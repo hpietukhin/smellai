@@ -24,7 +24,7 @@ docker run -d \
 
 # 4. Wait for startup (check logs)
 docker logs -f sonarqube
-docker run --rm -v "$(pwd):/usr/src" --network="host" -e SONAR_HOST_URL="http://localhost:9000" -e SONAR_SCANNER_OPTS="-Dsonar.projectKey=sonar-test-app -Dsonar.java.binaries=. -Dsonar.language=java -Dsonar.verbose=true" -e SONAR_TOKEN="squ_5f53blabla" sonarsource/sonar-scanner-cli
+docker run --rm -v "$(pwd):/usr/src" --network="host" -e SONAR_HOST_URL="http://localhost:9000" -e SONAR_SCANNER_OPTS="-Dsonar.projectKey=arthas -Dsonar.java.binaries=. -Dsonar.language=java -Dsonar.verbose=true" -e SONAR_TOKEN="squ_5f53blabla" sonarsource/sonar-scanner-cli
 
 # Wait a minute after "operational", then test
 curl http://localhost:9000/api/system/status
