@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:context7.com)"
+    ],
+    "deny": []
+  }
+}
