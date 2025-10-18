@@ -1,0 +1,31 @@
+[project]
+name = "smellai"
+version = "0.1.0"
+description = "LLM-based code smell detection and refactoring experiments"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Havriil Pietukhin" }]
+dependencies = [
+  "pandas>=2.1",
+  "wandb>=0.17",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+]
+
+[tool.uv]
+
+[dependency-groups]
+dev = [
+    "autoflake>=2.3.1",
+    "autopep8>=2.3.2",
+    "datasets>=4.2.0",
+    "isort>=7.0.0",
+    "openai>=2.3.0",
+    "set-env-colab-kaggle-dotenv>=0.1.4",
+    "weave>=0.52.9",
+]
+# Let uv manage Python versions automatically
