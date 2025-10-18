@@ -10,8 +10,22 @@
       "WebFetch(domain:tilburgsciencehub.com)",
       "Bash(chmod:*)",
       "Bash(pip install:*)",
-      "Bash(python -m pytest sonarqube_api/test_api.py -v)"
+      "Bash(python -m pytest sonarqube_api/test_api.py -v)",
+      "Read(//Users/havriil.pietukhin/**)"
     ],
     "deny": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit(**/*.{py})",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pre-commit run --files {files}"
+          }
+        ]
+      }
+    ]
   }
 }
