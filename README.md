@@ -20,33 +20,26 @@ run.finish()
 Project setup
 
 Prerequisites
-- Python 3.11+
-- pip
+- uv (installs Python automatically if needed)
 
-Create virtual environment (recommended)
+Install dependencies
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
-```
-
-Install minimal dependencies
-```bash
-pip install -U pandas wandb
+# uv handles Python version and dependencies automatically
+uv pip install .
 ```
 
 Environment variables
-- `WANDB_API_KEY`: your W&B API key (or run `wandb login`)
+Copy `.env.example` to `.env` and fill in your values:
+```bash
+cp .env.example .env
+# Edit .env with your actual values
+```
+
+Required variables:
+- `WANDB_API_KEY`: your W&B API key (or run `uvx wandb login`)
 - `WANDB_PROJECT`: defaults to `mt`
 - `CLASSES_CSV_PATH`: path to pre-edited classes CSV
 - `REFACTORINGS_CSV_PATH`: path to pre-edited refactorings CSV
-
-Example `.env` content (optional)
-```bash
-WANDB_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxx
-WANDB_PROJECT=mt
-CLASSES_CSV_PATH=/absolute/path/to/classes.csv
-REFACTORINGS_CSV_PATH=/absolute/path/to/refactorings.csv
-```
 
 Run a minimal experiment
 ```python
@@ -67,3 +60,72 @@ run_experiment(
     connector_name="mysql",
 )
 ```
+
+## Dependency Management with uv
+
+### Basic Setup
+- Install uv: see `https://docs.astral.sh/uv/` (macOS/Linux/Homebrew supported)
+- Install deps: `uv pip install .` (from pyproject.toml)
+- CLI tools via uvx: `uvx wandb login`
+- Lock dependencies: `uv pip compile pyproject.toml -o uv.lock`
+- Reproducible install: `uv pip sync uv.lock`
+
+### Jupyter Notebook Integration
+
+#### Setup for Notebooks
+```bash
+# 1. Add ipykernel and uv as dev dependencies
+uv add --dev ipykernel uv
+
+# 2. Create a dedicated Jupyter kernel for this project
+uv run ipython kernel install --user --env VIRTUAL_ENV $(pwd)/.venv --name=smellai
+
+# 3. Optional: Seed environment with pip for %pip magic support
+uv venv --seed
+```
+
+#### Managing Dependencies in Notebooks
+
+**Method 1: Using uv commands (Recommended)**
+```python
+# Add dependencies permanently to pyproject.toml
+!uv add pydantic numpy matplotlib
+
+# Install dependencies temporarily (session only)
+!uv pip install requests beautifulsoup4
+
+# Add development dependencies
+!uv add --dev pytest black ruff
+```
+
+**Method 2: Using %pip magic (if seeded)**
+```python
+# Only works if environment was created with --seed
+%pip install package-name
+```
+
+#### Best Practices for Notebook Dependencies
+
+1. **Persistent Dependencies**: Use `!uv add package-name` to add packages to your project permanently
+2. **Temporary Testing**: Use `!uv pip install package-name` for quick experiments
+3. **Development Tools**: Use `!uv add --dev package-name` for testing/linting tools
+4. **Project Isolation**: Always use the dedicated kernel (`smellai`) to ensure proper environment isolation
+
+#### Example Notebook Cell Structure
+```python
+# Cell 1: Install dependencies
+!uv add autopep8 autoflake weave isort openai datasets --dev
+
+# Cell 2: Handle compatibility issues
+!uv pip install "httpx<0.28"  # Temporary fix for OpenAI compatibility
+
+# Cell 3: Import and use
+import weave
+import openai
+# ... rest of your code
+```
+
+#### Troubleshooting
+- **Kernel not found**: Restart Jupyter and select the `smellai` kernel
+- **Package not found**: Ensure you're using the correct kernel and run `!uv pip list` to verify installation
+- **Import errors**: Restart kernel after installing new packages

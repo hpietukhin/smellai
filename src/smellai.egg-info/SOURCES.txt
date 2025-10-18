@@ -1,0 +1,12 @@
+LICENSE
+README.md
+pyproject.toml
+src/connectors/mysql_connector.py
+src/pipelines/experiment_pipeline.py
+src/smellai.egg-info/PKG-INFO
+src/smellai.egg-info/SOURCES.txt
+src/smellai.egg-info/dependency_links.txt
+src/smellai.egg-info/requires.txt
+src/smellai.egg-info/top_level.txt
+src/tracking/__init__.py
+src/tracking/wandb_tracking.py

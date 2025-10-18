@@ -1,15 +1,15 @@
 <!--
 Sync Impact Report
-Version change: 1.0.0 → 1.1.0
-Modified principles: II. Baseline Parity and Comparisons → explicit Dockerized SonarQube baseline requirement
+Version change: 1.1.0 → 1.2.0
+Modified principles: Additional Constraints & Tech Stack → add uv dependency management policy
 Added sections: None
 Removed sections: None
 Templates requiring updates:
- - ✅ .specify/templates/plan-template.md (version reference updated to v1.1.0)
+ - ✅ .specify/templates/plan-template.md (version reference updated to v1.2.0)
  - ✅ .specify/templates/spec-template.md (no outdated references)
  - ✅ .specify/templates/tasks-template.md (no outdated references)
  - ⚠  .specify/templates/commands/* (directory not present; no action)
-Follow-up TODOs: Consider adding `infra/sonarqube/docker-compose.yml` during implementation
+Follow-up TODOs: Add pyproject.toml and lockfile during implementation if missing
 -->
 
 # SmellAI Thesis Lab Constitution
@@ -89,6 +89,9 @@ Rationale: Keeps the repository organized, safe, and compliant.
 - Baseline Runtime: SonarQube via Docker (compose or single-container) with
   pinned version; local access default on port 9000; credentials/tokens provided
   via environment.
+- Dependencies: Manage with `uv` (venv + installs). Prefer `uv pip` and `uvx`
+  over plain pip. Keep dependency definitions in `pyproject.toml` and commit the
+  lockfile for reproducibility; CI MUST use `uv` to install from lock.
 - Testing: `pytest`; static checks via linters/formatters.
 - Structure: `src/` (pipelines, data access, evaluation), `experiments/`
   (Jupyter notebooks), `tests/` (unit/integration), DB migration scripts as
@@ -116,6 +119,9 @@ Rationale: Keeps the repository organized, safe, and compliant.
 4. Releases and milestones:
    - Tag important result sets with Git tags and W&B tags referencing the
      Constitution version in effect.
+5. Dependency hygiene:
+   - Any dependency change MUST update the uv lockfile and installation
+     instructions; builds MUST be reproducible via `uv pip sync`.
 
 ## Governance
 
@@ -131,4 +137,4 @@ Rationale: Keeps the repository organized, safe, and compliant.
   gate; reviewers MUST verify compliance before approval. A periodic audit MAY
   be conducted before major milestones.
 
-**Version**: 1.1.0 | **Ratified**: 2025-09-26 | **Last Amended**: 2025-09-26
+**Version**: 1.2.0 | **Ratified**: 2025-09-26 | **Last Amended**: 2025-09-26

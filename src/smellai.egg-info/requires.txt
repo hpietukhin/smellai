@@ -1,0 +1,5 @@
+pandas>=2.1
+wandb>=0.17
+
+[dev]
+pytest>=8
