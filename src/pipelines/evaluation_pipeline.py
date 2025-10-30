@@ -6,11 +6,14 @@ the entry point function for running evaluations.
 
 **Architecture**: Linear pipeline with error handling
 **Flow**: START → fetch_sample → clone_repo → detect_smells → judge_evaluation → END
+**Tracing**: MLflow automatically traces LangGraph execution via autolog
 """
 
 import json
+import os
 from typing import Any, Dict
 
+import mlflow
 from langgraph.graph import END, StateGraph
 
 from src.pipelines.nodes import (
@@ -23,6 +26,49 @@ from src.pipelines.nodes import (
 
 # Global retriever instance (initialized once, reused)
 _retriever = None
+
+# Initialize MLflow tracing for LangGraph (done once at module load)
+_mlflow_initialized = False
+
+
+def _initialize_mlflow():
+    """
+    Initialize MLflow tracing for LangGraph execution.
+
+    This enables automatic tracing of LangGraph workflows via MLflow's
+    LangChain autologging integration. Traces are logged to the active
+    MLflow experiment.
+
+    Configuration via environment variables:
+    - MLFLOW_TRACKING_URI: MLflow tracking server URI (default: local ./mlruns)
+    - MLFLOW_EXPERIMENT_NAME: Experiment name (default: code-smell-evaluation)
+    """
+    global _mlflow_initialized
+
+    if _mlflow_initialized:
+        return
+
+    try:
+        # Set MLflow tracking URI (defaults to local ./mlruns if not set)
+        tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "./mlruns")
+        mlflow.set_tracking_uri(tracking_uri)
+
+        # Set experiment name
+        experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "code-smell-evaluation")
+        mlflow.set_experiment(experiment_name)
+
+        # Enable LangChain autologging (captures LangGraph traces)
+        mlflow.langchain.autolog()
+
+        print("✓ MLflow tracing initialized")
+        print(f"  - Tracking URI: {tracking_uri}")
+        print(f"  - Experiment: {experiment_name}")
+
+        _mlflow_initialized = True
+
+    except Exception as e:
+        print(f"⚠ MLflow tracing initialization failed: {e}")
+        print("  Continuing without MLflow tracing...")
 
 
 def get_retriever_instance():
@@ -125,14 +171,16 @@ def run_evaluation(sample_id: int) -> Dict[str, Any]:
     """
     Run complete evaluation pipeline for a single sample.
 
-    This is the main entry point that Promptfoo or other tools will call.
+    This is the main entry point for running evaluations.
     It orchestrates the entire pipeline:
-    1. Initialize retriever (once, cached)
-    2. Create/get compiled graph
-    3. Invoke with sample_id
-    4. Extract and serialize results
+    1. Initialize MLflow tracing (once, cached)
+    2. Initialize retriever (once, cached)
+    3. Create/get compiled graph
+    4. Invoke with sample_id (automatically traced by MLflow)
+    5. Extract and serialize results
 
     **Task**: P4-PIPELINE-007 - Create pipeline entry point function
+    **Tracing**: Each invocation creates an MLflow trace for observability
 
     Args:
         sample_id: DACOS sample ID to evaluate
@@ -165,13 +213,16 @@ def run_evaluation(sample_id: int) -> Dict[str, Any]:
         - Retriever is initialized once and reused
         - Graph is created fresh each time (lightweight)
         - All errors are caught and included in result
-        - Output is JSON-serializable for Promptfoo
+        - Output is JSON-serializable for logging and analysis
     """
     print(f"\n{'='*60}")
     print(f"EVALUATION PIPELINE - Sample {sample_id}")
     print(f"{'='*60}")
 
     try:
+        # Initialize MLflow tracing
+        _initialize_mlflow()
+
         # Ensure retriever is initialized
         get_retriever_instance()
 

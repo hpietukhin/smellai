@@ -22,8 +22,8 @@
   - High-speed inference via Cerebras accelerators
 - **Google Embeddings**: `text-embedding-004`
 
-### 1.4 Evaluation Framework
-- **promptfoo**: `^0.80.0` (npm global install)
+### 1.4 Experiment Tracking & Tracing
+- **mlflow**: `^3.0.0` (tracing and experiment tracking)
 
 ### 1.5 Vector Database
 - **deeplake**: `<4.0.0` (v3.x)
@@ -94,9 +94,9 @@
 - MySQL 8.0+
 - Docker Engine 24.0+
 - Docker Compose 2.20+
-- Node.js 18+ (for Promptfoo)
 - Git 2.30+
 - Bash 4.0+
+- MLflow 3.0+ (for tracing and tracking)
 
 ### 6.2 Optional
 - uv 0.5+ (recommended package manager)
@@ -150,12 +150,12 @@ project/
 │   ├── clone_repos.py
 │   └── export_test_cases.py
 ├── eval_results/           # Git-ignored
+├── mlruns/                 # Git-ignored (MLflow tracking)
 ├── data/                   # Git-ignored
 ├── .env.example
 ├── .gitignore
 ├── pyproject.toml
 ├── uv.lock
-├── promptfoo.config.yaml
 ├── README.md
 ├── CLAUDE.md
 ├── CONSTITUTION.md

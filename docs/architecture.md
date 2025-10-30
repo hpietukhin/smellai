@@ -12,17 +12,16 @@ CLI tool for evaluating LLM-based code smell detection against ground truth anno
 
 ### 1.2 Phase 1 Scope (2-month prototype)
 - Single LangGraph agent: LLM-as-judge for smell detection evaluation
-- Promptfoo-driven evaluation framework
+- MLflow for tracing, experiment tracking, and evaluation metrics
 - Ground truth from MySQL DACOS dataset
 - SonarQube baseline (separate process, not integrated in eval pipeline)
-- Local JSON output (no W&B)
 - Focus: Java code smell detection quality assessment
 
 ### 1.3 Out of Scope (Phase 1)
 - Multi-agent workflows (coordinator, test generation, refactoring)
-- W&B tracking
 - Automated refactoring
 - Real-time SonarQube integration in eval pipeline
+- Advanced MLflow features (model registry, deployment)
 
 ## 2. System Components
 
@@ -30,10 +29,10 @@ CLI tool for evaluating LLM-based code smell detection against ground truth anno
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      Promptfoo CLI                          │
-│  (orchestrates evaluation runs, provides test cases)        │
+│                    MLflow Tracking                          │
+│  (experiment tracking, tracing, metrics logging)            │
 └──────────────────────┬──────────────────────────────────────┘
-                       │
+                       │ (automatic tracing)
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                  LangGraph Pipeline                         │
@@ -80,22 +79,10 @@ CLI tool for evaluating LLM-based code smell detection against ground truth anno
 
 ### 2.2 Component Descriptions
 
-#### 2.2.1 Promptfoo CLI
-**Purpose**: Evaluation orchestration framework  
-**Responsibilities**:
-- Load test cases (DACOS sample IDs)
-- Invoke LangGraph pipeline for each test case
-- Collect and aggregate evaluation results
-- Generate evaluation reports (JSON)
-
-**Configuration**: `promptfoo.config.yaml`
-- Provider: LangGraph pipeline endpoint
-- Test cases: DACOS sample filters/IDs
-- Output: JSON results directory
-
-#### 2.2.2 LangGraph Pipeline
-**Purpose**: Core evaluation workflow  
-**Implementation**: Single-agent graph with linear flow  
+#### 2.2.1 LangGraph Pipeline
+**Purpose**: Core evaluation workflow
+**Implementation**: Single-agent graph with linear flow
+**Tracing**: Automatic MLflow tracing via `mlflow.langchain.autolog()`
 **State Schema**:
 ```python
 class EvaluationState(TypedDict):
@@ -239,12 +226,10 @@ git sparse-checkout set <file_path>
 ### 3.1 End-to-End Evaluation Flow
 
 ```
-[Promptfoo Config] 
-    ↓ (sample IDs/filters)
-[Promptfoo CLI]
-    ↓ (invoke for each test case)
+[Evaluation Script/CLI]
+    ↓ (invoke for each sample)
 [LangGraph Pipeline Entry]
-    ↓
+    ↓ (automatically traced by MLflow)
 ┌─────────────────────────────────────────┐
 │ 1. Fetch Sample Metadata                │
 │    - Query MySQL for sample record      │
@@ -277,11 +262,12 @@ git sparse-checkout set <file_path>
 │    - Structured JSON output             │
 │    - Per-smell scores                   │
 │    - Aggregate metrics                  │
+│    - Logged to MLflow                   │
 └────────────┬────────────────────────────┘
              ↓
-[Promptfoo CLI]
-    ↓ (collect results)
-[JSON Output File]
+[MLflow Tracking]
+    ↓ (store trace + metrics)
+[MLflow UI / Analysis]
 ```
 
 ### 3.2 State Transitions (LangGraph)
@@ -420,42 +406,41 @@ class PromptfooConfig(BaseModel):
 
 ## 5. Integration Points
 
-### 5.1 Promptfoo → LangGraph
+### 5.1 Evaluation Entry Point
 
-**Interface**: Function call from Promptfoo to LangGraph pipeline
+**Interface**: Direct function call to LangGraph pipeline
 
-`promptfoo.config.yaml`:
-```yaml
-providers:
-  - id: langgraph
-    config:
-      module: src.pipelines.evaluation_pipeline
-      function: run_evaluation
-      
-prompts:
-  - 'Evaluate sample: {{sample_id}}'
-  
-tests:
-  # Generated from DACOS query
-  - vars:
-      sample_id: 1234
-  - vars:
-      sample_id: 5678
-```
-
-**Contract**:
+**Entry Point**:
 ```python
 def run_evaluation(sample_id: int) -> Dict[str, Any]:
     """
-    Entry point called by Promptfoo.
-    
+    Entry point for running evaluations.
+
     Args:
         sample_id: DACOS sample ID
-        
+
     Returns:
         Evaluation result as dict (serializable to JSON)
+
+    Notes:
+        - Automatically traced by MLflow
+        - Can be called from CLI, notebooks, or batch scripts
     """
     pass
+```
+
+**Usage Examples**:
+```python
+# Single evaluation
+result = run_evaluation(sample_id=12345)
+
+# Batch evaluation with MLflow tracking
+for sample_id in sample_ids:
+    result = run_evaluation(sample_id)
+    # Each run automatically traced in MLflow
+
+# From CLI
+python -m src.pipelines.evaluation_pipeline 12345
 ```
 
 ### 5.2 MySQL Schema Mapping
@@ -519,22 +504,31 @@ def clone_repo_node(state: EvaluationState) -> EvaluationState:
     }
 ```
 
-### 5.4 Context7 Integration
+### 5.4 MLflow Integration
 
-**Purpose**: Fetch up-to-date LangGraph and Promptfoo documentation
+**Purpose**: Automatic tracing and experiment tracking
 
 **Usage Pattern**:
 ```python
-# Before implementing pipeline, fetch docs
-context7.get_library_docs(
-    library_id='/langchain-ai/langgraph',
-    topic='single agent workflows'
-)
+# Initialize once at module load
+import mlflow
 
-context7.get_library_docs(
-    library_id='/promptfoo/promptfoo',
-    topic='evaluating python functions'
-)
+mlflow.set_tracking_uri("./mlruns")
+mlflow.set_experiment("code-smell-evaluation")
+mlflow.langchain.autolog()
+
+# Automatic tracing on every run_evaluation() call
+result = run_evaluation(sample_id=12345)
+
+# Optional: Log additional metrics
+mlflow.log_metrics({
+    "precision": result["precision"],
+    "recall": result["recall"],
+    "f1_score": result["f1_score"]
+})
+
+# View in UI
+# mlflow ui --backend-store-uri ./mlruns
 ```
 
 ## 6. Non-Functional Requirements
@@ -549,8 +543,9 @@ context7.get_library_docs(
 - Log Git SHA for each analyzed commit
 - Log LLM model version, temperature, seeds
 - Store full prompts and system messages
-- Record Promptfoo run config
+- Record MLflow experiment config
 - Version LangGraph graph definition
+- MLflow traces for complete execution history
 
 **Logging Requirements**:
 ```json
@@ -560,6 +555,8 @@ context7.get_library_docs(
     "timestamp": "2025-10-18T10:30:00Z",
     "pipeline_version": "1.0.0",
     "langgraph_version": "0.2.x",
+    "mlflow_version": "3.x",
+    "mlflow_run_id": "abc123...",
     "llm_model": "cerebras/llama3.1-8b",
     "llm_provider": "LiteLLM",
     "temperature": 0.0,
@@ -568,6 +565,13 @@ context7.get_library_docs(
   "evaluation_results": [...]
 }
 ```
+
+**MLflow Tracing Benefits**:
+- Automatic logging of all LangGraph node inputs/outputs
+- Execution timeline and performance metrics
+- Searchable trace history across experiments
+- UI for visualizing execution flow
+- Comparison across different evaluation runs
 
 ### 6.3 Correctness
 **Validation Gates**:
@@ -593,7 +597,7 @@ context7.get_library_docs(
 |-----------|-----------|---------|-------|
 | Language | Python | 3.11+ | Type hints required |
 | Orchestration | LangGraph | Latest | Single-agent workflow |
-| Evaluation | Promptfoo | Latest | CLI-driven |
+| Tracking & Tracing | MLflow | 3.0+ | Experiment tracking, observability |
 | Database | MySQL | 8.0+ | DACOS dataset |
 | Vector Store | DeepLake | <4.0.0 | Persistent local storage |
 | LLM | LiteLLM + Cerebras | llama3.1-8b | Detection & judging |
@@ -610,6 +614,7 @@ context7.get_library_docs(
 ```
 ├── MySQL (localhost:3306) - DACOS database
 ├── SonarQube (Docker, localhost:9000) - baseline tool
+├── MLflow (./mlruns) - tracing and experiment tracking
 ├── DeepLake (./data/deeplake/) - smell knowledge (persistent)
 ├── Git clones (/tmp/smell-eval-clones) - temporary
 └── Python environment (venv/uv) - pipeline execution
@@ -644,8 +649,8 @@ project/
 │   │   └── analyze_baseline.sh    # SonarQube batch script
 │   └── mysql/
 │       └── schema.sql              # DACOS schema reference
-├── eval_results/                   # Promptfoo outputs
-├── promptfoo.config.yaml           # Evaluation config
+├── eval_results/                   # Evaluation outputs
+├── mlruns/                         # MLflow tracking data (git-ignored)
 ├── .env.example                    # Template for secrets
 ├── pyproject.toml                  # Dependencies
 └── README.md                       # Setup instructions
