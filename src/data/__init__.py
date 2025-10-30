@@ -6,6 +6,7 @@ __all__ = [
     "get_connection",
     "fetch_sample_by_id",
     "fetch_samples",
+    "fetch_samples_dataframe",
     "derive_repo_url",
     "get_commit_before_date",
     "clone_and_read_file",
@@ -19,10 +20,12 @@ def __getattr__(name):
         "get_connection",
         "fetch_sample_by_id",
         "fetch_samples",
+        "fetch_samples_dataframe",
     ]:
         from .mysql_connector import (
             fetch_sample_by_id,
             fetch_samples,
+            fetch_samples_dataframe,
             get_connection,
             get_connection_pool,
         )

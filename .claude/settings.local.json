@@ -14,7 +14,17 @@
       "Read(//Users/havriil.pietukhin/**)",
       "Bash(uv tool install pre-commit)",
       "Bash(mkdir -p src/models)",
-      "WebFetch(domain:mlflow.org)"
+      "WebFetch(domain:mlflow.org)",
+      "Bash(echo:*)",
+      "Bash(curl:*)",
+      "Bash(python:*)",
+      "Bash(export SONAR_TOKEN=\"sqa_07c7bb2a187505d224c7e6535e1819f3b4e15948\")",
+      "Bash(tee:*)",
+      "Read(//private/tmp/**)",
+      "Bash(docker logs:*)",
+      "Bash(cat:*)",
+      "Bash(docker run:*)",
+      "Bash(git clone:*)"
     ],
     "deny": []
   },
