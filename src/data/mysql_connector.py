@@ -9,6 +9,7 @@ annotations.
 import os
 from typing import List, Optional
 
+import pandas as pd
 from dotenv import load_dotenv
 from mysql.connector import Error as MySQLError
 from mysql.connector import pooling
@@ -47,6 +48,7 @@ def get_connection_pool() -> pooling.MySQLConnectionPool:
     mysql_database = os.getenv("MYSQL_DATABASE")
     mysql_user = os.getenv("MYSQL_USER")
     mysql_password = os.getenv("MYSQL_PASSWORD")
+    mysql_pool_size = int(os.getenv("MYSQL_POOL_SIZE", "5"))
 
     # Validate required variables
     missing_vars = []
@@ -56,7 +58,7 @@ def get_connection_pool() -> pooling.MySQLConnectionPool:
         missing_vars.append("MYSQL_DATABASE")
     if not mysql_user:
         missing_vars.append("MYSQL_USER")
-    if not mysql_password:
+    if mysql_password is None:
         missing_vars.append("MYSQL_PASSWORD")
 
     if missing_vars:
@@ -69,7 +71,7 @@ def get_connection_pool() -> pooling.MySQLConnectionPool:
         # Create connection pool
         _connection_pool = pooling.MySQLConnectionPool(
             pool_name="dacos_pool",
-            pool_size=5,
+            pool_size=mysql_pool_size,
             pool_reset_session=True,
             host=mysql_host,
             port=int(mysql_port),
@@ -80,7 +82,7 @@ def get_connection_pool() -> pooling.MySQLConnectionPool:
         )
 
         print(
-            f"✓ MySQL connection pool created: {mysql_user}@{mysql_host}:{mysql_port}/{mysql_database}"
+            f"✓ MySQL connection pool created (size={mysql_pool_size}): {mysql_user}@{mysql_host}:{mysql_port}/{mysql_database}"
         )
         return _connection_pool
 
@@ -293,3 +295,79 @@ def fetch_samples(
             cursor.close()
         if connection:
             connection.close()
+
+
+    def fetch_samples_dataframe(
+        smell_ids: Optional[List[int]] = None,
+        limit: int = 10,
+    ) -> pd.DataFrame:
+        """Fetch sample rows as a pandas DataFrame.
+
+        Mirrors the exploratory query used in the reference notebook while
+        reusing the shared connection pool. Optional ``smell_ids`` filtering
+        aligns with ``WHERE smells IN (...)`` from the original snippet.
+
+        Args:
+            smell_ids: Optional list of smell IDs to filter (``smells`` column).
+            limit: Maximum number of rows to return.
+
+        Returns:
+            DataFrame with the requested sample rows (empty if none match).
+
+        Raises:
+            MySQLError: If database access or query execution fails.
+        """
+
+        connection = None
+
+        try:
+            connection = get_connection()
+
+            query = (
+                "SELECT id, designite_id, has_smell, is_class, path_to_file, "
+                "project_name, sample_constraints, smells "
+                "FROM tagman5.sample"
+            )
+
+            clauses: List[str] = []
+            params: List[object] = []
+
+            if smell_ids:
+                placeholders = ", ".join(["%s"] * len(smell_ids))
+                clauses.append(f"smells IN ({placeholders})")
+                params.extend(smell_ids)
+
+            if clauses:
+                query += " WHERE " + " AND ".join(clauses)
+
+            query += " LIMIT %s"
+            params.append(limit)
+
+            df = pd.read_sql(query, connection, params=params)
+
+            if not df.empty:
+                df["has_smell"] = df["has_smell"].astype(bool)
+                df["is_class"] = df["is_class"].astype(bool)
+
+            return df
+
+        except MySQLError as e:
+            raise MySQLError(f"Failed to fetch samples dataframe: {e}") from e
+
+        finally:
+            if connection:
+                connection.close()
+
+
+def test_connection() -> bool:
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        cursor.fetchone()
+        cursor.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"✗ MySQL connectivity failed: {e}")
+        return False
