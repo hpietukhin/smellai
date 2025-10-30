@@ -12,7 +12,8 @@
       "Bash(pip install:*)",
       "Bash(python -m pytest sonarqube_api/test_api.py -v)",
       "Read(//Users/havriil.pietukhin/**)",
-      "Bash(uv tool install pre-commit)"
+      "Bash(uv tool install pre-commit)",
+      "Bash(mkdir -p src/models)"
     ],
     "deny": []
   },
