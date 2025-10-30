@@ -24,7 +24,10 @@
       "Bash(docker logs:*)",
       "Bash(cat:*)",
       "Bash(docker run:*)",
-      "Bash(git clone:*)"
+      "Bash(git clone:*)",
+      "Bash(uv tool install:*)",
+      "Bash(creosote --help:*)",
+      "Bash(creosote --verbose:*)"
     ],
     "deny": []
   },

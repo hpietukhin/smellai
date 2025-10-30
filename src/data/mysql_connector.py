@@ -297,66 +297,66 @@ def fetch_samples(
             connection.close()
 
 
-    def fetch_samples_dataframe(
-        smell_ids: Optional[List[int]] = None,
-        limit: int = 10,
-    ) -> pd.DataFrame:
-        """Fetch sample rows as a pandas DataFrame.
+def fetch_samples_dataframe(
+    smell_ids: Optional[List[int]] = None,
+    limit: int = 10,
+) -> pd.DataFrame:
+    """Fetch sample rows as a pandas DataFrame.
 
-        Mirrors the exploratory query used in the reference notebook while
-        reusing the shared connection pool. Optional ``smell_ids`` filtering
-        aligns with ``WHERE smells IN (...)`` from the original snippet.
+    Mirrors the exploratory query used in the reference notebook while
+    reusing the shared connection pool. Optional ``smell_ids`` filtering
+    aligns with ``WHERE smells IN (...)`` from the original snippet.
 
-        Args:
-            smell_ids: Optional list of smell IDs to filter (``smells`` column).
-            limit: Maximum number of rows to return.
+    Args:
+        smell_ids: Optional list of smell IDs to filter (``smells`` column).
+        limit: Maximum number of rows to return.
 
-        Returns:
-            DataFrame with the requested sample rows (empty if none match).
+    Returns:
+        DataFrame with the requested sample rows (empty if none match).
 
-        Raises:
-            MySQLError: If database access or query execution fails.
-        """
+    Raises:
+        MySQLError: If database access or query execution fails.
+    """
 
-        connection = None
+    connection = None
 
-        try:
-            connection = get_connection()
+    try:
+        connection = get_connection()
 
-            query = (
-                "SELECT id, designite_id, has_smell, is_class, path_to_file, "
-                "project_name, sample_constraints, smells "
-                "FROM tagman5.sample"
-            )
+        query = (
+            "SELECT id, designite_id, has_smell, is_class, path_to_file, "
+            "project_name, sample_constraints, smells "
+            "FROM tagman5.sample"
+        )
 
-            clauses: List[str] = []
-            params: List[object] = []
+        clauses: List[str] = []
+        params: List[object] = []
 
-            if smell_ids:
-                placeholders = ", ".join(["%s"] * len(smell_ids))
-                clauses.append(f"smells IN ({placeholders})")
-                params.extend(smell_ids)
+        if smell_ids:
+            placeholders = ", ".join(["%s"] * len(smell_ids))
+            clauses.append(f"smells IN ({placeholders})")
+            params.extend(smell_ids)
 
-            if clauses:
-                query += " WHERE " + " AND ".join(clauses)
+        if clauses:
+            query += " WHERE " + " AND ".join(clauses)
 
-            query += " LIMIT %s"
-            params.append(limit)
+        query += " LIMIT %s"
+        params.append(limit)
 
-            df = pd.read_sql(query, connection, params=params)
+        df = pd.read_sql(query, connection, params=params)
 
-            if not df.empty:
-                df["has_smell"] = df["has_smell"].astype(bool)
-                df["is_class"] = df["is_class"].astype(bool)
+        if not df.empty:
+            df["has_smell"] = df["has_smell"].astype(bool)
+            df["is_class"] = df["is_class"].astype(bool)
 
-            return df
+        return df
 
-        except MySQLError as e:
-            raise MySQLError(f"Failed to fetch samples dataframe: {e}") from e
+    except MySQLError as e:
+        raise MySQLError(f"Failed to fetch samples dataframe: {e}") from e
 
-        finally:
-            if connection:
-                connection.close()
+    finally:
+        if connection:
+            connection.close()
 
 
 def test_connection() -> bool:
