@@ -1,0 +1,39 @@
+"""Data access layer for code smell detection."""
+
+# Lazy imports to avoid dependency issues
+__all__ = [
+    "get_connection_pool",
+    "get_connection",
+    "fetch_sample_by_id",
+    "fetch_samples",
+    "derive_repo_url",
+    "get_commit_before_date",
+    "clone_and_read_file",
+]
+
+
+def __getattr__(name):
+    """Lazy import to avoid loading heavy dependencies."""
+    if name in [
+        "get_connection_pool",
+        "get_connection",
+        "fetch_sample_by_id",
+        "fetch_samples",
+    ]:
+        from .mysql_connector import (
+            fetch_sample_by_id,
+            fetch_samples,
+            get_connection,
+            get_connection_pool,
+        )
+
+        return locals()[name]
+    elif name in ["derive_repo_url", "get_commit_before_date", "clone_and_read_file"]:
+        from .git_ops import (
+            clone_and_read_file,
+            derive_repo_url,
+            get_commit_before_date,
+        )
+
+        return locals()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

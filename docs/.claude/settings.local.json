@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "WebSearch",
+      "WebFetch(domain:docs.litellm.ai)",
+      "Read(//Users/havriil.pietukhin/PycharmProjects/smellai/**)",
+      "Bash(docker-compose -f /Users/havriil.pietukhin/PycharmProjects/smellai/infra/sonarqube/docker-compose.yml config --quiet)",
+      "Bash(chmod +x /Users/havriil.pietukhin/PycharmProjects/smellai/infra/sonarqube/start_sonarqube.sh)",
+      "Bash(bash -n /Users/havriil.pietukhin/PycharmProjects/smellai/infra/sonarqube/start_sonarqube.sh)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

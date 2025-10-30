@@ -3,20 +3,51 @@ name = "smellai"
 version = "0.1.0"
 description = "LLM-based code smell detection and refactoring experiments"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 license = { text = "MIT" }
 authors = [{ name = "Havriil Pietukhin" }]
 dependencies = [
-  "pandas>=2.1",
-  "wandb>=0.17",
+  # LangChain ecosystem
+  "langgraph>=0.2.0",
+  "langchain>=0.3.0",
+  "langchain-community>=0.3.0",
+  "langchain-google-genai>=2.0.0",
+  # LLM integration
+  "litellm>=1.0.0",
+  # Vector database
+  "deeplake<4.0.0",
+  # Database
+  "mysql-connector-python>=9.0.0",
+  # Git operations
+  "GitPython>=3.1.0",
+  # Configuration
+  "pydantic>=2.0.0",
+  "pydantic-settings>=2.0.0",
+  "python-dotenv>=1.0.0",
+  # Utilities
+  "requests>=2.31.0",
+  "pandas>=2.2.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=8",
+  # Testing
+  "pytest>=8.0.0",
+  "pytest-cov>=4.1.0",
+  "pytest-asyncio>=0.23.0",
+  # Code quality
+  "ruff>=0.5.0",
+  "mypy>=1.10.0",
+  # Interactive development
+  "ipython>=8.20.0",
+  "jupyter>=1.0.0",
 ]
 
-[tool.uv]
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+tdd_guard_project_root = "."
 
 [dependency-groups]
 dev = [
