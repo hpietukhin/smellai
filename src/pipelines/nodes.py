@@ -1,4 +1,4 @@
-gg"""
+"""
 LangGraph nodes for code smell detection evaluation pipeline.
 
 This module defines the state schema and node functions for the evaluation pipeline.
@@ -8,16 +8,17 @@ Each node performs a specific step in the process and updates the shared state.
 **Nodes**: fetch_sample → clone_repo → detect_smells → judge_evaluation
 """
 
-from datetime import datetime
 from typing import List, Optional, TypedDict
 
 from src.agents.detector import detect_smells as detect_smells_agent
 from src.agents.judge import evaluate_detections
-from src.data.git_ops import (clone_and_read_file, derive_repo_url,
-                              get_commit_before_date)
+from src.data.git_ops import (
+    clone_and_read_file,
+    derive_repo_url,
+    get_commit_before_date,
+)
 from src.data.mysql_connector import fetch_sample_by_id
-from src.models.entities import (EvaluationResult, SmellAnnotation,
-                                 SmellDetection)
+from src.models.entities import EvaluationResult, SmellAnnotation, SmellDetection
 
 
 class EvaluationState(TypedDict):
@@ -29,6 +30,7 @@ class EvaluationState(TypedDict):
 
     **Task**: P4-PIPELINE-001 - Create LangGraph state definition
     """
+
     # Input
     sample_id: int
 
@@ -80,12 +82,12 @@ def fetch_sample_node(state: EvaluationState) -> EvaluationState:
 
     try:
         # Fetch sample from database
-        sample = fetch_sample_by_id(state['sample_id'])
+        sample = fetch_sample_by_id(state["sample_id"])
 
         if sample is None:
             return {
                 **state,
-                'error': f"Sample {state['sample_id']} not found in database"
+                "error": f"Sample {state['sample_id']} not found in database",
             }
 
         print(f"✓ Sample found: {sample.project_name}")
@@ -97,15 +99,12 @@ def fetch_sample_node(state: EvaluationState) -> EvaluationState:
         print(f"✓ Derived repo URL: {repo_url}")
 
         # Get commit SHA before cutoff date
-        commit_sha = get_commit_before_date(
-            repo_url,
-            before_date="2023-01-24"
-        )
+        commit_sha = get_commit_before_date(repo_url, before_date="2023-01-24")
 
         if commit_sha is None:
             return {
                 **state,
-                'error': f"No commits found before 2023-01-24 for {repo_url}"
+                "error": f"No commits found before 2023-01-24 for {repo_url}",
             }
 
         print(f"✓ Found commit: {commit_sha[:8]}")
@@ -121,20 +120,17 @@ def fetch_sample_node(state: EvaluationState) -> EvaluationState:
         # Update state
         return {
             **state,
-            'file_path': sample.path_to_file,
-            'project_name': sample.project_name,
-            'repo_url': repo_url,
-            'commit_sha': commit_sha,
-            'ground_truth': ground_truth,
-            'error': None
+            "file_path": sample.path_to_file,
+            "project_name": sample.project_name,
+            "repo_url": repo_url,
+            "commit_sha": commit_sha,
+            "ground_truth": ground_truth,
+            "error": None,
         }
 
     except Exception as e:
         print(f"✗ Error fetching sample: {e}")
-        return {
-            **state,
-            'error': f"Failed to fetch sample: {str(e)}"
-        }
+        return {**state, "error": f"Failed to fetch sample: {str(e)}"}
 
 
 def clone_repo_node(state: EvaluationState) -> EvaluationState:
@@ -164,37 +160,30 @@ def clone_repo_node(state: EvaluationState) -> EvaluationState:
         >>> print(len(new_state["file_content"]))
         1234
     """
-    print(f"\n=== Cloning Repository ===")
+    print("\n=== Cloning Repository ===")
 
     # Check for errors from previous nodes
-    if state.get('error'):
+    if state.get("error"):
         print(f"⊘ Skipping due to previous error: {state['error']}")
         return state
 
     try:
         # Clone and read file
         file_content = clone_and_read_file(
-            repo_url=state['repo_url'],
-            commit_sha=state['commit_sha'],
-            file_path=state['file_path']
+            repo_url=state["repo_url"],
+            commit_sha=state["commit_sha"],
+            file_path=state["file_path"],
         )
 
         print(f"✓ File read: {len(file_content)} characters")
         print(f"  First 100 chars: {file_content[:100]}...")
 
         # Update state
-        return {
-            **state,
-            'file_content': file_content,
-            'error': None
-        }
+        return {**state, "file_content": file_content, "error": None}
 
     except Exception as e:
         print(f"✗ Error cloning repository: {e}")
-        return {
-            **state,
-            'error': f"Failed to clone repository: {str(e)}"
-        }
+        return {**state, "error": f"Failed to clone repository: {str(e)}"}
 
 
 def detect_smells_node(state: EvaluationState) -> EvaluationState:
@@ -220,41 +209,39 @@ def detect_smells_node(state: EvaluationState) -> EvaluationState:
         >>> new_state = detect_smells_node(state)
         >>> print(f"Detected {len(new_state['llm_detections'])} smells")
     """
-    print(f"\n=== Detecting Code Smells ===")
+    print("\n=== Detecting Code Smells ===")
 
     # Check for errors from previous nodes
-    if state.get('error'):
+    if state.get("error"):
         print(f"⊘ Skipping due to previous error: {state['error']}")
         return state
 
     try:
         # Import retriever (should be initialized globally or passed in)
         from src.pipelines.evaluation_pipeline import get_retriever_instance
+
         retriever = get_retriever_instance()
 
         # Detect smells
         detections = detect_smells_agent(
-            code=state['file_content'],
-            retriever=retriever
+            code=state["file_content"], retriever=retriever
         )
 
         print(f"✓ Detected {len(detections)} smells")
         for detection in detections:
-            print(f"  - {detection.smell_type} ({detection.severity}) at {detection.location}")
+            print(
+                f"  - {detection.smell_type} ({detection.severity}) at {detection.location}"
+            )
 
         # Update state
-        return {
-            **state,
-            'llm_detections': detections,
-            'error': None
-        }
+        return {**state, "llm_detections": detections, "error": None}
 
     except Exception as e:
         print(f"✗ Error detecting smells: {e}")
         return {
             **state,
-            'llm_detections': [],
-            'error': f"Failed to detect smells: {str(e)}"
+            "llm_detections": [],
+            "error": f"Failed to detect smells: {str(e)}",
         }
 
 
@@ -285,17 +272,18 @@ def judge_evaluation_node(state: EvaluationState) -> EvaluationState:
         >>> new_state = judge_evaluation_node(state)
         >>> print(f"F1 Score: {new_state['evaluation_result'].f1_score}")
     """
-    print(f"\n=== Evaluating Detection Quality ===")
+    print("\n=== Evaluating Detection Quality ===")
 
     # Check for errors from previous nodes
-    if state.get('error'):
+    if state.get("error"):
         print(f"⊘ Skipping due to previous error: {state['error']}")
 
         # Create error evaluation result
         from datetime import datetime
+
         error_result = EvaluationResult(
-            sample_id=state['sample_id'],
-            file_path=state.get('file_path', 'unknown'),
+            sample_id=state["sample_id"],
+            file_path=state.get("file_path", "unknown"),
             overall_score=0.0,
             precision=0.0,
             recall=0.0,
@@ -303,45 +291,39 @@ def judge_evaluation_node(state: EvaluationState) -> EvaluationState:
             evaluations=[],
             summary=f"Evaluation skipped: {state['error']}",
             timestamp=datetime.now().isoformat(),
-            git_sha=state.get('commit_sha', 'unknown')
+            git_sha=state.get("commit_sha", "unknown"),
         )
 
-        return {
-            **state,
-            'evaluation_result': error_result
-        }
+        return {**state, "evaluation_result": error_result}
 
     try:
         # Evaluate detections
         evaluation_result = evaluate_detections(
-            ground_truth=state['ground_truth'],
-            detected_smells=state['llm_detections'],
-            sample_id=state['sample_id'],
-            file_path=state['file_path'],
-            git_sha=state['commit_sha']
+            ground_truth=state["ground_truth"],
+            detected_smells=state["llm_detections"],
+            sample_id=state["sample_id"],
+            file_path=state["file_path"],
+            git_sha=state["commit_sha"],
         )
 
-        print(f"✓ Evaluation complete")
+        print("✓ Evaluation complete")
         print(f"  Overall Score: {evaluation_result.overall_score:.2f}/5.0")
         print(f"  Precision: {evaluation_result.precision:.2f}")
         print(f"  Recall: {evaluation_result.recall:.2f}")
         print(f"  F1: {evaluation_result.f1_score:.2f}")
 
         # Update state
-        return {
-            **state,
-            'evaluation_result': evaluation_result,
-            'error': None
-        }
+        return {**state, "evaluation_result": evaluation_result, "error": None}
 
     except Exception as e:
         print(f"✗ Error in evaluation: {e}")
 
         # Create error evaluation result
         from datetime import datetime
+
         error_result = EvaluationResult(
-            sample_id=state['sample_id'],
-            file_path=state.get('file_path', 'unknown'),
+            sample_id=state["sample_id"],
+            file_path=state.get("file_path", "unknown"),
             overall_score=0.0,
             precision=0.0,
             recall=0.0,
@@ -349,11 +331,11 @@ def judge_evaluation_node(state: EvaluationState) -> EvaluationState:
             evaluations=[],
             summary=f"Evaluation failed: {str(e)}",
             timestamp=datetime.now().isoformat(),
-            git_sha=state.get('commit_sha', 'unknown')
+            git_sha=state.get("commit_sha", "unknown"),
         )
 
         return {
             **state,
-            'evaluation_result': error_result,
-            'error': f"Failed to evaluate: {str(e)}"
+            "evaluation_result": error_result,
+            "error": f"Failed to evaluate: {str(e)}",
         }

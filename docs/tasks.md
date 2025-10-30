@@ -917,10 +917,10 @@ Tasks are grouped by component and ordered by dependency. Complete tasks in orde
 ---
 
 #### Task P4-PIPELINE-007: Create pipeline entry point function
-**Estimated time**: 3 hours  
+**Estimated time**: 3 hours
 **Estimated LOC**: 80 lines
 
-**Description**: Create the main function that Promptfoo will call to run evaluations.
+**Description**: Create the main function to run evaluations with MLflow tracing.
 
 **Steps**:
 1. In file: `src/pipelines/evaluation_pipeline.py`
@@ -949,87 +949,90 @@ Tasks are grouped by component and ordered by dependency. Complete tasks in orde
 
 ## Phase 5: Evaluation Framework
 
-### PROMPTFOO: Integration
+### MLFLOW: Batch Evaluation
 
-#### Task P5-PROMPTFOO-001: Create test cases export script
-**Estimated time**: 3 hours  
+#### Task P5-MLFLOW-001: Create batch evaluation script
+**Estimated time**: 3 hours
 **Estimated LOC**: 100 lines
 
-**Description**: Write a script that exports DACOS sample IDs to JSON for Promptfoo.
+**Description**: Write a script that runs batch evaluations with MLflow tracking.
 
 **Steps**:
-1. Create file: `scripts/export_test_cases.py`
+1. Create file: `scripts/run_batch_evaluation.py`
 2. Import: `from src.data.mysql_connector import fetch_samples`
-3. Import: `import json`
-4. Create function `export_test_cases(output_file: str = "test_cases.json", limit: int = 10)`:
+3. Import: `from src.pipelines.evaluation_pipeline import run_evaluation`
+4. Import: `import mlflow`
+5. Create function `run_batch_evaluation(limit: int = 10, project_name: str = None)`:
    - Fetch samples with has_smell=True
-   - Create list of dicts: [{"sample_id": id}, ...]
-   - Write to JSON file
-5. Add main block to run when executed
-6. Test: Run script and verify JSON created
+   - Initialize MLflow experiment
+   - For each sample, call run_evaluation()
+   - Collect results and aggregate metrics
+   - Log batch metrics to MLflow
+6. Add main block with CLI arguments
+7. Test: Run script and verify MLflow tracking
 
 **Acceptance criteria**:
 - [ ] Fetches samples from database
-- [ ] Creates JSON file with correct format
-- [ ] Limit parameter works
-- [ ] File is valid JSON
+- [ ] Runs evaluation for each sample
+- [ ] Each run automatically traced in MLflow
+- [ ] Batch metrics logged to MLflow
+- [ ] Progress printed to console
 
-**Dependencies**: P2-DB-003
-
----
-
-#### Task P5-PROMPTFOO-002: Create promptfoo.config.yaml
-**Estimated time**: 2 hours  
-**Estimated LOC**: 40 lines
-
-**Description**: Create Promptfoo configuration file to run evaluations.
-
-**Steps**:
-1. Create file: `promptfoo.config.yaml` in project root
-2. Define provider:
-   - id: python module path to run_evaluation function
-   - Example: `python:src.pipelines.evaluation_pipeline:run_evaluation`
-3. Define prompts:
-   - Simple template: "Evaluate sample: {{sample_id}}"
-4. Define tests:
-   - Reference test_cases.json file
-5. Define output:
-   - outputPath: ./eval_results
-6. Test: Run `promptfoo eval` (if promptfoo installed)
-
-**Acceptance criteria**:
-- [ ] Config file valid YAML
-- [ ] Provider correctly references Python function
-- [ ] Test cases file referenced
-- [ ] Output path configured
-
-**Dependencies**: P4-PIPELINE-007, P5-PROMPTFOO-001
+**Dependencies**: P4-PIPELINE-007, P2-DB-003
 
 ---
 
-#### Task P5-PROMPTFOO-003: Create evaluation runner script
-**Estimated time**: 2 hours  
-**Estimated LOC**: 60 lines
+#### Task P5-MLFLOW-002: Create MLflow results export script
+**Estimated time**: 2 hours
+**Estimated LOC**: 80 lines
 
-**Description**: Create a bash script that runs the complete evaluation process.
+**Description**: Write a script to export MLflow results to JSON/CSV for analysis.
 
 **Steps**:
-1. Create file: `scripts/run_evaluation.sh`
-2. Make executable
-3. Script should:
-   - Check if test_cases.json exists, if not run export script
-   - Check if SonarQube is running (optional warning)
-   - Run promptfoo eval
-   - Print results location
-4. Test: Run script end-to-end
+1. Create file: `scripts/export_mlflow_results.py`
+2. Import: `import mlflow`, `import pandas as pd`
+3. Create function `export_results(experiment_name: str, output_format: str = "json")`:
+   - Connect to MLflow tracking
+   - Load experiment runs
+   - Extract evaluation metrics
+   - Export to JSON or CSV
+4. Add main block with CLI arguments
+5. Test: Run script and verify export
 
 **Acceptance criteria**:
-- [ ] Script runs export if needed
-- [ ] Runs promptfoo eval
-- [ ] Prints clear status messages
-- [ ] Exits with correct code (0 on success)
+- [ ] Loads experiment runs from MLflow
+- [ ] Extracts all evaluation metrics
+- [ ] Exports to JSON or CSV
+- [ ] Handles missing experiments gracefully
 
-**Dependencies**: P5-PROMPTFOO-002
+**Dependencies**: P5-MLFLOW-001
+
+---
+
+#### Task P5-MLFLOW-003: Create evaluation analysis notebook
+**Estimated time**: 3 hours
+**Estimated LOC**: 150 lines
+
+**Description**: Create Jupyter notebook for analyzing MLflow evaluation results.
+
+**Steps**:
+1. Create file: `experiments/notebooks/analyze_results.ipynb`
+2. Add cells for:
+   - Loading MLflow experiment data
+   - Computing aggregate statistics
+   - Visualizing precision/recall/F1 distributions
+   - Comparing across different runs
+   - Analyzing per-smell-type performance
+3. Add markdown explanations
+4. Test: Run all cells successfully
+
+**Acceptance criteria**:
+- [ ] Loads data from MLflow
+- [ ] Computes summary statistics
+- [ ] Creates visualizations
+- [ ] All cells execute without errors
+
+**Dependencies**: P5-MLFLOW-001
 
 ---
 
@@ -1262,7 +1265,7 @@ Tasks are grouped by component and ordered by dependency. Complete tasks in orde
 **Phase 2 - Data Layer**: [ ] (11 tasks)  
 **Phase 3 - LLM Components**: [ ] (9 tasks)  
 **Phase 4 - Pipeline Integration**: [ ] (7 tasks)  
-**Phase 5 - Evaluation Framework**: [ ] (3 tasks)  
+**Phase 5 - Evaluation Framework**: [ ] (3 tasks - MLflow batch evaluation)  
 **Phase 6 - Configuration & Documentation**: [ ] (3 tasks)  
 **Phase 7 - Testing**: [ ] (4 tasks)
 
@@ -1275,8 +1278,8 @@ Tasks are grouped by component and ordered by dependency. Complete tasks in orde
 5. P3-VECTOR-001 → P3-VECTOR-003 (Vector DB)
 6. P3-LLM-001 → P3-LLM-003 (Detector)
 7. P3-JUDGE-001 → P3-JUDGE-002 (Judge)
-8. P4-PIPELINE-001 → P4-PIPELINE-007 (Pipeline)
-9. P5-PROMPTFOO-001 → P5-PROMPTFOO-003 (Evaluation)
+8. P4-PIPELINE-001 → P4-PIPELINE-007 (Pipeline with MLflow tracing)
+9. P5-MLFLOW-001 → P5-MLFLOW-003 (Batch evaluation and analysis)
 
 ### Notes for agent
 

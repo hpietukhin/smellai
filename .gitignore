@@ -49,6 +49,9 @@ data/deeplake/
 temp/
 *.log
 
+# MLflow tracking
+mlruns/
+
 # SonarQube
 .scannerwork/
 

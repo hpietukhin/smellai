@@ -27,6 +27,8 @@ dependencies = [
   # Utilities
   "requests>=2.31.0",
   "pandas>=2.2.0",
+  # Experiment tracking and tracing
+  "mlflow>=3.0.0",
 ]
 
 [project.optional-dependencies]
