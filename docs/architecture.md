@@ -151,12 +151,12 @@ id: bigint PK
 sample_id: bigint FK
 is_smell: bit(1)      -- general smell flag
 iscm: bit(1)          -- Complex Method
-isim: bit(1)          -- Insufficient Modularization  
+isim: bit(1)          -- Insufficient Modularization
 islp: bit(1)          -- Long Parameter List
-isma: bit(1)          -- Magic Number
+isma: bit(1)          -- Multifaceted Abstraction
 ```
 
-**Note**: DACOS tracks 4 specific smell types via binary flags. For Phase 1, evaluation focuses on these 4 types. Additional smell types may exist in the `smell` table but won't have ground truth annotations.
+**Note**: DACOS tracks 4 specific smell types via binary flags: Complex Method (iscm), Insufficient Modularization (isim), Long Parameter List (islp), and Multifaceted Abstraction (isma). For Phase 1, evaluation focuses on these 4 types. Additional smell types may exist in the `smell` table but won't have ground truth annotations.
 
 **smell table** (type definitions):
 ```sql
@@ -198,28 +198,37 @@ git sparse-checkout set <file_path>
 2. Analyze file content with RAG context
 3. Return structured detections (type, location, severity, description)
 
-**Note**: DeepLake uses persistent local storage at `./data/deeplake/` for reproducibility
+**Note**: DeepLake configured to use in-memory storage (`mem://deeplake/smells`) by default for development speed. Persistent storage at `./data/deeplake/smells` available for production use.
 
 #### 2.2.6 SonarQube Baseline (Separate Process)
-**Purpose**: Classical tool baseline for comparison  
-**Deployment**: Docker container (sonarqube:10.6.0-community)  
+**Purpose**: Classical tool baseline for comparison
+**Deployment**: Docker container (sonarqube:10.6.0-community)
+**Implementation**: Python script (`infra/sonarqube/baseline_scan.py`)
 **Configuration**:
 - Port: 9000
-- Credentials: environment variables (.env)
+- Credentials: environment variables (SONAR_URL, SONAR_TOKEN from .env)
 - Quality profile: default Java profile
+- Scanner: Docker image `sonarsource/sonar-scanner-cli`
 
-**Bash Script Flow**:
-```bash
-1. Start SonarQube container
-2. For each DACOS sample:
-   - Clone repo at commit SHA
-   - Run sonar-scanner
-   - Export issues via REST API (/api/issues/search)
-3. Save baseline JSON artifacts
-4. Stop container
+**Python Script Flow** (`baseline_scan.py`):
+```python
+1. Clone repository at commit before cutoff date (2024-01-01)
+2. Run sonar-scanner via Docker container
+3. Poll SonarQube API for analysis completion
+4. Fetch issues via REST API (/api/issues/search)
+5. Normalize issues to SmellDetection format
+6. Save baseline JSON artifacts to eval_results/sonarqube_baseline/
 ```
 
-**Output**: Separate JSON files for baseline comparison
+**Rule Mapping**:
+- java:S1541 → Complex Method
+- java:S138 → Long Method
+- java:S107 → Long Parameter List
+- java:S1067 → Conditional Complexity
+- java:S1200 → God Class
+- java:S110 → Large Class
+
+**Output**: JSON files per project with normalized smell detections for baseline comparison
 
 ## 3. Data Flow
 
@@ -356,7 +365,7 @@ class DACOSSample(BaseModel):
     iscm: bool  # Complex Method
     isim: bool  # Insufficient Modularization
     islp: bool  # Long Parameter List
-    isma: bool  # Magic Number
+    isma: bool  # Multifaceted Abstraction
     
     # From smell table
     smell_name: str
@@ -377,31 +386,22 @@ class DACOSSample(BaseModel):
         if self.islp:
             smells.append("Long Parameter List")
         if self.isma:
-            smells.append("Magic Number")
+            smells.append("Multifaceted Abstraction")
         return smells
 ```
 
 ### 4.2 Configuration Models
 
 ```python
-class PipelineConfig(BaseModel):
-    """Pipeline configuration"""
-    llm_model: str = "cerebras/llama3.1-8b"  # Cerebras via LiteLLM
-    embedding_model: str = "text-embedding-004"
-    vector_db_path: str = "./data/deeplake/smells"  # Persistent local storage
-    mysql_host: str = "localhost"
-    mysql_database: str = "dacos"
-    mysql_user: str  # from env
-    mysql_password: str  # from env
-    temp_clone_dir: str = "/tmp/smell-eval-clones"
-    max_file_size_kb: int = 500  # skip files larger than this
-    
-class PromptfooConfig(BaseModel):
-    """Promptfoo configuration"""
-    provider: str = "langgraph"
-    test_cases_query: str  # SQL query for DACOS samples
-    output_dir: str = "eval_results"
-    max_concurrency: int = 1  # sequential for prototype
+**Note**: Pipeline configuration is managed via environment variables (.env file) and function parameters. No dedicated configuration module exists in current implementation. Key configuration points:
+
+- **LLM Model**: `cerebras/llama3.1-8b` (via LiteLLM)
+- **Embedding Model**: `models/text-embedding-004` (Google Generative AI)
+- **Vector DB Path**: `mem://deeplake/smells` (in-memory, default) or `./data/deeplake/smells` (persistent)
+- **MySQL Connection**: MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD (from .env)
+- **MLflow**: MLFLOW_TRACKING_URI, MLFLOW_EXPERIMENT_NAME (from .env, defaults to `./mlruns` and `code-smell-evaluation`)
+- **SonarQube**: SONAR_URL, SONAR_TOKEN (from .env)
+- **API Keys**: CEREBRAS_API_KEY, GOOGLE_API_KEY (from .env)
 ```
 
 ## 5. Integration Points
@@ -575,15 +575,17 @@ mlflow.log_metrics({
 
 ### 6.3 Correctness
 **Validation Gates**:
-- File exists and is readable
-- File size within limits (<500KB)
-- LLM detection returns valid structure
+- File exists and is readable at specified commit
+- LLM detection returns valid Pydantic-structured output
 - Evaluation scores in valid range (0-5)
+- Pydantic model validation on all inputs/outputs
 
 **Error Recovery**:
-- Skip samples that fail validation
-- Log errors but continue batch
-- Output partial results
+- Each pipeline node handles errors gracefully
+- Errors propagate through state but don't halt pipeline
+- Failed nodes return error state, subsequent nodes create error responses
+- Full error context included in final evaluation result
+- No silent failures - all errors logged and included in output
 
 ### 6.4 Security
 - MySQL credentials via environment variables (.env)
@@ -633,26 +635,26 @@ project/
 │   ├── agents/
 │   │   ├── detector.py             # LLM smell detector
 │   │   └── judge.py                # LLM-as-judge evaluator
-│   ├── models/
-│   │   └── entities.py             # Pydantic models
-│   └── config/
-│       └── settings.py             # Configuration loading
-├── experiments/
-│   └── notebooks/
-│       └── prototype_eval.ipynb    # Original notebook
+│   └── models/
+│       └── entities.py             # Pydantic models
+├── pipeline_reference/              # Reference implementation
 ├── tests/
 │   ├── unit/
 │   └── integration/
 ├── infra/
-│   ├── sonarqube/
-│   │   ├── docker-compose.yml
-│   │   └── analyze_baseline.sh    # SonarQube batch script
-│   └── mysql/
-│       └── schema.sql              # DACOS schema reference
-├── eval_results/                   # Evaluation outputs
-├── mlruns/                         # MLflow tracking data (git-ignored)
+│   └── sonarqube/
+│       └── baseline_scan.py        # Python script for SonarQube baseline
+├── eval_results/                   # Evaluation outputs (git-ignored)
+├── docs/                           # Documentation
+│   ├── architecture.md
+│   ├── tech_stack.md
+│   ├── tasks.md
+│   └── sonarqube_smells.md
+├── .env                            # Environment variables (git-ignored)
 ├── .env.example                    # Template for secrets
-├── pyproject.toml                  # Dependencies
+├── pyproject.toml                  # Dependencies (uv format)
+├── uv.lock                         # Locked dependencies
+├── CLAUDE.md                       # Project instructions for AI agents
 └── README.md                       # Setup instructions
 ```
 
@@ -692,9 +694,12 @@ def derive_repo_url(project_name: str) -> str:
 - For each project, find latest commit before dataset publication
 - Command: `git log --before="2023-01-24" --max-count=1 --format=%H`
 
-**Note on smell types**: 
-- DACOS paper mentions 3 smells: Multifaceted Abstraction (isim), Complex Method (iscm), Long Parameter List (islp)
-- Your database has 4th flag: Magic Number (isma) - may be custom addition
+**Note on smell types**:
+- DACOS annotation table tracks 4 design smell types:
+  - Complex Method (iscm)
+  - Insufficient Modularization (isim)
+  - Long Parameter List (islp)
+  - Multifaceted Abstraction (isma)
 - Focus evaluation on these 4 types present in annotation table
 
 **3. Smell location strategy**:
