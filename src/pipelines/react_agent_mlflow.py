@@ -26,6 +26,7 @@ import asyncio
 import json
 import logging
 import os
+from difflib import SequenceMatcher
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import mlflow
@@ -54,6 +55,89 @@ _AGENT_CONTEXT: Optional[Context] = None
 
 
 logger = logging.getLogger(__name__)
+
+
+LOGGED_METRICS_MESSAGE = "Logged metrics: %s"
+
+
+def _get_output_text(row: pd.Series) -> Optional[str]:
+    """Return the response text for a result row, normalizing non-str values."""
+
+    output = row.get("output")
+    if output is None:
+        output = row.get("outputs")
+
+    if output is None:
+        return None
+
+    if isinstance(output, str):
+        return output
+
+    try:
+        return json.dumps(output)
+    except (TypeError, ValueError):  # pragma: no cover - defensive path
+        return str(output)
+
+
+def _compute_positive_flags(
+    output: str, expectations: Dict[str, Any], row: pd.Series
+) -> Optional[Tuple[bool, float]]:
+    """Return (mentions_smell, f1_score) when the example qualifies as positive."""
+
+    mentions = row.get("mentions_smell")
+    if mentions is None:
+        mentions = mentions_smell(output, expectations)
+
+    f1_score = row.get("smell_detection_f1")
+    if f1_score is None:
+        f1_score = smell_detection_f1(output, expectations)
+
+    if mentions and (f1_score or 0.0) >= 0.5:
+        return bool(mentions), float(f1_score or 0.0)
+
+    return None
+
+
+def _log_positive_trace_feedback(
+    trace_id: Optional[str],
+    *,
+    similarity: float,
+    sample_id: Any,
+    smell_name: str,
+    reference_sample_id: Any,
+    mentions_smell_flag: bool,
+    f1_score: float,
+) -> None:
+    """Attach similarity feedback and tags to the trace when possible."""
+
+    if not trace_id:
+        return
+
+    try:
+        mlflow.log_feedback(
+            trace_id=trace_id,
+            name="refactoring_similarity",
+            value=similarity,
+            rationale="Positive refactoring example with smell coverage",
+            source=AssessmentSource(
+                source_type=AssessmentSourceType.CODE,
+                source_id="react_agent_mlflow_pipeline",
+            ),
+            metadata={
+                "sample_id": sample_id,
+                "smell_name": smell_name,
+                "reference_sample_id": reference_sample_id,
+                "mentions_smell": mentions_smell_flag,
+                "smell_detection_f1": f1_score,
+            },
+        )
+        mlflow.set_trace_tag(
+            trace_id=trace_id,
+            key="refactoring_success",
+            value="true",
+        )
+    except MlflowException as exc:  # pragma: no cover - backend variability
+        logger.debug("Unable to log positive feedback for trace %s: %s", trace_id, exc)
 
 
 def _safe_update_current_trace(**kwargs: Any) -> None:
@@ -142,6 +226,234 @@ def _log_expectation_with_fallback(
 
 
 _log_expectation_with_fallback._warned = False  # type: ignore[attr-defined]
+
+
+def _log_positive_refactoring_examples(df: pd.DataFrame) -> None:
+    """Annotate MLflow traces with high-quality refactoring similarities."""
+
+    if df.empty:
+        return
+
+    positives: List[Dict[str, Any]] = []
+    reference_text_by_smell: Dict[str, str] = {}
+    reference_sample_by_smell: Dict[str, Any] = {}
+    similarities: List[float] = []
+
+    for idx, row in df.iterrows():
+        expectations = row.get("expectations") or {}
+        smell_name = (expectations.get("smell_name") or "unknown").strip().lower()
+        sample_id = expectations.get("sample_id")
+        output = _get_output_text(row)
+        if output is None:
+            logger.debug(
+                "No output available for row %s; skipping positive logging", idx
+            )
+            continue
+
+        positive_flags = _compute_positive_flags(output, expectations, row)
+        if positive_flags is None:
+            continue
+
+        mentions_flag, f1_score = positive_flags
+
+        reference_output = reference_text_by_smell.get(smell_name)
+        if reference_output is None:
+            similarity = 1.0
+            reference_text_by_smell[smell_name] = output
+            reference_sample_by_smell[smell_name] = sample_id
+        else:
+            similarity = SequenceMatcher(None, output, reference_output).ratio()
+
+        reference_sample_id = reference_sample_by_smell.get(smell_name)
+        similarities.append(similarity)
+
+        output_preview = output[:500]
+        positive_entry: Dict[str, Any] = {
+            "sample_id": sample_id,
+            "smell_name": smell_name,
+            "output_preview": output_preview,
+            "output_length": len(output),
+            "similarity": similarity,
+            "reference_sample_id": reference_sample_id,
+            "mentions_smell": mentions_flag,
+            "smell_detection_f1": f1_score,
+        }
+
+        trace_id = row.get("trace_id")
+        if trace_id:
+            positive_entry["trace_id"] = trace_id
+            _log_positive_trace_feedback(
+                trace_id,
+                similarity=similarity,
+                sample_id=sample_id,
+                smell_name=smell_name,
+                reference_sample_id=reference_sample_id,
+                mentions_smell_flag=mentions_flag,
+                f1_score=f1_score,
+            )
+
+        positives.append(positive_entry)
+
+    if not positives:
+        return
+
+    similarity_mean = sum(similarities) / len(similarities)
+    mlflow.log_metric("refactoring_similarity/mean", similarity_mean)
+    mlflow.log_metric("refactoring_similarity/count", len(similarities))
+
+    positive_df = pd.DataFrame(positives)
+    try:
+        mlflow.log_table(positive_df, artifact_file="positive_refactorings.json")
+    except AttributeError:
+        mlflow.log_dict(
+            positive_df.to_dict(orient="records"),
+            "positive_refactorings.json",
+        )
+
+
+def _extract_outputs_from_tables(tables: Any) -> List[Any]:
+    """Return the list of outputs from the evaluation result tables."""
+
+    if not isinstance(tables, dict):
+        return []
+
+    eval_table = tables.get("eval_results_table")
+    if eval_table is None:
+        return []
+
+    candidate_columns = ["outputs", "output", "response", "predictions"]
+    for column in candidate_columns:
+        if column in eval_table.columns:
+            return eval_table[column].tolist()
+
+    for column in eval_table.columns:
+        if "output" in column:
+            return eval_table[column].tolist()
+
+    return []
+
+
+def _run_parallel_evaluation(
+    data: List[Dict[str, Any]],
+    judges: Sequence[Any],
+    *,
+    max_concurrent: int,
+    trace_registry: Sequence[Dict[str, Any]],
+):
+    """Evaluate samples in parallel, log metrics, and return results."""
+
+    context = _get_agent_context()
+    parallel_data = [
+        {**row, "trace_id": trace_info.get("trace_id")}
+        for row, trace_info in zip(data, trace_registry)
+    ]
+
+    evaluation_results = asyncio.run(
+        _evaluate_samples_parallel(
+            parallel_data, context, max_concurrent=max_concurrent
+        )
+    )
+
+    outputs_df = pd.DataFrame(
+        [
+            {
+                "inputs": row["inputs"]["inputs"],
+                "output": row["output"],
+                "expectations": row.get("expectations", {}),
+                "trace_id": row.get("trace_id"),
+            }
+            for row in evaluation_results
+        ]
+    )
+
+    scored_results = []
+    metrics: Dict[str, Any] = {}
+
+    for idx, row in outputs_df.iterrows():
+        scores: Dict[str, Any] = {}
+        scores["mentions_smell"] = mentions_smell(row["output"], row["expectations"])
+        scores["smell_detection_f1"] = smell_detection_f1(
+            row["output"], row["expectations"]
+        )
+        outputs_df.loc[idx, "mentions_smell"] = scores["mentions_smell"]
+        outputs_df.loc[idx, "smell_detection_f1"] = scores["smell_detection_f1"]
+
+        for judge in judges:
+            judge_name = judge.name if hasattr(judge, "name") else str(judge)
+            try:
+                judge_result = judge(
+                    inputs=row["inputs"],
+                    outputs=row["output"],
+                    expectations=row["expectations"],
+                )
+                scores[judge_name] = judge_result
+                outputs_df.loc[idx, judge_name] = judge_result
+            except Exception as exc:
+                logger.warning("Judge %s failed for row %d: %s", judge_name, idx, exc)
+                scores[judge_name] = None
+
+        scored_results.append(scores)
+
+    all_score_keys = {key for score in scored_results for key in score.keys()}
+    for key in all_score_keys:
+        values = [score[key] for score in scored_results if score.get(key) is not None]
+        if not values:
+            continue
+        first = values[0]
+        if isinstance(first, (bool, int, float)):
+            metrics[f"{key}/mean"] = sum(values) / len(values)
+
+    mlflow.log_metrics(metrics)
+    logger.debug(LOGGED_METRICS_MESSAGE, metrics)
+
+    _log_positive_refactoring_examples(outputs_df)
+
+    class EvaluationResult:
+        def __init__(self, metrics: Dict[str, Any], results: pd.DataFrame):
+            self.metrics = metrics
+            self.results = results
+
+    return EvaluationResult(metrics=metrics, results=outputs_df)
+
+
+def _log_sequential_positive_examples(
+    result: Any,
+    data: Sequence[Dict[str, Any]],
+    trace_registry: Sequence[Dict[str, Any]],
+) -> None:
+    """Extract sequential outputs, derive heuristics, and log positives."""
+
+    trace_ids = [entry.get("trace_id") for entry in trace_registry]
+    expectations_payload = [row.get("expectations", {}) for row in data]
+    inputs_payload = [row.get("inputs", {}).get("inputs") for row in data]
+
+    outputs_list = _extract_outputs_from_tables(getattr(result, "tables", {}))
+
+    if not outputs_list:
+        logger.debug(
+            "Evaluation results table did not expose outputs; falling back to empty list"
+        )
+        outputs_list = [None] * len(data)
+
+    sequential_df = pd.DataFrame(
+        {
+            "inputs": inputs_payload,
+            "output": outputs_list,
+            "expectations": expectations_payload,
+            "trace_id": trace_ids,
+        }
+    )
+
+    sequential_df["mentions_smell"] = sequential_df.apply(
+        lambda row: mentions_smell(row.get("output"), row.get("expectations")),
+        axis=1,
+    )
+    sequential_df["smell_detection_f1"] = sequential_df.apply(
+        lambda row: smell_detection_f1(row.get("output"), row.get("expectations")),
+        axis=1,
+    )
+
+    _log_positive_refactoring_examples(sequential_df)
 
 
 def _get_agent_context() -> Context:
@@ -625,6 +937,8 @@ def evaluate_react_agent(
 
         # Log expectations (ground truth smell info) to the trace layer so they appear
         # in the Traces UI; create a lightweight trace per sample for richer inspection.
+        trace_registry: List[Dict[str, Any]] = []
+
         for row in data:
             exp = row.get("expectations", {})
             # Create a synthetic trace capturing input prompt & placeholder output
@@ -658,99 +972,41 @@ def evaluate_react_agent(
                 metadata={"sample_id": exp.get("sample_id")},
             )
 
+            trace_registry.append(
+                {
+                    "trace_id": trace_id,
+                    "sample_id": exp.get("sample_id"),
+                    "smell_name": exp.get("smell_name"),
+                }
+            )
+
         if use_parallel:
             logger.info(
                 "Running parallel evaluation with max_concurrent=%d", max_concurrent
             )
-            context = _get_agent_context()
-            evaluation_results = asyncio.run(
-                _evaluate_samples_parallel(data, context, max_concurrent=max_concurrent)
-            )
-
-            # Convert parallel results to format compatible with MLflow evaluate
-            outputs_df = pd.DataFrame(
-                [
-                    {
-                        "inputs": row["inputs"]["inputs"],
-                        "output": row["output"],
-                        "expectations": row.get("expectations", {}),
-                    }
-                    for row in evaluation_results
-                ]
-            )
-
-            # Score the outputs using MLflow scorers
-            logger.info(
-                "Scoring %d outputs with %d scorers", len(outputs_df), len(judges) + 2
-            )
-            scored_results = []
-            for idx, row in outputs_df.iterrows():
-                scores = {}
-                # Run heuristic scorers
-                scores["mentions_smell"] = mentions_smell(
-                    row["output"], row["expectations"]
-                )
-                scores["smell_detection_f1"] = smell_detection_f1(
-                    row["output"], row["expectations"]
-                )
-
-                # Run LLM-as-judge scorers
-                for judge in judges:
-                    judge_name = judge.name if hasattr(judge, "name") else str(judge)
-                    try:
-                        judge_result = judge(
-                            inputs=row["inputs"],
-                            outputs=row["output"],
-                            expectations=row["expectations"],
-                        )
-                        scores[judge_name] = judge_result
-                    except Exception as exc:
-                        logger.warning(
-                            "Judge %s failed for row %d: %s", judge_name, idx, exc
-                        )
-                        scores[judge_name] = None
-
-                scored_results.append(scores)
-
-            # Calculate aggregate metrics
-            metrics = {}
-            all_score_keys = set()
-            for score_dict in scored_results:
-                all_score_keys.update(score_dict.keys())
-
-            for key in all_score_keys:
-                values = [s[key] for s in scored_results if s.get(key) is not None]
-                if values:
-                    if isinstance(values[0], bool):
-                        metrics[f"{key}/mean"] = sum(values) / len(values)
-                    elif isinstance(values[0], (int, float)):
-                        metrics[f"{key}/mean"] = sum(values) / len(values)
-
-            logger.info("Parallel evaluation completed")
-            mlflow.log_metrics(metrics)
-            logger.debug("Logged metrics: %s", metrics)
-
-            # Return a result object compatible with MLflow's EvaluationResult interface
-            class EvaluationResult:
-                def __init__(self, metrics: Dict[str, Any], results: pd.DataFrame):
-                    self.metrics = metrics
-                    self.results = results
-
-            return EvaluationResult(metrics=metrics, results=outputs_df)
-        else:
-            result = mlflow_genai_evaluate(
+            evaluation_result = _run_parallel_evaluation(
                 data=data,
-                predict_fn=predict_refactoring,
-                scorers=[*judges, mentions_smell, smell_detection_f1],
+                judges=judges,
+                max_concurrent=max_concurrent,
+                trace_registry=trace_registry,
             )
-            logger.info("mlflow.genai.evaluate completed")
+            logger.info("Parallel evaluation completed")
+            return evaluation_result
 
-            # Log aggregate metrics explicitly (they are already tracked, but this makes them easy to query)
-            mlflow.log_metrics(
-                {k: v for k, v in result.metrics.items() if isinstance(v, (int, float))}
-            )
-            logger.debug("Logged metrics: %s", result.metrics)
-            return result
+        result = mlflow_genai_evaluate(
+            data=data,
+            predict_fn=predict_refactoring,
+            scorers=[*judges, mentions_smell, smell_detection_f1],
+        )
+        logger.info("mlflow.genai.evaluate completed")
+
+        mlflow.log_metrics(
+            {k: v for k, v in result.metrics.items() if isinstance(v, (int, float))}
+        )
+        logger.debug(LOGGED_METRICS_MESSAGE, result.metrics)
+
+        _log_sequential_positive_examples(result, data, trace_registry)
+        return result
 
 
 def _parse_cli_args(argv: Optional[Sequence[str]] = None):
