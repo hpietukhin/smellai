@@ -73,3 +73,4 @@ var/
 wheels/
 share/python-wheels/
 /mlartifacts/
+/infra/sonarqube/mlartifacts/

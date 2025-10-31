@@ -556,7 +556,7 @@ def evaluate_react_agent(
 
     effective_limit = limit
     if not sample_ids and not sample_preset:
-        effective_limit = max(limit, 50)
+        effective_limit = max(limit, 5)
         if effective_limit != limit:
             logger.info(
                 "Adjusted limit from %d to %d to meet minimum dataset size", limit, effective_limit
