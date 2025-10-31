@@ -22,21 +22,21 @@ from __future__ import annotations
 import argparse
 import logging
 import os
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import mlflow
 import pandas as pd
 from dotenv import load_dotenv
 from mlflow.genai.datasets import create_dataset
 
-from src.data.mysql_connector import (
+from data.mysql_connector import (
     fetch_balanced_smell_samples,
     fetch_sample_by_id,
     fetch_samples,
     fetch_samples_dataframe,
     get_connection_pool,
 )
-from src.models.entities import DACOSSample
+from models.entities import DACOSSample
 
 LOGGER = logging.getLogger(__name__)
 
@@ -115,13 +115,16 @@ def _build_expectations(sample: DACOSSample, *, smell_override: Optional[str] = 
     }
 
 
-def _sample_to_record(sample: DACOSSample, *, smell_override: Optional[str] = None) -> Dict[str, str]:
+def _sample_to_record(sample: DACOSSample, *, smell_override: Optional[str] = None) -> Dict[str, Any]:
     smell_name = smell_override or _resolve_smell_name(sample)
     expectations = _build_expectations(sample, smell_override=smell_override)
     ground_truth = sample.ground_truth_smells()
+    prompt = _sample_to_prompt(sample, smell_override=smell_override)
 
-    record: Dict[str, str] = {
-        "inputs.inputs": _sample_to_prompt(sample, smell_override=smell_override),
+    record: Dict[str, Any] = {
+        "inputs": {"inputs": prompt},
+        "inputs.inputs": prompt,
+        "expectations": expectations,
         "expectations.sample_id": expectations["sample_id"],
         "expectations.smell_name": expectations["smell_name"],
         "expectations.smell_description": expectations["smell_description"],
@@ -234,11 +237,13 @@ def _materialise_dataset(
         LOGGER.info("Preview:\n%s", records_df.head())
         return
 
+    if dataset_description:
+        LOGGER.info("Dataset description: %s", dataset_description)
+
     dataset = create_dataset(
         name=dataset_name,
         experiment_id=[experiment_identifier],
         tags=dataset_tags,
-        description=dataset_description,
     )
 
     dataset.merge_records(records_df)
