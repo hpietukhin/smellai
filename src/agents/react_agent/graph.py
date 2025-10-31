@@ -40,7 +40,9 @@ def _parse_model_identifier(raw_model: str) -> Tuple[str, str]:
 
     cleaned = raw_model.strip()
     if not cleaned:
-        raise ValueError("Model identifier is empty; set MODEL to a valid chat model name.")
+        raise ValueError(
+            "Model identifier is empty; set MODEL to a valid chat model name."
+        )
 
     provider, model = _split_model_string(cleaned)
     provider = (provider or "openai").lower()
@@ -82,7 +84,7 @@ async def call_model(
     )
 
     # Get the model's response
-    response = cast( # type: ignore[redundant-cast]
+    response = cast(  # type: ignore[redundant-cast]
         AIMessage,
         await model.ainvoke(
             [{"role": "system", "content": system_message}, *state.messages]

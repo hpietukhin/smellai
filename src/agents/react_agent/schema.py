@@ -34,14 +34,14 @@ class CodeSmellDetection(BaseModel):
         description=(
             "Precise location of the smell (file path, class, method, or line span)."
         )
+    )
     severity: CodeSmellSeverity = Field(
         description="Relative severity of the issue based on impact and scope."
     )
     description: str = Field(
         description="Short justification that explains why this is a smell."
     )
-    refactoring_suggestion: str = Field(
-        description="Actionable refactoring guidance.")
+    refactoring_suggestion: str = Field(description="Actionable refactoring guidance.")
     refactoring_reference: Optional[str] = Field(
         default=None,
         description=(

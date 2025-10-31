@@ -30,9 +30,9 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import mlflow
 import pandas as pd
+from langchain_core.messages import BaseMessage, HumanMessage
 from mlflow.entities import AssessmentSource, AssessmentSourceType, SpanType
 from mlflow.exceptions import MlflowException
-from langchain_core.messages import BaseMessage, HumanMessage
 from mlflow.genai import evaluate as mlflow_genai_evaluate
 from mlflow.genai import scorer
 from mlflow.genai.judges import make_judge
@@ -41,8 +41,8 @@ from src.agents.react_agent import graph
 from src.agents.react_agent.context import Context
 from src.agents.react_agent.utils import get_message_text
 from src.data.mysql_connector import (
-    fetch_sample_by_id,
     fetch_balanced_smell_samples,
+    fetch_sample_by_id,
     fetch_samples,
     fetch_samples_dataframe,
     get_connection_pool,
@@ -69,23 +69,33 @@ def _safe_update_current_trace(**kwargs: Any) -> None:
             logger.debug("Falling back to legacy mlflow.update_trace API")
 
     if update_fn is None:
-        logger.debug("MLflow does not expose a trace update API; skipping update for %s", list(kwargs.keys()))
+        logger.debug(
+            "MLflow does not expose a trace update API; skipping update for %s",
+            list(kwargs.keys()),
+        )
         return
 
     get_span = getattr(mlflow, "get_current_active_span", None)
     if callable(get_span):
         try:
             span = get_span()
-        except Exception as exc:  # pragma: no cover - defensive, depends on MLflow internals
+        except (
+            Exception
+        ) as exc:  # pragma: no cover - defensive, depends on MLflow internals
             logger.debug("Failed to fetch current MLflow span: %s", exc)
             span = None
         if span is None or getattr(span, "trace_id", None) is None:
-            logger.debug("No active MLflow span available; skipping trace update for %s", list(kwargs.keys()))
+            logger.debug(
+                "No active MLflow span available; skipping trace update for %s",
+                list(kwargs.keys()),
+            )
             return
 
     try:
         update_fn(**kwargs)
-    except MlflowException as exc:  # pragma: no cover - defensive, depends on backend capabilities
+    except (
+        MlflowException
+    ) as exc:  # pragma: no cover - defensive, depends on backend capabilities
         logger.debug("MLflow refused trace update (%s); skipping", exc)
 
 
@@ -134,7 +144,6 @@ def _log_expectation_with_fallback(
 _log_expectation_with_fallback._warned = False  # type: ignore[attr-defined]
 
 
-
 def _get_agent_context() -> Context:
     """Return the shared agent context, instantiating it on first use."""
 
@@ -144,13 +153,17 @@ def _get_agent_context() -> Context:
     return _AGENT_CONTEXT
 
 
-async def _ainvoke_agent(messages: Sequence[BaseMessage], *, context: Context) -> Dict[str, Any]:
+async def _ainvoke_agent(
+    messages: Sequence[BaseMessage], *, context: Context
+) -> Dict[str, Any]:
     """Run the LangGraph agent asynchronously and return the final state."""
 
     return await graph.ainvoke({"messages": list(messages)}, context=context)
 
 
-def _invoke_agent(messages: Sequence[BaseMessage], *, context: Context) -> Dict[str, Any]:
+def _invoke_agent(
+    messages: Sequence[BaseMessage], *, context: Context
+) -> Dict[str, Any]:
     """Synchronous helper that wraps ``asyncio.run`` for the agent call."""
 
     return asyncio.run(_ainvoke_agent(messages, context=context))
@@ -179,7 +192,9 @@ def _resolve_smell_name(sample: DACOSSample) -> str:
     return "Unknown smell"
 
 
-def _sample_to_prompt(sample: DACOSSample, *, smell_override: Optional[str] = None) -> str:
+def _sample_to_prompt(
+    sample: DACOSSample, *, smell_override: Optional[str] = None
+) -> str:
     """Craft the user prompt that primes the agent for refactoring advice."""
 
     smell_name = smell_override or _resolve_smell_name(sample)
@@ -208,7 +223,9 @@ def _sample_to_prompt(sample: DACOSSample, *, smell_override: Optional[str] = No
     return " \n".join(prompt_lines)
 
 
-def _build_expectations(sample: DACOSSample, *, smell_override: Optional[str] = None) -> Dict[str, Any]:
+def _build_expectations(
+    sample: DACOSSample, *, smell_override: Optional[str] = None
+) -> Dict[str, Any]:
     """Assemble judge expectations for a given sample."""
 
     return {
@@ -218,7 +235,9 @@ def _build_expectations(sample: DACOSSample, *, smell_override: Optional[str] = 
     }
 
 
-def _build_inputs(sample: DACOSSample, *, smell_override: Optional[str] = None) -> Dict[str, str]:
+def _build_inputs(
+    sample: DACOSSample, *, smell_override: Optional[str] = None
+) -> Dict[str, str]:
     """Prepare the ``inputs`` block passed to ``predict_fn``."""
 
     return {"inputs": _sample_to_prompt(sample, smell_override=smell_override)}
@@ -292,14 +311,18 @@ def _load_eval_examples(
         sample_entries = [(sample, None) for sample in samples]
 
     if not sample_entries:
-        raise ValueError("No DACOS samples with ground-truth smells were loaded for evaluation.")
+        raise ValueError(
+            "No DACOS samples with ground-truth smells were loaded for evaluation."
+        )
 
     examples: List[Dict[str, Any]] = []
     for sample, smell_override in sample_entries:
         examples.append(
             {
                 "inputs": _build_inputs(sample, smell_override=smell_override),
-                "expectations": _build_expectations(sample, smell_override=smell_override),
+                "expectations": _build_expectations(
+                    sample, smell_override=smell_override
+                ),
                 "tags": {"smell_name": smell_override or _resolve_smell_name(sample)},
             }
         )
@@ -326,10 +349,10 @@ def _resolve_judge_models(
     """Resolve the list of judge models to use for evaluation."""
     if judge_models:
         return list(judge_models)
-    
+
     if judge_model:
         return [judge_model]
-    
+
     # Default judge model from environment or fallback
     default_model = os.getenv("MLFLOW_JUDGE_MODEL", "openai:/gpt-4.1-mini")
     return [default_model]
@@ -391,52 +414,60 @@ def mentions_smell(outputs: Any, expectations: Dict[str, Any]) -> bool:
 @scorer
 def smell_detection_f1(outputs: Any, expectations: Dict[str, Any]) -> float:
     """Calculate F1 score for smell detection based on ground truth.
-    
+
     This scorer evaluates whether the agent correctly identifies the smell type.
     It calculates precision, recall, and F1 score based on:
     - True Positive: Agent mentions the correct smell that is present
-    - False Positive: Agent mentions a smell that is not present  
+    - False Positive: Agent mentions a smell that is not present
     - False Negative: Agent fails to mention a smell that is present
     """
-    
+
     if isinstance(outputs, str):
         payload = outputs.lower()
     else:
         payload = json.dumps(outputs).lower()
-    
+
     # Get expected smell
     expected_smell = (expectations.get("smell_name") or "").strip().lower()
-    
+
     # Common smell types to check
     smell_types = [
         "complex method",
-        "long method", 
+        "long method",
         "insufficient modularization",
         "long parameter list",
         "multifaceted abstraction",
     ]
-    
+
     # Determine detected smells
     detected_smells = {smell for smell in smell_types if smell in payload}
-    
+
     # Ground truth: the expected smell should be present
     true_smells = {expected_smell} if expected_smell else set()
-    
+
     # Calculate metrics
     true_positives = len(detected_smells & true_smells)
     false_positives = len(detected_smells - true_smells)
     false_negatives = len(true_smells - detected_smells)
-    
+
     # Calculate precision and recall
-    precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0.0
-    recall = true_positives / (true_positives + false_negatives) if (true_positives + false_negatives) > 0 else 0.0
-    
+    precision = (
+        true_positives / (true_positives + false_positives)
+        if (true_positives + false_positives) > 0
+        else 0.0
+    )
+    recall = (
+        true_positives / (true_positives + false_negatives)
+        if (true_positives + false_negatives) > 0
+        else 0.0
+    )
+
     # Calculate F1 score
     if precision + recall > 0:
         f1 = 2 * (precision * recall) / (precision + recall)
     else:
         f1 = 0.0
-    
+
     return f1
 
 
@@ -559,7 +590,9 @@ def evaluate_react_agent(
         effective_limit = max(limit, 5)
         if effective_limit != limit:
             logger.info(
-                "Adjusted limit from %d to %d to meet minimum dataset size", limit, effective_limit
+                "Adjusted limit from %d to %d to meet minimum dataset size",
+                limit,
+                effective_limit,
             )
 
     data = _load_eval_examples(sample_ids, limit=effective_limit, preset=sample_preset)
@@ -599,7 +632,10 @@ def evaluate_react_agent(
                 name="sample_refactoring",
                 request=row.get("inputs", {}).get("inputs"),
                 response=None,
-                attributes={"smell_name": exp.get("smell_name", "unknown"), "sample_id": exp.get("sample_id")},
+                attributes={
+                    "smell_name": exp.get("smell_name", "unknown"),
+                    "sample_id": exp.get("sample_id"),
+                },
                 tags=row.get("tags", {}),
             )
             # Human annotated expectation source metadata
@@ -623,34 +659,44 @@ def evaluate_react_agent(
             )
 
         if use_parallel:
-            logger.info("Running parallel evaluation with max_concurrent=%d", max_concurrent)
+            logger.info(
+                "Running parallel evaluation with max_concurrent=%d", max_concurrent
+            )
             context = _get_agent_context()
             evaluation_results = asyncio.run(
                 _evaluate_samples_parallel(data, context, max_concurrent=max_concurrent)
             )
 
             # Convert parallel results to format compatible with MLflow evaluate
-            outputs_df = pd.DataFrame([
-                {
-                    "inputs": row["inputs"]["inputs"],
-                    "output": row["output"],
-                    "expectations": row.get("expectations", {}),
-                }
-                for row in evaluation_results
-            ])
+            outputs_df = pd.DataFrame(
+                [
+                    {
+                        "inputs": row["inputs"]["inputs"],
+                        "output": row["output"],
+                        "expectations": row.get("expectations", {}),
+                    }
+                    for row in evaluation_results
+                ]
+            )
 
             # Score the outputs using MLflow scorers
-            logger.info("Scoring %d outputs with %d scorers", len(outputs_df), len(judges) + 2)
+            logger.info(
+                "Scoring %d outputs with %d scorers", len(outputs_df), len(judges) + 2
+            )
             scored_results = []
             for idx, row in outputs_df.iterrows():
                 scores = {}
                 # Run heuristic scorers
-                scores["mentions_smell"] = mentions_smell(row["output"], row["expectations"])
-                scores["smell_detection_f1"] = smell_detection_f1(row["output"], row["expectations"])
+                scores["mentions_smell"] = mentions_smell(
+                    row["output"], row["expectations"]
+                )
+                scores["smell_detection_f1"] = smell_detection_f1(
+                    row["output"], row["expectations"]
+                )
 
                 # Run LLM-as-judge scorers
                 for judge in judges:
-                    judge_name = judge.name if hasattr(judge, 'name') else str(judge)
+                    judge_name = judge.name if hasattr(judge, "name") else str(judge)
                     try:
                         judge_result = judge(
                             inputs=row["inputs"],
@@ -659,7 +705,9 @@ def evaluate_react_agent(
                         )
                         scores[judge_name] = judge_result
                     except Exception as exc:
-                        logger.warning("Judge %s failed for row %d: %s", judge_name, idx, exc)
+                        logger.warning(
+                            "Judge %s failed for row %d: %s", judge_name, idx, exc
+                        )
                         scores[judge_name] = None
 
                 scored_results.append(scores)
@@ -698,7 +746,9 @@ def evaluate_react_agent(
             logger.info("mlflow.genai.evaluate completed")
 
             # Log aggregate metrics explicitly (they are already tracked, but this makes them easy to query)
-            mlflow.log_metrics({k: v for k, v in result.metrics.items() if isinstance(v, (int, float))})
+            mlflow.log_metrics(
+                {k: v for k, v in result.metrics.items() if isinstance(v, (int, float))}
+            )
             logger.debug("Logged metrics: %s", result.metrics)
             return result
 
@@ -706,9 +756,21 @@ def evaluate_react_agent(
 def _parse_cli_args(argv: Optional[Sequence[str]] = None):
     import argparse
 
-    parser = argparse.ArgumentParser(description="Evaluate the LangGraph ReAct agent with MLflow GenAI.")
-    parser.add_argument("--sample-ids", type=int, nargs="*", help="Explicit DACOS sample IDs to evaluate")
-    parser.add_argument("--limit", type=int, default=5, help="Fallback sample count when --sample-ids is omitted")
+    parser = argparse.ArgumentParser(
+        description="Evaluate the LangGraph ReAct agent with MLflow GenAI."
+    )
+    parser.add_argument(
+        "--sample-ids",
+        type=int,
+        nargs="*",
+        help="Explicit DACOS sample IDs to evaluate",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=5,
+        help="Fallback sample count when --sample-ids is omitted",
+    )
     parser.add_argument(
         "--sample-preset",
         choices=[TEST_5_PRESET],

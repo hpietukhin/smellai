@@ -22,7 +22,7 @@ def __getattr__(name):
         "fetch_samples",
         "fetch_samples_dataframe",
     ]:
-        from .mysql_connector import (
+        from .mysql_connector import (  # noqa: F401
             fetch_sample_by_id,
             fetch_samples,
             fetch_samples_dataframe,
@@ -32,7 +32,7 @@ def __getattr__(name):
 
         return locals()[name]
     elif name in ["derive_repo_url", "get_commit_before_date", "clone_and_read_file"]:
-        from .git_ops import (
+        from .git_ops import (  # noqa: F401
             clone_and_read_file,
             derive_repo_url,
             get_commit_before_date,

@@ -385,7 +385,9 @@ def _collect_balanced_sample_ids(per_smell: int) -> Dict[str, List[int]]:
 
         smell_to_ids: Dict[str, List[int]] = {}
         for smell_label, flag_column in _SMELL_FLAG_COLUMNS:
-            cursor.execute(query_template.format(condition=f"{flag_column} = 1"), (per_smell,))
+            cursor.execute(
+                query_template.format(condition=f"{flag_column} = 1"), (per_smell,)
+            )
             rows = cursor.fetchall()
             ids = [row[0] if not isinstance(row, dict) else row["id"] for row in rows]
             smell_to_ids[smell_label] = ids
@@ -393,7 +395,9 @@ def _collect_balanced_sample_ids(per_smell: int) -> Dict[str, List[int]]:
         return smell_to_ids
 
     except MySQLError as e:
-        raise MySQLError(f"Failed to fetch balanced smell sample identifiers: {e}") from e
+        raise MySQLError(
+            f"Failed to fetch balanced smell sample identifiers: {e}"
+        ) from e
 
     finally:
         if cursor is not None:
@@ -408,7 +412,9 @@ def _collect_balanced_sample_ids(per_smell: int) -> Dict[str, List[int]]:
                 pass
 
 
-def _hydrate_samples_with_labels(smell_to_ids: Dict[str, List[int]]) -> List[Tuple[DACOSSample, str]]:
+def _hydrate_samples_with_labels(
+    smell_to_ids: Dict[str, List[int]]
+) -> List[Tuple[DACOSSample, str]]:
     """Fetch full sample objects for the supplied identifier mapping."""
 
     samples: List[Tuple[DACOSSample, str]] = []
@@ -542,7 +548,9 @@ async def fetch_samples_async(
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(
         None,
-        lambda: fetch_samples(project_name=project_name, has_smell=has_smell, limit=limit)
+        lambda: fetch_samples(
+            project_name=project_name, has_smell=has_smell, limit=limit
+        ),
     )
 
 
@@ -553,12 +561,13 @@ async def fetch_samples_dataframe_async(
     """Async wrapper for fetch_samples_dataframe that runs in thread pool to avoid blocking event loop."""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(
-        None,
-        lambda: fetch_samples_dataframe(smell_ids=smell_ids, limit=limit)
+        None, lambda: fetch_samples_dataframe(smell_ids=smell_ids, limit=limit)
     )
 
 
-async def fetch_balanced_smell_samples_async(per_smell: int = 5) -> List[Tuple[DACOSSample, str]]:
+async def fetch_balanced_smell_samples_async(
+    per_smell: int = 5,
+) -> List[Tuple[DACOSSample, str]]:
     """Async wrapper for fetch_balanced_smell_samples that runs in thread pool to avoid blocking event loop."""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, fetch_balanced_smell_samples, per_smell)
