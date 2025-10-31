@@ -205,7 +205,9 @@ class DACOSSample(BaseModel):
     sample_constraints: Optional[str] = Field(
         default=None, description="Sample constraints"
     )
-    smells: Optional[int] = Field(default=None, description="Smell type ID")
+    smells: Optional[str] = Field(
+        default=None, description="Smell identifier(s) as stored in DACOS"
+    )
 
     # Annotation fields (boolean flags for smell types)
     iscm: bool = Field(default=False, description="Is Complex Method")
@@ -281,8 +283,8 @@ class DACOSSample(BaseModel):
                 "is_class": False,
                 "path_to_file": "src/main/java/com/example/UserService.java",
                 "project_name": "alibaba_arthas",
-                "sample_constraints": None,
-                "smells": 1,
+                "sample_constraints": "0",
+                "smells": "1",
                 "iscm": True,
                 "isim": False,
                 "islp": False,

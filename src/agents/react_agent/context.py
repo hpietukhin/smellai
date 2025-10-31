@@ -22,10 +22,9 @@ class Context:
     )
 
     model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
-        default="anthropic/claude-sonnet-4-5-20250929",
+        default="gpt-4.1-mini",
         metadata={
-            "description": "The name of the language model to use for the agent's main interactions. "
-            "Should be in the form: provider/model-name."
+            "description": "OpenAI chat model identifier. Only the model name is required; the provider is hardcoded to 'openai'."
         },
     )
 

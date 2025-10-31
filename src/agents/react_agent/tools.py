@@ -6,8 +6,10 @@ shared MySQL connection utilities and optional Git-based code retrieval.
 
 from __future__ import annotations
 
+import asyncio
 import os
-from typing import Any, Callable, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
@@ -21,6 +23,8 @@ from src.data.mysql_connector import (
     fetch_sample_by_id,
     fetch_samples_dataframe,
     get_connection_pool,
+    fetch_sample_by_id_async,
+    fetch_samples_dataframe_async,
 )
 from src.models.entities import DACOSSample
 
@@ -43,7 +47,7 @@ class SamplesArgs(BaseModel):
 
 
 @tool("load_dacos_samples", args_schema=SamplesArgs)
-def load_dacos_samples(limit: int, smell_ids: Optional[List[int]] = None) -> Dict[str, Any]:
+async def load_dacos_samples(limit: int, smell_ids: Optional[List[int]] = None) -> Dict[str, Any]:
     """Return DACOS samples as a JSON-serialisable payload.
 
     The underlying query mirrors the exploratory DataFrame utility from
@@ -55,7 +59,7 @@ def load_dacos_samples(limit: int, smell_ids: Optional[List[int]] = None) -> Dic
     # Ensure the pool is initialised before running pandas SQL helpers.
     get_connection_pool()
 
-    df = fetch_samples_dataframe(smell_ids=smell_ids, limit=limit)
+    df = await fetch_samples_dataframe_async(smell_ids=smell_ids, limit=limit)
 
     if df.empty:
         return {
@@ -93,6 +97,91 @@ class SampleDetailArgs(BaseModel):
     )
 
 
+_DATASET_ROOT_ENV_KEYS: Tuple[str, ...] = (
+    "DACOS_FILES_ROOT",
+    "DACOS_DATA_ROOT",
+    "DACOS_DATASET_ROOT",
+)
+
+
+def _expand_dataset_roots() -> List[Path]:
+    """Collect candidate dataset roots from environment variables and defaults."""
+
+    roots: List[Path] = []
+    seen: set[Path] = set()
+
+    for key in _DATASET_ROOT_ENV_KEYS:
+        value = os.getenv(key)
+        if not value:
+            continue
+
+        candidate = Path(value).expanduser()
+        if candidate in seen:
+            continue
+
+        seen.add(candidate)
+        if candidate.is_dir():
+            roots.append(candidate)
+
+    # Fall back to a sibling "files" directory if it exists alongside the repo.
+    project_root = Path(__file__).resolve().parents[3]
+    default_roots = [project_root / "files", project_root.parent / "files"]
+    for candidate in default_roots:
+        if candidate.is_dir() and candidate not in seen:
+            seen.add(candidate)
+            roots.append(candidate)
+
+    return roots
+
+
+def _read_text_preview(file_path: Path, max_lines: int) -> str:
+    """Read a text file and return at most ``max_lines`` lines."""
+
+    try:
+        content = file_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        content = file_path.read_text(encoding="latin-1")
+
+    lines = content.splitlines()
+    snippet = "\n".join(lines[:max_lines])
+    if len(lines) > max_lines:
+        snippet += "\n..."
+    return snippet
+
+
+def _try_local_code_lookup(path_to_file: str, max_lines: int) -> Tuple[bool, str]:
+    """Attempt to resolve DACOS `.code` files from the extracted dataset."""
+
+    normalized = Path(path_to_file.replace("\\", "/").lstrip("/"))
+    if normalized.suffix.lower() != ".code":
+        return False, ""
+
+    roots = _expand_dataset_roots()
+    if not roots:
+        return False, (
+            "Local DACOS dataset directory not configured. Set DACOS_FILES_ROOT to the extracted "
+            "`files` folder to enable direct `.code` retrieval."
+        )
+
+    for root in roots:
+        candidate = (root / normalized).resolve()
+        try:
+            candidate.relative_to(root.resolve())
+        except ValueError:
+            continue
+
+        if candidate.is_file():
+            try:
+                return True, _read_text_preview(candidate, max_lines)
+            except (OSError, UnicodeDecodeError) as exc:
+                return False, f"Failed to read local code file {candidate}: {exc}."
+
+    return False, (
+        f"Code file {normalized} not found under configured DACOS dataset roots. "
+        "Check DACOS_FILES_ROOT or ensure the dataset is extracted."
+    )
+
+
 def _maybe_fetch_code(sample: DACOSSample, max_lines: int) -> Optional[str]:
     """Best effort attempt to pull the referenced file content for a sample.
 
@@ -100,6 +189,23 @@ def _maybe_fetch_code(sample: DACOSSample, max_lines: int) -> Optional[str]:
     checkout the commit immediately prior to the DACOS publication cutoff. This is
     expensive; callers should guard behind an explicit signal.
     """
+
+    success, local_payload = _try_local_code_lookup(sample.path_to_file, max_lines)
+    if success:
+        return local_payload
+    if local_payload:
+        return local_payload
+
+    allow_git = os.environ.get("DACOS_ENABLE_GIT_FETCH", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+    if not allow_git:
+        return (
+            "Set DACOS_ENABLE_GIT_FETCH=1 to allow sparse git checkout for code retrieval."
+        )
 
     try:
         repo_url = sample.repo_url or derive_repo_url(sample.project_name)
@@ -133,12 +239,12 @@ def _maybe_fetch_code(sample: DACOSSample, max_lines: int) -> Optional[str]:
 
 
 @tool("fetch_dacos_sample", args_schema=SampleDetailArgs)
-def fetch_dacos_sample(
+async def fetch_dacos_sample(
     sample_id: int, include_code: bool = False, max_lines: int = 120
 ) -> Dict[str, Any]:
     """Load a single DACOS sample along with optional source code snippet."""
 
-    sample = fetch_sample_by_id(sample_id)
+    sample = await fetch_sample_by_id_async(sample_id)
 
     if sample is None:
         return {
@@ -151,17 +257,42 @@ def fetch_dacos_sample(
         "ground_truth_smells": sample.ground_truth_smells(),
     }
 
-    if include_code:
-        if os.environ.get("DACOS_ENABLE_GIT_FETCH", "false").lower() in {
-            "1",
-            "true",
-            "yes",
-        }:
-            payload["code_fragment"] = _maybe_fetch_code(sample, max_lines)
+    code_details: Optional[Dict[str, Any]] = None
+    if sample.path_to_file.lower().endswith(".code"):
+        # Run synchronous file I/O in thread pool
+        loop = asyncio.get_event_loop()
+        success, code_result = await loop.run_in_executor(
+            None,
+            _try_local_code_lookup,
+            sample.path_to_file,
+            max_lines
+        )
+        code_details = {
+            "path": sample.path_to_file,
+            "source": "local_dataset",
+        }
+        if success:
+            code_details["content"] = code_result
         else:
-            payload["code_fragment"] = (
-                "Set DACOS_ENABLE_GIT_FETCH=1 to allow sparse git checkout for code retrieval."
+            code_details["error"] = code_result
+
+    if code_details:
+        payload["code_sample"] = code_details
+
+    if include_code:
+        if code_details and "content" in code_details:
+            payload["code_fragment"] = code_details["content"]
+        else:
+            # Run potentially slow git operation in thread pool
+            loop = asyncio.get_event_loop()
+            payload["code_fragment"] = await loop.run_in_executor(
+                None,
+                _maybe_fetch_code,
+                sample,
+                max_lines
             )
+    elif code_details and "content" in code_details:
+        payload.setdefault("code_fragment_preview", code_details["content"])
 
     return payload
 
