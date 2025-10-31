@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 from mysql.connector import Error as MySQLError
 from mysql.connector import pooling
 
-from src.models.entities import DACOSSample
+from models.entities import DACOSSample
 
 # Load environment variables
 load_dotenv()

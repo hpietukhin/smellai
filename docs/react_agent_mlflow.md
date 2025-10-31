@@ -25,7 +25,7 @@ Create a `.env` file or export the variables before running the pipeline.
 | --- | --- |
 | `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD` | DACOS MySQL connectivity (required). |
 | `MODEL` | Optional override for the LangGraph agent model (default: `gpt-4.1-mini`). Supports provider-prefixed format (see below). |
-| `MLFLOW_TRACKING_URI` | Optional MLflow tracking location (default: `http://localhost:5000`). |
+| `MLFLOW_TRACKING_URI` | MLflow tracking backend URI. Use `sqlite:///path/to/mlflow.db` for SQLite or `http://localhost:5000` for tracking server (default: `http://localhost:5000`). **Note:** Dataset features require a SQL backend (SQLite, PostgreSQL, or MySQL). |
 | `MLFLOW_EXPERIMENT_NAME` | Optional experiment name (default: `react-agent-mlflow`). |
 | `MLFLOW_JUDGE_MODEL` | Optional override for the LLM-as-judge model (default: `openai:/gpt-4.1-mini`). Must use provider-prefixed format. |
 
@@ -131,14 +131,40 @@ All traces, expectations, and scores are logged to MLflow for reproducibility an
 ## Inspecting MLflow Results
 
 Launch the MLflow UI against the configured tracking URI to inspect traces and scores:
-```bash
-# If using default HTTP server tracking
-uv run mlflow ui --backend-store-uri "${MLFLOW_TRACKING_URI:-http://localhost:5000}"
 
-# If using local file-based tracking (./mlruns)
-uv run mlflow ui --backend-store-uri "./mlruns" --port 5000
+### Using SQLite Backend (Recommended)
+
+If you have a `mlflow.db` SQLite database (required for dataset features) use the project environment to avoid migration mismatches:
+```bash
+# Using absolute path
+uv run mlflow ui --backend-store-uri sqlite:////Users/havriil.pietukhin/PycharmProjects/smellai/mlflow.db --port 5000
+
+# Or use the provided script
+./start_mlflow_server.sh
 ```
+
+### Using HTTP Tracking Server
+
+If using a remote MLflow tracking server:
+```bash
+# Server should already be running with SQL backend
+# Start the UI with the same environment
+uv run mlflow ui --backend-store-uri http://remote-tracking-server --port 5000
+# Or just access the existing UI if it is already hosted
+open http://localhost:5000
+```
+
+### Using FileStore (Limited Features)
+
+If using local file-based tracking (./mlruns) - **Note:** Dataset features are not supported:
+Use the same command pattern, replacing the backend URI as needed.
+
 Navigate to the `react-agent-mlflow` experiment, open a run, and review the GenAI evaluation tables for judge outputs and heuristic scores.
+
+**Important:** To use MLflow dataset features (like `create_dataset`), you must use a SQL backend. Configure your `.env` with:
+```bash
+MLFLOW_TRACKING_URI=sqlite:///$(pwd)/mlflow.db
+```
 
 ## Troubleshooting
 
@@ -146,3 +172,9 @@ Navigate to the `react-agent-mlflow` experiment, open a run, and review the GenA
 - **MySQL connection errors**: verify the DACOS instance is reachable and credentials are correct; run `uv run python -m src.data.mysql_connector` if you have a connectivity check implemented.
 - **LLM authentication issues**: confirm the relevant API key environment variables are exported in the same shell session.
 - **Judge cost control**: set `MLFLOW_JUDGE_MODEL` to a cheaper provider/model if needed.
+- **"create_dataset is not supported with FileStore" error**: This means you're using MLflow's FileStore backend (`./mlruns` directory) which doesn't support dataset features. You must configure a SQL backend:
+  1. Add to `.env`: `MLFLOW_TRACKING_URI=sqlite:///$(pwd)/mlflow.db`
+  2. Restart your scripts to pick up the new tracking URI
+  3. Launch MLflow UI with: `mlflow ui --backend-store-uri sqlite:///path/to/mlflow.db --port 5000`
+- **"Each record must have an 'inputs' field" error**: You are likely using a dataset created with an older version of `create_dacos_mlflow_dataset.py`. Regenerate the dataset so that every row includes a top-level `inputs` object (the updated script writes both `inputs` and nested `inputs.inputs` columns) or add the column manually before calling `dataset.merge_records`.
+- **"Can't locate revision identified by 'bf29a5ff90ea'" error**: The CLI that launched MLflow UI is older than the project dependency set and lacks the corresponding Alembic migration. Run the UI with `uv run mlflow ui ...` (or via `./start_mlflow_server.sh`, which now falls back to `.venv`) so the bundled MLflow version is used, or upgrade your global/pipx `mlflow` installation to match the version declared in `pyproject.toml`.
