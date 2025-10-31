@@ -61,4 +61,3 @@ dev = [
     "set-env-colab-kaggle-dotenv>=0.1.4",
     "weave>=0.52.9",
 ]
-# Let uv manage Python versions automatically

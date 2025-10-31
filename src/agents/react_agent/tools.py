@@ -20,11 +20,9 @@ from src.data.git_ops import (
     get_commit_before_date,
 )
 from src.data.mysql_connector import (
-    fetch_sample_by_id,
-    fetch_samples_dataframe,
-    get_connection_pool,
     fetch_sample_by_id_async,
     fetch_samples_dataframe_async,
+    get_connection_pool,
 )
 from src.models.entities import DACOSSample
 
@@ -47,7 +45,9 @@ class SamplesArgs(BaseModel):
 
 
 @tool("load_dacos_samples", args_schema=SamplesArgs)
-async def load_dacos_samples(limit: int, smell_ids: Optional[List[int]] = None) -> Dict[str, Any]:
+async def load_dacos_samples(
+    limit: int, smell_ids: Optional[List[int]] = None
+) -> Dict[str, Any]:
     """Return DACOS samples as a JSON-serialisable payload.
 
     The underlying query mirrors the exploratory DataFrame utility from
@@ -82,7 +82,9 @@ async def load_dacos_samples(limit: int, smell_ids: Optional[List[int]] = None) 
 class SampleDetailArgs(BaseModel):
     """Input schema for the `fetch_dacos_sample` tool."""
 
-    sample_id: int = Field(..., ge=1, description="DACOS sample identifier (tagman5.sample.id)")
+    sample_id: int = Field(
+        ..., ge=1, description="DACOS sample identifier (tagman5.sample.id)"
+    )
     include_code: bool = Field(
         default=False,
         description=(
@@ -203,9 +205,7 @@ def _maybe_fetch_code(sample: DACOSSample, max_lines: int) -> Optional[str]:
     }
 
     if not allow_git:
-        return (
-            "Set DACOS_ENABLE_GIT_FETCH=1 to allow sparse git checkout for code retrieval."
-        )
+        return "Set DACOS_ENABLE_GIT_FETCH=1 to allow sparse git checkout for code retrieval."
 
     try:
         repo_url = sample.repo_url or derive_repo_url(sample.project_name)
@@ -262,10 +262,7 @@ async def fetch_dacos_sample(
         # Run synchronous file I/O in thread pool
         loop = asyncio.get_event_loop()
         success, code_result = await loop.run_in_executor(
-            None,
-            _try_local_code_lookup,
-            sample.path_to_file,
-            max_lines
+            None, _try_local_code_lookup, sample.path_to_file, max_lines
         )
         code_details = {
             "path": sample.path_to_file,
@@ -286,10 +283,7 @@ async def fetch_dacos_sample(
             # Run potentially slow git operation in thread pool
             loop = asyncio.get_event_loop()
             payload["code_fragment"] = await loop.run_in_executor(
-                None,
-                _maybe_fetch_code,
-                sample,
-                max_lines
+                None, _maybe_fetch_code, sample, max_lines
             )
     elif code_details and "content" in code_details:
         payload.setdefault("code_fragment_preview", code_details["content"])

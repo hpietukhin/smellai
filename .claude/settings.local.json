@@ -27,7 +27,8 @@
       "Bash(git clone:*)",
       "Bash(uv tool install:*)",
       "Bash(creosote --help:*)",
-      "Bash(creosote --verbose:*)"
+      "Bash(creosote --verbose:*)",
+      "Bash(pre-commit run:*)"
     ],
     "deny": []
   },
