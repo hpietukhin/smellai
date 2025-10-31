@@ -1,0 +1,19 @@
+{
+  "testModules": [
+    {
+      "moduleId": "tests/test_react_agent_mlflow.py",
+      "tests": [
+        {
+          "name": "collection_error_tests/test_react_agent_mlflow.py",
+          "fullName": "tests/test_react_agent_mlflow.py",
+          "state": "failed",
+          "errors": [
+            {
+              "message": "ImportError while importing test module '/Users/havriil.pietukhin/PycharmProjects/smellai/tests/test_react_agent_mlflow.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n../../.pyenv/versions/3.11.5/lib/python3.11/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\ntests/test_react_agent_mlflow.py:7: in <module>\n    from src.models import DACOSSample\nE   ModuleNotFoundError: No module named 'src'"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
