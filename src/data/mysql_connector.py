@@ -6,8 +6,9 @@ This module provides connection pooling and data access functions for the DACOS
 annotations.
 """
 
+import asyncio
 import os
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -21,6 +22,40 @@ load_dotenv()
 
 # Global connection pool (lazy initialization)
 _connection_pool: Optional[pooling.MySQLConnectionPool] = None
+
+
+_SMELL_FLAG_COLUMNS: Sequence[Tuple[str, str]] = (
+    ("Complex Method", "a.iscm"),
+    ("Long Parameter List", "a.islp"),
+    ("Multifaceted Abstraction", "a.isma"),
+)
+
+
+def _bit_to_bool(value: Any) -> bool:
+    """Convert MySQL BIT column values into Python booleans.
+
+    mysql-connector returns BIT columns as byte-like objects (e.g. ``b"\x01"``),
+    so a direct ``bool(value)`` would incorrectly evaluate to ``True`` even
+    when the bit is ``0``. This helper normalises the various shapes into a
+    proper boolean.
+    """
+
+    if value is None:
+        return False
+
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, memoryview):
+        return _bit_to_bool(value.tobytes())
+
+    if isinstance(value, (bytes, bytearray)):
+        return any(value)
+
+    try:
+        return bool(int(value))
+    except (TypeError, ValueError):
+        return bool(value)
 
 
 def get_connection_pool() -> pooling.MySQLConnectionPool:
@@ -110,6 +145,33 @@ def get_connection():
         raise MySQLError(f"Failed to get connection from pool: {e}") from e
 
 
+def _row_to_sample(row: Dict[str, Any]) -> DACOSSample:
+    """Convert a SQL row into a ``DACOSSample`` with normalised types."""
+
+    sample_constraints = row.get("sample_constraints")
+    if sample_constraints is not None:
+        sample_constraints = str(sample_constraints)
+
+    return DACOSSample(
+        id=row["id"],
+        designite_id=row.get("designite_id"),
+        has_smell=_bit_to_bool(row.get("has_smell")),
+        is_class=_bit_to_bool(row.get("is_class")),
+        path_to_file=row["path_to_file"],
+        project_name=row["project_name"],
+        sample_constraints=sample_constraints,
+        smells=row.get("smells"),
+        iscm=_bit_to_bool(row.get("iscm")),
+        isim=_bit_to_bool(row.get("isim")),
+        islp=_bit_to_bool(row.get("islp")),
+        isma=_bit_to_bool(row.get("isma")),
+        smell_name=row.get("smell_name"),
+        smell_description=row.get("smell_description"),
+        repo_url=row.get("repo_url"),
+        commit_sha=row.get("commit_sha"),
+    )
+
+
 def fetch_sample_by_id(sample_id: int) -> Optional[DACOSSample]:
     """
     Fetch a complete DACOS sample record with annotations by ID.
@@ -135,7 +197,7 @@ def fetch_sample_by_id(sample_id: int) -> Optional[DACOSSample]:
 
         # SQL query with JOINs to get complete sample data
         query = """
-        SELECT
+        SELECT DISTINCT
             s.id,
             s.designite_id,
             s.has_smell,
@@ -152,36 +214,49 @@ def fetch_sample_by_id(sample_id: int) -> Optional[DACOSSample]:
             sm.description AS smell_description
         FROM tagman5.sample s
         LEFT JOIN tagman5.annotation a ON s.id = a.sample_id
-        LEFT JOIN tagman5.smell sm ON s.smells = sm.id
+        LEFT JOIN tagman5.smell sm
+            ON (
+                (
+                    s.smells IS NOT NULL
+                    AND s.smells <> ''
+                    AND FIND_IN_SET(
+                        CAST(sm.id AS CHAR),
+                        REPLACE(s.smells, ' ', '')
+                    )
+                )
+                OR s.smells = sm.name
+            )
         WHERE s.id = %s
         """
 
         cursor.execute(query, (sample_id,))
-        row = cursor.fetchone()
+        rows = cursor.fetchall()
 
-        if row is None:
+        if not rows:
             return None
 
-        # Convert row to DACOSSample
-        # Handle NULL values for boolean fields
-        sample = DACOSSample(
-            id=row["id"],
-            designite_id=row.get("designite_id"),
-            has_smell=bool(row["has_smell"]),
-            is_class=bool(row["is_class"]),
-            path_to_file=row["path_to_file"],
-            project_name=row["project_name"],
-            sample_constraints=row.get("sample_constraints"),
-            smells=row.get("smells"),
-            iscm=bool(row.get("iscm", False)),
-            isim=bool(row.get("isim", False)),
-            islp=bool(row.get("islp", False)),
-            isma=bool(row.get("isma", False)),
-            smell_name=row.get("smell_name"),
-            smell_description=row.get("smell_description"),
-        )
+        # Some samples have multiple smell rows; prefer the first non-null smell info
+        primary = rows[0]
+        smell_name = primary.get("smell_name")
+        smell_description = primary.get("smell_description")
 
-        return sample
+        if smell_name is None:
+            for candidate in rows[1:]:
+                if candidate.get("smell_name"):
+                    smell_name = candidate.get("smell_name")
+                    smell_description = candidate.get("smell_description")
+                    break
+
+        # Aggregate smell flags across all rows to account for multi-annotation records.
+        aggregated = dict(primary)
+        aggregated["smell_name"] = smell_name
+        aggregated["smell_description"] = smell_description
+        aggregated["iscm"] = any(_bit_to_bool(row.get("iscm")) for row in rows)
+        aggregated["isim"] = any(_bit_to_bool(row.get("isim")) for row in rows)
+        aggregated["islp"] = any(_bit_to_bool(row.get("islp")) for row in rows)
+        aggregated["isma"] = any(_bit_to_bool(row.get("isma")) for row in rows)
+
+        return _row_to_sample(aggregated)
 
     except MySQLError as e:
         raise MySQLError(f"Failed to fetch sample {sample_id}: {e}") from e
@@ -241,7 +316,18 @@ def fetch_samples(
             sm.description AS smell_description
         FROM tagman5.sample s
         LEFT JOIN tagman5.annotation a ON s.id = a.sample_id
-        LEFT JOIN tagman5.smell sm ON s.smells = sm.id
+        LEFT JOIN tagman5.smell sm
+            ON (
+                (
+                    s.smells IS NOT NULL
+                    AND s.smells <> ''
+                    AND FIND_IN_SET(
+                        CAST(sm.id AS CHAR),
+                        REPLACE(s.smells, ' ', '')
+                    )
+                )
+                OR s.smells = sm.name
+            )
         WHERE 1=1
         """
 
@@ -254,7 +340,7 @@ def fetch_samples(
 
         if has_smell is not None:
             query += " AND s.has_smell = %s"
-            params.append(has_smell)
+            params.append(1 if has_smell else 0)
 
         # Add limit
         query += " LIMIT %s"
@@ -265,25 +351,7 @@ def fetch_samples(
         rows = cursor.fetchall()
 
         # Convert rows to DACOSSample objects
-        samples = []
-        for row in rows:
-            sample = DACOSSample(
-                id=row["id"],
-                designite_id=row.get("designite_id"),
-                has_smell=bool(row["has_smell"]),
-                is_class=bool(row["is_class"]),
-                path_to_file=row["path_to_file"],
-                project_name=row["project_name"],
-                sample_constraints=row.get("sample_constraints"),
-                smells=row.get("smells"),
-                iscm=bool(row.get("iscm", False)),
-                isim=bool(row.get("isim", False)),
-                islp=bool(row.get("islp", False)),
-                isma=bool(row.get("isma", False)),
-                smell_name=row.get("smell_name"),
-                smell_description=row.get("smell_description"),
-            )
-            samples.append(sample)
+        samples = [_row_to_sample(row) for row in rows]
 
         return samples
 
@@ -295,6 +363,76 @@ def fetch_samples(
             cursor.close()
         if connection:
             connection.close()
+
+
+def _collect_balanced_sample_ids(per_smell: int) -> Dict[str, List[int]]:
+    """Return a mapping from smell labels to sample identifiers."""
+
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+
+        query_template = """
+        SELECT DISTINCT s.id
+        FROM tagman5.sample s
+        JOIN tagman5.annotation a ON s.id = a.sample_id
+        WHERE {condition}
+        ORDER BY s.id
+        LIMIT %s
+        """
+
+        smell_to_ids: Dict[str, List[int]] = {}
+        for smell_label, flag_column in _SMELL_FLAG_COLUMNS:
+            cursor.execute(query_template.format(condition=f"{flag_column} = 1"), (per_smell,))
+            rows = cursor.fetchall()
+            ids = [row[0] if not isinstance(row, dict) else row["id"] for row in rows]
+            smell_to_ids[smell_label] = ids
+
+        return smell_to_ids
+
+    except MySQLError as e:
+        raise MySQLError(f"Failed to fetch balanced smell sample identifiers: {e}") from e
+
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+        if connection is not None:
+            try:
+                connection.close()
+            except Exception:
+                pass
+
+
+def _hydrate_samples_with_labels(smell_to_ids: Dict[str, List[int]]) -> List[Tuple[DACOSSample, str]]:
+    """Fetch full sample objects for the supplied identifier mapping."""
+
+    samples: List[Tuple[DACOSSample, str]] = []
+    for smell_label, sample_ids in smell_to_ids.items():
+        for sample_id in sample_ids:
+            sample = fetch_sample_by_id(sample_id)
+            if sample is None:
+                continue
+            samples.append((sample, smell_label))
+    return samples
+
+
+def fetch_balanced_smell_samples(per_smell: int = 5) -> List[Tuple[DACOSSample, str]]:
+    """Return up to ``per_smell`` samples per smell, tagged with the target smell name.
+
+    A sample that exhibits multiple smells may appear more than once, each time paired
+    with a different smell label.
+    """
+
+    if per_smell <= 0:
+        return []
+
+    smell_to_ids = _collect_balanced_sample_ids(per_smell)
+    return _hydrate_samples_with_labels(smell_to_ids)
 
 
 def fetch_samples_dataframe(
@@ -319,9 +457,11 @@ def fetch_samples_dataframe(
     """
 
     connection = None
+    cursor = None
 
     try:
         connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
 
         query = (
             "SELECT id, designite_id, has_smell, is_class, path_to_file, "
@@ -343,11 +483,20 @@ def fetch_samples_dataframe(
         query += " LIMIT %s"
         params.append(limit)
 
-        df = pd.read_sql(query, connection, params=params)
+        cursor.execute(query, tuple(params))
+        rows = cursor.fetchall()
+
+        df = pd.DataFrame(rows)
 
         if not df.empty:
-            df["has_smell"] = df["has_smell"].astype(bool)
-            df["is_class"] = df["is_class"].astype(bool)
+            for column in ("has_smell", "is_class"):
+                if column in df.columns:
+                    df[column] = df[column].apply(_bit_to_bool)
+
+            if "sample_constraints" in df.columns:
+                df["sample_constraints"] = pd.to_numeric(
+                    df["sample_constraints"], errors="coerce"
+                )
 
         return df
 
@@ -355,6 +504,8 @@ def fetch_samples_dataframe(
         raise MySQLError(f"Failed to fetch samples dataframe: {e}") from e
 
     finally:
+        if cursor:
+            cursor.close()
         if connection:
             connection.close()
 
@@ -371,3 +522,43 @@ def test_connection() -> bool:
     except Exception as e:
         print(f"✗ MySQL connectivity failed: {e}")
         return False
+
+
+# Async wrappers for non-blocking database operations
+
+
+async def fetch_sample_by_id_async(sample_id: int) -> Optional[DACOSSample]:
+    """Async wrapper for fetch_sample_by_id that runs in thread pool to avoid blocking event loop."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, fetch_sample_by_id, sample_id)
+
+
+async def fetch_samples_async(
+    project_name: Optional[str] = None,
+    has_smell: Optional[bool] = None,
+    limit: int = 100,
+) -> List[DACOSSample]:
+    """Async wrapper for fetch_samples that runs in thread pool to avoid blocking event loop."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None,
+        lambda: fetch_samples(project_name=project_name, has_smell=has_smell, limit=limit)
+    )
+
+
+async def fetch_samples_dataframe_async(
+    smell_ids: Optional[List[int]] = None,
+    limit: int = 10,
+) -> pd.DataFrame:
+    """Async wrapper for fetch_samples_dataframe that runs in thread pool to avoid blocking event loop."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None,
+        lambda: fetch_samples_dataframe(smell_ids=smell_ids, limit=limit)
+    )
+
+
+async def fetch_balanced_smell_samples_async(per_smell: int = 5) -> List[Tuple[DACOSSample, str]]:
+    """Async wrapper for fetch_balanced_smell_samples that runs in thread pool to avoid blocking event loop."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, fetch_balanced_smell_samples, per_smell)

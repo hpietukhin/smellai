@@ -4,8 +4,9 @@ Works with a chat model with tool calling support.
 """
 
 from datetime import UTC, datetime
-from typing import Dict, List, Literal, cast
+from typing import Dict, List, Literal, Optional, Tuple, cast
 
+from langchain.chat_models import init_chat_model
 from langchain_core.messages import AIMessage
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
@@ -14,9 +15,43 @@ from langgraph.runtime import Runtime
 from .context import Context
 from .state import InputState, State
 from .tools import TOOLS
-from .utils import load_chat_model
 
 # Define the function that calls the model
+
+
+def _split_model_string(cleaned: str) -> Tuple[Optional[str], str]:
+    """Return provider/model components if a separator is present."""
+
+    for separator in (":/", "://"):
+        if separator in cleaned:
+            head, tail = cleaned.split(separator, 1)
+            if head and tail:
+                return head, tail
+    for separator in ("/", ":"):
+        if separator in cleaned:
+            head, tail = cleaned.split(separator, 1)
+            if head.isalpha() and tail:
+                return head, tail
+    return None, cleaned
+
+
+def _parse_model_identifier(raw_model: str) -> Tuple[str, str]:
+    """Return provider and model name from the runtime configuration."""
+
+    cleaned = raw_model.strip()
+    if not cleaned:
+        raise ValueError("Model identifier is empty; set MODEL to a valid chat model name.")
+
+    provider, model = _split_model_string(cleaned)
+    provider = (provider or "openai").lower()
+    model = model.lstrip("/")
+
+    if not model:
+        raise ValueError(
+            "Model name resolved to empty string after parsing. Verify the MODEL configuration."
+        )
+
+    return provider, model
 
 
 async def call_model(
@@ -34,7 +69,12 @@ async def call_model(
         dict: A dictionary containing the model's response message.
     """
     # Initialize the model with tool binding. Change the model or add more tools here.
-    model = load_chat_model(runtime.context.model).bind_tools(TOOLS)
+    provider, model_id = _parse_model_identifier(runtime.context.model)
+
+    model = init_chat_model(
+        model_id,
+        model_provider=provider,
+    ).bind_tools(TOOLS)
 
     # Format the system prompt. Customize this to change the agent's behavior.
     system_message = runtime.context.system_prompt.format(
