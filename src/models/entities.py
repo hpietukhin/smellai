@@ -19,7 +19,7 @@ Models included:
 """
 
 from enum import Enum
-from typing import List, Literal, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -71,11 +71,20 @@ class SmellAnnotation(BaseModel):
         }
 
 
+class CodeSmellSeverity(str, Enum):
+    """Severity levels for detected code smells."""
+
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+
+
 class SmellDetection(BaseModel):
     """
     Code smell detected by the LLM.
 
     Represents a smell identified by the LLM detector agent during analysis.
+    Consolidated from previous CodeSmellDetection and SmellDetection models.
     """
 
     smell_type: str = Field(description="Type of code smell detected")
@@ -83,7 +92,7 @@ class SmellDetection(BaseModel):
         description="Description of where the smell was found (class, method, line range)"
     )
     description: str = Field(description="Detailed description of the detected smell")
-    severity: Literal["LOW", "MEDIUM", "HIGH"] = Field(
+    severity: CodeSmellSeverity = Field(
         description="Severity level of the detected smell"
     )
     refactoring_suggestion: str = Field(
@@ -95,6 +104,17 @@ class SmellDetection(BaseModel):
         ge=0.0,
         le=1.0,
     )
+    refactoring_reference: Optional[str] = Field(
+        default=None,
+        description=(
+            "Optional citation or reference identifier from DACOS/Designite "
+            "materials that inspired the suggestion."
+        ),
+    )
+    code_example: Optional[str] = Field(
+        default=None,
+        description="Illustrative snippet that demonstrates the recommended fix.",
+    )
 
     class Config:
         json_schema_extra = {
@@ -105,6 +125,53 @@ class SmellDetection(BaseModel):
                 "severity": "HIGH",
                 "refactoring_suggestion": "Extract validation logic into separate methods",
                 "confidence": 0.92,
+                "refactoring_reference": "DACOS::LongMethod::Refactor",
+                "code_example": "private void validateInput() { ... }",
+            }
+        }
+
+
+class CodeAnalysisResult(BaseModel):
+    """
+    Structured LLM output for code smell analysis.
+
+    Contains the analysis summary and list of detected smells.
+    Used as the top-level response model for structured LLM output.
+    """
+
+    analysis_summary: str = Field(
+        description="Overall summary of code quality and detected issues"
+    )
+    smells_detected: List[SmellDetection] = Field(
+        description="List of all detected code smells with details"
+    )
+    evidence: Optional[str] = Field(
+        default=None,
+        description=(
+            "Optional supporting context retrieved from DACOS (e.g., DataFrame "
+            "rows, annotations, or smell descriptions)."
+        ),
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "analysis_summary": (
+                    "The method `Foo.bar()` exhibits multiple indicators of a "
+                    "Complex Method smell and the constructor parameters form a "
+                    "Long Parameter List."
+                ),
+                "smells_detected": [
+                    {
+                        "smell_type": "Complex Method",
+                        "location": "UserService.processData() (lines 45-120)",
+                        "description": "Method has cyclomatic complexity of 15",
+                        "severity": "HIGH",
+                        "refactoring_suggestion": "Extract validation into separate methods",
+                        "confidence": 0.92,
+                    }
+                ],
+                "evidence": "Sample 42 from DACOS tagged as Complex Method with similarity score 0.82.",
             }
         }
 

@@ -1,6 +1,8 @@
 """Data models for code smell detection and evaluation."""
 
 from .entities import (
+    CodeAnalysisResult,
+    CodeSmellSeverity,
     DACOSSample,
     EvaluationResult,
     EvaluationScore,
@@ -16,4 +18,6 @@ __all__ = [
     "EvaluationResult",
     "DACOSSample",
     "EvaluationScore",
+    "CodeSmellSeverity",
+    "CodeAnalysisResult",
 ]
