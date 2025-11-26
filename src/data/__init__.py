@@ -10,6 +10,13 @@ __all__ = [
     "derive_repo_url",
     "get_commit_before_date",
     "clone_and_read_file",
+    "load_rminer_data",
+    "group_by_repository",
+    "find_consecutive_commits",
+    "calculate_semantic_similarity",
+    "compute_statistics",
+    "fetch_full_refactoring_json",
+    "build_dependency_graph",
 ]
 
 
@@ -36,6 +43,26 @@ def __getattr__(name):
             clone_and_read_file,
             derive_repo_url,
             get_commit_before_date,
+        )
+
+        return locals()[name]
+    elif name in [
+        "load_rminer_data",
+        "group_by_repository",
+        "find_consecutive_commits",
+        "calculate_semantic_similarity",
+        "compute_statistics",
+        "fetch_full_refactoring_json",
+        "build_dependency_graph",
+    ]:
+        from .rminer_utils import (  # noqa: F401
+            build_dependency_graph,
+            calculate_semantic_similarity,
+            compute_statistics,
+            fetch_full_refactoring_json,
+            find_consecutive_commits,
+            group_by_repository,
+            load_rminer_data,
         )
 
         return locals()[name]
