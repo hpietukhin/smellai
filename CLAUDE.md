@@ -1,0 +1,24 @@
+- Delete unused or obsolete files when your changes make them irrelevant (refactors, feature removals, etc.), and revert files only when the change is yours or explicitly requested. If a git operation leaves you unsure about other agents' in-flight work, stop and coordinate instead of deleting.
+- **Before attempting to delete a file to resolve a local type/lint failure, stop and ask the user.** Other agents are often editing adjacent files; deleting their work to silence an error is never acceptable without explicit approval.
+- NEVER edit `.env` or any environment variable files—only the user may change them.
+- Coordinate with other agents before removing their in-progress edits—don't revert or delete work you didn't author unless everyone agrees.
+- Moving/renaming and restoring files is allowed.
+- ABSOLUTELY NEVER run destructive git operations (e.g., `git reset --hard`, `rm`, `git checkout`/`git restore` to an older commit) unless the user gives an explicit, written instruction in this conversation. Treat these commands as catastrophic; if you are even slightly unsure, stop and ask before touching them. *(When working within Cursor or Codex Web, these git limitations do not apply; use the tooling's capabilities as needed.)*
+- Never use `git restore` (or similar commands) to revert files you didn't author—coordinate with other agents instead so their in-progress work stays intact.
+- Always double-check git status before any commit
+- Keep commits atomic: commit only the files you touched and list each path explicitly. For tracked files run `git commit -m "<scoped message>" -- path/to/file1 path/to/file2`. For brand-new files, use the one-liner `git restore --staged :/ && git add "path/to/file1" "path/to/file2" && git commit -m "<scoped message>" -- path/to/file1 path/to/file2`.
+- Quote any git paths containing brackets or parentheses (e.g., `src/app/[candidate]/**`) when staging or committing so the shell does not treat them as globs or subshells.
+- When running `git rebase`, avoid opening editors—export `GIT_EDITOR=:` and `GIT_SEQUENCE_EDITOR=:` (or pass `--no-edit`) so the default messages are used automatically.
+- Never amend commits unless you have explicit written approval in the task thread.
+- When accessing the documentation for some third-party tool in situations when more precise information needed, try first to resolve documentation via context7 MCP, even if i did not explicitly mention it. If problems occur, try to access the documentation via the web search tool.
+- Prioritize code correctness and clarity. Speed and efficiency are secondary priorities unless otherwise specified.
+- Do not write organizational or comments that summarize the code. Comments should only be written in order to explain "why" the code is written in some way in the case there is a reason that is tricky / non-obvious.
+- Prefer implementing functionality in existing files unless it is a new logical component. Avoid creating many small files.
+- When writing titles anywhere in text, not code (markdown files, comments in code, etc.) do not write it like this "First Second", but capitalize only first letter - "First second". Only exception is describing acronyms.
+- !!!!No fallbacks strict policy!!!: do not invent default values to mask missing data.
+- !!no try catch except on asynchronous requests!!!
+- No silent except: catch only expected exceptions, log with context, then re-raise.
+- No chained defaults in business logic: a or b or c only for UI labels; never for required config/data.
+- No hidden retries: allowed only if explicitly requested, idempotent, transient errors, bounded attempts, logged.
+- Fail fast: on invalid input or state — raise; do not continue with partial results.
+- Observability: include structured logging on failure; do not downgrade severity (no silent warning where error is due).

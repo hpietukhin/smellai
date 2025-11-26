@@ -2,7 +2,6 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/may25/pixel-dungeon" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/may25/smells" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/react-agent" vcs="Git" />
   </component>
 </project>

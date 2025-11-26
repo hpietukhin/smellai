@@ -1,0 +1,84 @@
+{
+  "testModules": [
+    {
+      "moduleId": "tests/test_react_agent_mlflow.py",
+      "tests": [
+        {
+          "name": "test_sample_to_prompt",
+          "fullName": "tests/test_react_agent_mlflow.py::test_sample_to_prompt",
+          "state": "passed"
+        },
+        {
+          "name": "test_build_expectations",
+          "fullName": "tests/test_react_agent_mlflow.py::test_build_expectations",
+          "state": "passed"
+        },
+        {
+          "name": "test_build_inputs",
+          "fullName": "tests/test_react_agent_mlflow.py::test_build_inputs",
+          "state": "passed"
+        },
+        {
+          "name": "test_extract_agent_response",
+          "fullName": "tests/test_react_agent_mlflow.py::test_extract_agent_response",
+          "state": "passed"
+        },
+        {
+          "name": "test_extract_agent_response_no_messages",
+          "fullName": "tests/test_react_agent_mlflow.py::test_extract_agent_response_no_messages",
+          "state": "passed"
+        },
+        {
+          "name": "test_resolve_judge_models_with_models",
+          "fullName": "tests/test_react_agent_mlflow.py::test_resolve_judge_models_with_models",
+          "state": "passed"
+        },
+        {
+          "name": "test_resolve_judge_models_with_single_model",
+          "fullName": "tests/test_react_agent_mlflow.py::test_resolve_judge_models_with_single_model",
+          "state": "passed"
+        },
+        {
+          "name": "test_resolve_judge_models_from_env",
+          "fullName": "tests/test_react_agent_mlflow.py::test_resolve_judge_models_from_env",
+          "state": "passed"
+        },
+        {
+          "name": "test_predict_refactoring_success",
+          "fullName": "tests/test_react_agent_mlflow.py::test_predict_refactoring_success",
+          "state": "passed"
+        },
+        {
+          "name": "test_predict_refactoring_error",
+          "fullName": "tests/test_react_agent_mlflow.py::test_predict_refactoring_error",
+          "state": "passed"
+        },
+        {
+          "name": "test_smell_detection_f1_perfect_match",
+          "fullName": "tests/test_react_agent_mlflow.py::test_smell_detection_f1_perfect_match",
+          "state": "passed"
+        },
+        {
+          "name": "test_smell_detection_f1_no_detection",
+          "fullName": "tests/test_react_agent_mlflow.py::test_smell_detection_f1_no_detection",
+          "state": "passed"
+        },
+        {
+          "name": "test_smell_detection_f1_false_positive",
+          "fullName": "tests/test_react_agent_mlflow.py::test_smell_detection_f1_false_positive",
+          "state": "passed"
+        },
+        {
+          "name": "test_smell_detection_f1_partial_match",
+          "fullName": "tests/test_react_agent_mlflow.py::test_smell_detection_f1_partial_match",
+          "state": "passed"
+        },
+        {
+          "name": "test_smell_detection_f1_no_expectation",
+          "fullName": "tests/test_react_agent_mlflow.py::test_smell_detection_f1_no_expectation",
+          "state": "passed"
+        }
+      ]
+    }
+  ]
+}

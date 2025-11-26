@@ -1,8 +1,48 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:context7.com)"
+      "WebFetch(domain:context7.com)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "mcp__ide__executeCode",
+      "WebFetch(domain:weave-docs.wandb.ai)",
+      "WebSearch",
+      "WebFetch(domain:tilburgsciencehub.com)",
+      "Bash(chmod:*)",
+      "Bash(pip install:*)",
+      "Bash(python -m pytest sonarqube_api/test_api.py -v)",
+      "Read(//Users/havriil.pietukhin/**)",
+      "Bash(uv tool install pre-commit)",
+      "Bash(mkdir -p src/models)",
+      "WebFetch(domain:mlflow.org)",
+      "Bash(echo:*)",
+      "Bash(curl:*)",
+      "Bash(python:*)",
+      "Bash(export SONAR_TOKEN=\"sqa_07c7bb2a187505d224c7e6535e1819f3b4e15948\")",
+      "Bash(tee:*)",
+      "Read(//private/tmp/**)",
+      "Bash(docker logs:*)",
+      "Bash(cat:*)",
+      "Bash(docker run:*)",
+      "Bash(git clone:*)",
+      "Bash(uv tool install:*)",
+      "Bash(creosote --help:*)",
+      "Bash(creosote --verbose:*)",
+      "Bash(pre-commit run:*)"
     ],
     "deny": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit(**/*.{py})",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pre-commit run --files {files}"
+          }
+        ]
+      }
+    ]
   }
 }

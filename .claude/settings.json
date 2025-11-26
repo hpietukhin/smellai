@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit(**/*.{py})",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pre-commit run --files {files}"
+          }
+        ]
+      }
+    ]
+  }
+}
