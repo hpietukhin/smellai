@@ -130,64 +130,70 @@ import openai
 
 ## RefactoringMiner Evaluation Workflow
 
-1. Generate extraction pairs (optional if you already have `rminer_data`):
-     ```bash
-     uv run src/data/rminer_extract.py --data /path/to/oracle/data.json --output ./rminer_data --max-commits 50
-     ```
-     This populates `rminer_data/manifest.json` with Java before/after pairs collected from RefactoringMiner.
+This project includes MLflow-based evaluation pipelines for refactoring mapping agents.
 
-2. Build the MLflow dataset from the manifest. Baseline run without SonarQube:
-     ```bash
-     uv run infra/mlflow/rminer_dataset.py --manifest rminer_data/manifest.json --limit 20 --dry-run
-     ```
+### Quick Start
 
-     Enable SonarQube enrichment with the new `--enable-sonar` flag to map smells onto refactored hunks:
-     ```bash
-     uv run infra/mlflow/rminer_dataset.py --manifest rminer_data/manifest.json --limit 20 --enable-sonar --dry-run
-     ```
+#### 1. Create an MLflow Dataset
+```bash
+# Create dataset from RefactoringMiner manifest
+# NOTE: --experiment must match what you use in evaluation
+uv run infra/mlflow/rminer_dataset.py \
+    --manifest rminer_data/manifest.json \
+    --limit 20 \
+    --experiment rminer-evaluation \
+    --tracking-uri sqlite:///mlflow.db
 
-     Required environment variables when Sonar is enabled:
-     - `SONAR_URL` (defaults to `http://localhost:9000` if unset)
-     - `SONAR_TOKEN` (must be provided or passed with `--sonar-token`)
-
-     Optional flags:
-     - `--sonar-cache-dir` to reuse previous scan results (default `.sonar_cache`)
-     - `--local-scanner` to use a local `sonar-scanner` binary instead of Docker
-
-### How smell mapping works
-
-- Each pair is scanned at the parent commit (`parent_sha`) so smells represent the pre-refactoring state.
-- SonarQube issues are filtered to the file under analysis and only kept when their line number falls inside the diff hunk span (`old_start` to `old_start + old_count`).
-- Mapped smells are stored in `expectations.code_smells` with hunk metadata so downstream tooling can reason about affected regions.
-
-Example (truncated) expectation payload with smell annotations:
-
-```json
-{
-    "inputs": {"pair_id": "4af8b1c2d3"},
-    "expectations": {
-        "file_path": "src/main/java/com/example/Foo.java",
-        "diff_hunks": [
-            {"old_start": 42, "old_count": 3, "new_start": 42, "new_count": 5}
-        ],
-        "code_smells": [
-            {
-                "smell_type": "Long Method",
-                "line": 43,
-                "severity": "MEDIUM",
-                "message": "Refactor this method to reduce its Cognitive Complexity.",
-                "rule": "java:S138",
-                "hunk_index": 0
-            }
-        ],
-        "num_smells": 1
-    }
-}
+# Note the dataset_id printed at the end (e.g., "d-abc123def456")
 ```
 
-To inspect or export created datasets, use the CLI helper:
-
+#### 2. List Available Datasets
 ```bash
-uv run infra/rminer_dataset_cli.py list
+# List all datasets
+uv run infra/rminer_dataset_cli.py list --tracking-uri sqlite:///mlflow.db
+
+# List datasets with JSON output
+uv run infra/rminer_dataset_cli.py list --json
+```
+
+#### 3. Inspect a Dataset
+```bash
+# Get dataset by name
 uv run infra/rminer_dataset_cli.py get --name rminer-eval-dataset --show-records
+
+# Get dataset by ID
+uv run infra/rminer_dataset_cli.py get --id d-abc123def456 --show-records
+```
+
+#### 4. Run Evaluation
+```bash
+# Option A: Evaluate directly from manifest (creates records inline, no persisted dataset)
+uv run src/pipelines/rminer_eval.py \
+    --manifest rminer_data/manifest.json \
+    --experiment rminer-evaluation \
+    --limit 5
+
+# Option B: Evaluate using saved dataset by name
+uv run src/pipelines/rminer_eval.py \
+    --dataset-name rminer-eval-dataset \
+    --experiment rminer-evaluation
+
+# Option C: Evaluate using saved dataset by ID
+uv run src/pipelines/rminer_eval.py \
+    --dataset-id d-abc123def456 \
+    --experiment rminer-evaluation
+```
+
+### Configuration
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--tracking-uri` | `sqlite:///mlflow.db` | MLflow tracking server |
+| `--experiment` | `rminer-evaluation` | Experiment name (must be consistent) |
+| `--model` | `gpt-4o-mini` | LLM model for agent |
+
+### View Results
+```bash
+mlflow ui --backend-store-uri sqlite:///mlflow.db
+# Open http://localhost:5000
 ```

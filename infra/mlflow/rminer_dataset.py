@@ -3,48 +3,37 @@
 # requires-python = ">=3.11"
 # dependencies = [
 #     "mlflow>=3.3",
-#     "python-dotenv",
-#     "requests"
+#     "python-dotenv"
 # ]
 # ///
-"""Create MLflow GenAI evaluation dataset from RefactoringMiner pairs with SonarQube smell enrichment.
+"""Create MLflow GenAI evaluation dataset from RefactoringMiner pairs.
 
 This script creates a dataset with:
 - inputs: pair_id (passed to predict_fn)
-- expectations: ground truth (diff_hunks, refactoring metadata, code smells)
+- expectations: ground truth (diff_hunks, refactoring metadata)
 - tags: repository, commit info
 
-The key enhancement is SonarQube integration:
-1. For each pair, checkout the parent commit
-2. Run SonarQube analysis on the "before" state
-3. Map detected smells to the lines that will be refactored
-4. Add smell metadata to dataset records
-
 Usage:
-    # Create dataset with smell enrichment
-    uv run infra/mlflow/rminer_dataset.py --manifest rminer_data/manifest.json --enable-sonar
+    # Create dataset
+    uv run infra/mlflow/rminer_dataset.py --manifest rminer_data/manifest.json
 
     # Dry run (preview records)
     uv run infra/mlflow/rminer_dataset.py --manifest rminer_data/manifest.json --dry-run
 
-    # Skip SonarQube scanning
-    uv run infra/mlflow/rminer_dataset.py --manifest rminer_data/manifest.json
-
     # Limit number of pairs
-    uv run infra/mlflow/rminer_dataset.py --manifest rminer_data/manifest.json --limit 10 --enable-sonar
+    uv run infra/mlflow/rminer_dataset.py --manifest rminer_data/manifest.json --limit 10
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import subprocess
 import sys
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import List, Tuple, Dict, Any, Optional
+from typing import List, Tuple
 
 from dotenv import load_dotenv
 
@@ -129,112 +118,13 @@ def parse_refactoring_info(pair: dict) -> Tuple[List[str], List[str]]:
     return types, descriptions
 
 
-def map_smells_to_hunks(
-    issues: List[Dict[str, Any]], hunks: List[DiffHunk]
-) -> List[Dict[str, Any]]:
-    """
-    Map SonarQube issues to diff hunks based on line numbers.
-
-    Returns list of smells that occur in lines that will be refactored.
-    """
-    mapped_smells = []
-
-    for issue in issues:
-        issue_line = issue.get("line")
-        if not issue_line:
-            continue
-
-        # Check if issue line falls within any hunk's "before" range
-        for hunk_idx, hunk in enumerate(hunks):
-            hunk_start = hunk.old_start
-            hunk_end = hunk.old_start + hunk.old_count
-
-            if hunk_start <= issue_line < hunk_end:
-                mapped_smells.append(
-                    {
-                        "smell_type": issue.get("smell_type"),
-                        "line": issue_line,
-                        "severity": issue.get("severity"),
-                        "message": issue.get("message"),
-                        "rule": issue.get("rule"),
-                        "hunk_index": hunk_idx,
-                        "hunk_old_start": hunk.old_start,
-                        "hunk_old_count": hunk.old_count,
-                    }
-                )
-                break
-
-    return mapped_smells
-
-
-def enrich_with_sonarqube(
-    pair: dict,
-    hunks: List[DiffHunk],
-    sonar_url: str,
-    sonar_token: str,
-    cache_dir: Optional[Path] = None,
-    use_docker: bool = True,
-) -> Optional[List[Dict[str, Any]]]:
-    """
-    Run SonarQube analysis on parent commit and map smells to hunks.
-
-    Returns list of mapped smells or None if scanning fails/disabled.
-    """
-    try:
-        # Import here to avoid dependency if not using SonarQube
-        from infra.sonarqube.commit_scan import scan_commit
-
-        repo_url = pair.get("repository")
-        parent_sha = pair.get("parent_sha")
-        file_path = pair.get("file_path")
-
-        if not repo_url or not parent_sha or not file_path:
-            return None
-
-        # Scan entire commit (cached)
-        issues_by_file = scan_commit(
-            repo_url=repo_url,
-            commit_sha=parent_sha,
-            sonar_url=sonar_url,
-            sonar_token=sonar_token,
-            cache_dir=cache_dir,
-            use_docker=use_docker,
-        )
-
-        # Get issues for this specific file
-        file_issues = issues_by_file.get(file_path, [])
-
-        if not file_issues:
-            return []
-
-        # Map issues to hunks
-        mapped_smells = map_smells_to_hunks(file_issues, hunks)
-
-        return mapped_smells
-
-    except Exception as e:
-        print(
-            f"Warning: SonarQube enrichment failed for {pair.get('id')}: {e}",
-            file=sys.stderr,
-        )
-        return None
-
-
-def build_genai_records(
-    manifest_path: Path,
-    limit: int | None = None,
-    enable_sonar: bool = False,
-    sonar_url: Optional[str] = None,
-    sonar_token: Optional[str] = None,
-    sonar_cache_dir: Optional[Path] = None,
-    use_docker: bool = True,
-) -> list[dict]:
+def build_genai_records(manifest_path: Path, limit: int | None = None) -> list[dict]:
     """
     Build GenAI evaluation records from manifest.
 
     Each record has:
     - inputs: {"pair_id": "..."}
-    - expectations: ground truth data (including optional smell mappings)
+    - expectations: ground truth data
     - tags: metadata
     """
     base_dir = manifest_path.parent
@@ -248,7 +138,6 @@ def build_genai_records(
 
     records = []
     skipped = 0
-    sonar_enriched = 0
 
     for pair in pairs:
         before_path = base_dir / pair["before_file"]
@@ -265,68 +154,32 @@ def build_genai_records(
             skipped += 1
             continue
 
-        # Build base record
-        expectations = {
-            "num_refactorings": len(types),
-            "num_hunks": len(diff_hunks),
-            "diff_hunks": [h.to_dict() for h in diff_hunks],
-            "refactoring_types": types,
-            "refactoring_descriptions": descriptions,
-            "file_path": pair["file_path"],
-        }
-
-        # Enrich with SonarQube if enabled
-        if enable_sonar and sonar_url and sonar_token:
-            mapped_smells = enrich_with_sonarqube(
-                pair=pair,
-                hunks=diff_hunks,
-                sonar_url=sonar_url,
-                sonar_token=sonar_token,
-                cache_dir=sonar_cache_dir,
-                use_docker=use_docker,
-            )
-
-            if mapped_smells is not None:
-                expectations["code_smells"] = mapped_smells
-                expectations["num_smells"] = len(mapped_smells)
-                sonar_enriched += 1
-            else:
-                expectations["code_smells"] = []
-                expectations["num_smells"] = 0
-        else:
-            expectations["code_smells"] = []
-            expectations["num_smells"] = 0
-
         record = {
             "inputs": {
                 "pair_id": pair["id"],
             },
-            "expectations": expectations,
+            "expectations": {
+                "num_refactorings": len(types),
+                "num_hunks": len(diff_hunks),
+                "diff_hunks": [h.to_dict() for h in diff_hunks],
+                "refactoring_types": types,
+                "refactoring_descriptions": descriptions,
+                "file_path": pair["file_path"],
+            },
             "tags": {
                 "repository": pair.get("repository", ""),
                 "commit_sha": pair.get("commit_sha", ""),
-                "parent_sha": pair.get("parent_sha", ""),
                 "status": pair.get("status", "modified"),
-                "sonar_enriched": str(
-                    enable_sonar and expectations.get("num_smells", 0) > 0
-                ),
             },
         }
         records.append(record)
 
     print(f"Built {len(records)} records ({skipped} skipped)")
-    if enable_sonar:
-        print(
-            f"SonarQube enrichment: {sonar_enriched}/{len(records)} records have smell data"
-        )
-
     return records
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Create MLflow GenAI dataset with SonarQube enrichment"
-    )
+    parser = argparse.ArgumentParser(description="Create MLflow GenAI dataset")
     parser.add_argument("--manifest", required=True, help="Path to manifest.json")
     parser.add_argument("--experiment", default="rminer-evaluation")
     parser.add_argument("--dataset-name", default="rminer-eval-dataset")
@@ -336,28 +189,6 @@ def main() -> int:
     parser.add_argument(
         "--output-json", help="Save records to JSON file (for debugging)"
     )
-
-    # SonarQube options
-    parser.add_argument(
-        "--enable-sonar", action="store_true", help="Enable SonarQube smell enrichment"
-    )
-    parser.add_argument(
-        "--sonar-url", default=None, help="SonarQube URL (default: SONAR_URL env)"
-    )
-    parser.add_argument(
-        "--sonar-token", default=None, help="SonarQube token (default: SONAR_TOKEN env)"
-    )
-    parser.add_argument(
-        "--sonar-cache-dir",
-        default=".sonar_cache",
-        help="Cache directory for SonarQube results",
-    )
-    parser.add_argument(
-        "--local-scanner",
-        action="store_true",
-        help="Use local sonar-scanner instead of Docker",
-    )
-
     args = parser.parse_args()
 
     manifest_path = Path(args.manifest)
@@ -365,29 +196,8 @@ def main() -> int:
         print(f"Manifest not found: {manifest_path}", file=sys.stderr)
         return 1
 
-    # SonarQube configuration
-    sonar_url = args.sonar_url or os.environ.get("SONAR_URL", "http://localhost:9000")
-    sonar_token = args.sonar_token or os.environ.get("SONAR_TOKEN")
-
-    if args.enable_sonar and not sonar_token:
-        print(
-            "Error: --enable-sonar requires SONAR_TOKEN environment variable or --sonar-token",
-            file=sys.stderr,
-        )
-        return 1
-
-    sonar_cache_dir = Path(args.sonar_cache_dir) if args.enable_sonar else None
-
     # Build records
-    records = build_genai_records(
-        manifest_path,
-        limit=args.limit,
-        enable_sonar=args.enable_sonar,
-        sonar_url=sonar_url,
-        sonar_token=sonar_token,
-        sonar_cache_dir=sonar_cache_dir,
-        use_docker=not args.local_scanner,
-    )
+    records = build_genai_records(manifest_path, limit=args.limit)
 
     if not records:
         print("No valid records found", file=sys.stderr)
@@ -396,12 +206,8 @@ def main() -> int:
     # Stats
     total_hunks = sum(r["expectations"]["num_hunks"] for r in records)
     total_refactorings = sum(r["expectations"]["num_refactorings"] for r in records)
-    total_smells = sum(r["expectations"]["num_smells"] for r in records)
-
     print(f"Total hunks: {total_hunks}")
     print(f"Total refactorings: {total_refactorings}")
-    if args.enable_sonar:
-        print(f"Total code smells mapped: {total_smells}")
 
     # Save to JSON if requested
     if args.output_json:
@@ -420,10 +226,6 @@ def main() -> int:
                     "added_lines": ["..."],
                 }
             ]
-        if sample["expectations"]["code_smells"]:
-            sample["expectations"]["code_smells"] = sample["expectations"][
-                "code_smells"
-            ][:2] + ["..."]
         print(json.dumps(sample, indent=2))
         return 0
 
@@ -444,21 +246,15 @@ def main() -> int:
     print(f"Experiment ID: {experiment_id}")
 
     # Create dataset
-    dataset_tags = {
-        "source": "RefactoringMiner",
-        "total_pairs": str(len(records)),
-        "total_hunks": str(total_hunks),
-        "total_refactorings": str(total_refactorings),
-    }
-
-    if args.enable_sonar:
-        dataset_tags["sonar_enriched"] = "true"
-        dataset_tags["total_smells"] = str(total_smells)
-
     dataset = create_dataset(
         name=args.dataset_name,
         experiment_id=[experiment_id],
-        tags=dataset_tags,
+        tags={
+            "source": "RefactoringMiner",
+            "total_pairs": str(len(records)),
+            "total_hunks": str(total_hunks),
+            "total_refactorings": str(total_refactorings),
+        },
     )
 
     # Merge records
@@ -476,8 +272,6 @@ def main() -> int:
     print(f"Dataset created: {args.dataset_name}")
     print(f"Dataset ID: {dataset.dataset_id}")
     print(f"Records: {actual_count}")
-    if args.enable_sonar:
-        print(f"SonarQube enriched: {total_smells} smells mapped")
     print(f"{'='*50}")
     print("\nTo inspect:")
     print(

@@ -28,7 +28,9 @@
       "Bash(uv tool install:*)",
       "Bash(creosote --help:*)",
       "Bash(creosote --verbose:*)",
-      "Bash(pre-commit run:*)"
+      "Bash(pre-commit run:*)",
+      "Bash(git checkout:*)",
+      "Bash(git ls-tree:*)"
     ],
     "deny": []
   },
