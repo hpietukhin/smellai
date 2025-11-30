@@ -5,8 +5,8 @@ from unittest.mock import Mock, patch
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
-from src.models import DACOSSample
-from src.pipelines import (
+from smellai.models import DACOSSample
+from smellai.pipelines import (
     _build_expectations,
     _build_inputs,
     _extract_agent_response,
@@ -105,8 +105,8 @@ def test_resolve_judge_models_from_env():
         assert models == ["custom/model"]
 
 
-@patch("src.pipelines.react_agent_mlflow._invoke_agent")
-@patch("src.pipelines.react_agent_mlflow._get_agent_context")
+@patch("smellai.pipelines.react_agent_mlflow._invoke_agent")
+@patch("smellai.pipelines.react_agent_mlflow._get_agent_context")
 def test_predict_refactoring_success(mock_context, mock_invoke):
     """Test successful prediction."""
     mock_invoke.return_value = {
@@ -122,8 +122,8 @@ def test_predict_refactoring_success(mock_context, mock_invoke):
     mock_invoke.assert_called_once()
 
 
-@patch("src.pipelines.react_agent_mlflow._invoke_agent")
-@patch("src.pipelines.react_agent_mlflow._get_agent_context")
+@patch("smellai.pipelines.react_agent_mlflow._invoke_agent")
+@patch("smellai.pipelines.react_agent_mlflow._get_agent_context")
 def test_predict_refactoring_error(mock_context, mock_invoke):
     """Test error handling in prediction."""
     mock_invoke.side_effect = Exception("Test error")
@@ -136,7 +136,7 @@ def test_predict_refactoring_error(mock_context, mock_invoke):
 
 def test_smell_detection_f1_perfect_match():
     """Test F1 score with perfect detection."""
-    from src.pipelines.react_agent_mlflow import smell_detection_f1
+    from smellai.pipelines.react_agent_mlflow import smell_detection_f1
 
     outputs = "This code has a Complex Method smell that needs refactoring."
     expectations = {"smell_name": "Complex Method"}
@@ -147,7 +147,7 @@ def test_smell_detection_f1_perfect_match():
 
 def test_smell_detection_f1_no_detection():
     """Test F1 score when smell is not detected."""
-    from src.pipelines.react_agent_mlflow import smell_detection_f1
+    from smellai.pipelines.react_agent_mlflow import smell_detection_f1
 
     outputs = "The code looks good and follows best practices."
     expectations = {"smell_name": "Complex Method"}
@@ -158,7 +158,7 @@ def test_smell_detection_f1_no_detection():
 
 def test_smell_detection_f1_false_positive():
     """Test F1 score with false positive detection."""
-    from src.pipelines.react_agent_mlflow import smell_detection_f1
+    from smellai.pipelines.react_agent_mlflow import smell_detection_f1
 
     outputs = "This code has a Long Method smell."
     expectations = {"smell_name": "Complex Method"}
@@ -170,7 +170,7 @@ def test_smell_detection_f1_false_positive():
 
 def test_smell_detection_f1_partial_match():
     """Test F1 score with both correct and incorrect detections."""
-    from src.pipelines.react_agent_mlflow import smell_detection_f1
+    from smellai.pipelines.react_agent_mlflow import smell_detection_f1
 
     outputs = "This code has a Complex Method and Long Method smell."
     expectations = {"smell_name": "Complex Method"}
@@ -184,7 +184,7 @@ def test_smell_detection_f1_partial_match():
 
 def test_smell_detection_f1_no_expectation():
     """Test F1 score when no smell is expected."""
-    from src.pipelines.react_agent_mlflow import smell_detection_f1
+    from smellai.pipelines.react_agent_mlflow import smell_detection_f1
 
     outputs = "The code looks good."
     expectations = {}

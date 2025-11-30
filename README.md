@@ -138,7 +138,7 @@ This project includes MLflow-based evaluation pipelines for refactoring mapping 
 ```bash
 # Create dataset from RefactoringMiner manifest
 # NOTE: --experiment must match what you use in evaluation
-uv run infra/mlflow/rminer_dataset.py \
+uv run scripts/create_rminer_dataset.py \
     --manifest rminer_data/manifest.json \
     --limit 20 \
     --experiment rminer-evaluation \
@@ -150,38 +150,30 @@ uv run infra/mlflow/rminer_dataset.py \
 #### 2. List Available Datasets
 ```bash
 # List all datasets
-uv run infra/rminer_dataset_cli.py list --tracking-uri sqlite:///mlflow.db
+uv run scripts/manage_datasets.py list --tracking-uri sqlite:///mlflow.db
 
 # List datasets with JSON output
-uv run infra/rminer_dataset_cli.py list --json
+uv run scripts/manage_datasets.py list --json
 ```
 
 #### 3. Inspect a Dataset
 ```bash
 # Get dataset by name
-uv run infra/rminer_dataset_cli.py get --name rminer-eval-dataset --show-records
+uv run scripts/manage_datasets.py get --name rminer-eval-dataset --show-records
 
 # Get dataset by ID
-uv run infra/rminer_dataset_cli.py get --id d-abc123def456 --show-records
+uv run scripts/manage_datasets.py get --id d-abc123def456 --show-records
 ```
 
 #### 4. Run Evaluation
 ```bash
-# Option A: Evaluate directly from manifest (creates records inline, no persisted dataset)
-uv run src/pipelines/rminer_eval.py \
-    --manifest rminer_data/manifest.json \
-    --experiment rminer-evaluation \
-    --limit 5
-
-# Option B: Evaluate using saved dataset by name
-uv run src/pipelines/rminer_eval.py \
+# Run evaluation pipeline
+# NOTE: --dataset-id is preferred if you have it
+uv run smellai/pipelines/rminer_eval.py \
     --dataset-name rminer-eval-dataset \
-    --experiment rminer-evaluation
-
-# Option C: Evaluate using saved dataset by ID
-uv run src/pipelines/rminer_eval.py \
-    --dataset-id d-abc123def456 \
-    --experiment rminer-evaluation
+    --experiment rminer-evaluation \
+    --tracking-uri sqlite:///mlflow.db \
+    --model gpt-4o-mini
 ```
 
 ### Configuration

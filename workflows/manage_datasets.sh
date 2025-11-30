@@ -61,7 +61,7 @@ shift
 
 case "$COMMAND" in
     list)
-        uv run infra/rminer_dataset_cli.py list --tracking-uri "${TRACKING_URI}" "$@"
+        uv run scripts/manage_datasets.py list --tracking-uri "${TRACKING_URI}" "$@"
         ;;
     get)
         if [[ $# -eq 0 ]]; then
@@ -70,7 +70,7 @@ case "$COMMAND" in
         fi
         NAME="$1"
         shift
-        uv run infra/rminer_dataset_cli.py get --name "${NAME}" --tracking-uri "${TRACKING_URI}" "$@"
+        uv run scripts/manage_datasets.py get --name "${NAME}" --tracking-uri "${TRACKING_URI}" "$@"
         ;;
     get-id)
         if [[ $# -eq 0 ]]; then
@@ -79,10 +79,10 @@ case "$COMMAND" in
         fi
         ID="$1"
         shift
-        uv run infra/rminer_dataset_cli.py get --id "${ID}" --tracking-uri "${TRACKING_URI}" "$@"
+        uv run scripts/manage_datasets.py get --id "${ID}" --tracking-uri "${TRACKING_URI}" "$@"
         ;;
     create)
-        uv run infra/mlflow/rminer_dataset.py \
+        uv run scripts/manage_datasets.py \
             --manifest rminer_data/manifest.json \
             --experiment rminer-evaluation \
             --tracking-uri "${TRACKING_URI}" \
@@ -95,7 +95,7 @@ case "$COMMAND" in
         fi
         NAME="$1"
         shift
-        uv run infra/rminer_dataset_cli.py get --name "${NAME}" --show-records --tracking-uri "${TRACKING_URI}" "$@"
+        uv run scripts/manage_datasets.py get --name "${NAME}" --show-records --tracking-uri "${TRACKING_URI}" "$@"
         ;;
     --help|-h|help)
         show_help

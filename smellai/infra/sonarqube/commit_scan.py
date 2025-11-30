@@ -1,0 +1,457 @@
+#!/usr/bin/env -S uv run --env-file .env
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["requests"]
+# ///
+"""SonarQube scanning for specific git commits.
+
+This module provides functionality to:
+1. Checkout a specific commit in a temporary directory
+2. Run SonarQube analysis on that commit
+3. Fetch and normalize issues for specific files
+4. Cache results to avoid redundant scans
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import shutil
+import subprocess
+import tempfile
+import sys
+from pathlib import Path
+from typing import Dict, List, Optional, Any
+
+import requests
+
+# Reuse rule mapping from baseline_scan
+RULE_NAME_MAP = {
+    "java:S1541": "Complex Method",
+    "java:S138": "Long Method",
+    "java:S107": "Long Parameter List",
+    "java:S1067": "Conditional Complexity",
+    "java:S1200": "God Class",
+    "java:S110": "Large Class",
+    "java:S1871": "Duplicated Conditions",
+    "java:S106": "Print Statements",
+}
+
+SEVERITY_MAP = {
+    "BLOCKER": "HIGH",
+    "CRITICAL": "HIGH",
+    "MAJOR": "MEDIUM",
+    "MINOR": "LOW",
+    "INFO": "LOW",
+}
+
+
+def run_command(cmd: List[str], cwd: Optional[Path] = None, check: bool = True) -> str:
+    """Run a shell command and return stdout."""
+    proc = subprocess.run(
+        cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
+    if check and proc.returncode != 0:
+        raise RuntimeError(f"Command failed: {' '.join(cmd)}\n{proc.stderr}")
+    return proc.stdout.strip()
+
+
+def derive_project_key(repo_url: str, commit_sha: str) -> str:
+    """Generate unique project key for repo+commit."""
+    m = re.search(
+        r"github.com[:/](?P<org>[\w.-]+)/(?P<repo>[\w.-]+)(?:\.git)?", repo_url
+    )
+    if not m:
+        raise ValueError(f"Cannot parse repo URL: {repo_url}")
+    short_sha = commit_sha[:8]
+    return f"{m.group('org')}_{m.group('repo')}_{short_sha}".lower()
+
+
+def run_sonar_scanner_docker(
+    clone_dir: Path, project_key: str, sonar_url: str, sonar_token: str
+) -> None:
+    """Run sonar-scanner via Docker container."""
+    scanner_opts = (
+        f"-Dsonar.projectKey={project_key} "
+        f"-Dsonar.java.binaries=. "
+        f"-Dsonar.language=java "
+        f"-Dsonar.verbose=false"
+    )
+    cmd = [
+        "docker",
+        "run",
+        "--rm",
+        "-v",
+        f"{clone_dir.absolute()}:/usr/src",
+        "--network=host",
+        "-e",
+        f"SONAR_HOST_URL={sonar_url}",
+        "-e",
+        f"SONAR_SCANNER_OPTS={scanner_opts}",
+        "-e",
+        f"SONAR_TOKEN={sonar_token}",
+        "sonarsource/sonar-scanner-cli",
+    ]
+    run_command(cmd)
+
+
+def poll_analysis_completion(
+    project_key: str, sonar_url: str, sonar_token: str, timeout_sec: int = 600
+) -> None:
+    """Poll SonarQube CE until the current analysis succeeds or timeout."""
+    import time
+
+    session = requests.Session()
+    session.auth = (sonar_token, "")
+
+    try:
+        resp = session.get(
+            f"{sonar_url}/api/ce/component",
+            params={"component": project_key},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        analysis_id = resp.json().get("current", {}).get("analysisId")
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 403:
+            time.sleep(30)
+            return
+        raise
+
+    if not analysis_id:
+        return
+
+    start = time.time()
+    while True:
+        task_resp = session.get(
+            f"{sonar_url}/api/ce/task", params={"id": analysis_id}, timeout=30
+        )
+        task_resp.raise_for_status()
+        status = task_resp.json().get("task", {}).get("status")
+        if status == "SUCCESS":
+            return
+        if status in {"FAILED", "CANCELED"}:
+            raise RuntimeError(f"Analysis ended with status {status}")
+        if time.time() - start > timeout_sec:
+            raise TimeoutError("Timeout waiting for analysis completion")
+        time.sleep(5)
+
+
+def fetch_issues_for_file(
+    project_key: str, file_path: str, sonar_url: str, sonar_token: str
+) -> List[Dict[str, Any]]:
+    """Fetch SonarQube issues for a specific file in the project."""
+    session = requests.Session()
+    session.auth = (sonar_token, "")
+
+    all_issues: List[Dict[str, Any]] = []
+    page = 1
+    rule_list = ",".join(RULE_NAME_MAP.keys())
+
+    # Construct component key: projectKey:filepath
+    component_key = f"{project_key}:{file_path}"
+
+    while True:
+        resp = session.get(
+            f"{sonar_url}/api/issues/search",
+            params={
+                "components": component_key,
+                "types": "CODE_SMELL",
+                "rules": rule_list,
+                "p": page,
+                "ps": 500,
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        batch = data.get("issues", [])
+        all_issues.extend(batch)
+        total = data.get("total", 0)
+        if page * 500 >= total:
+            break
+        page += 1
+
+    return all_issues
+
+
+def normalize_issue(issue: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize SonarQube issue to simplified format."""
+    rule = issue.get("rule")
+    smell_type = RULE_NAME_MAP.get(rule, rule)
+    sev = SEVERITY_MAP.get(issue.get("severity"), "LOW")
+
+    return {
+        "smell_type": smell_type,
+        "line": issue.get("line"),
+        "severity": sev,
+        "message": issue.get("message"),
+        "rule": rule,
+        "raw_severity": issue.get("severity"),
+    }
+
+
+def scan_commit_file(
+    repo_url: str,
+    commit_sha: str,
+    file_path: str,
+    sonar_url: str,
+    sonar_token: str,
+    cache_dir: Optional[Path] = None,
+    use_docker: bool = True,
+) -> List[Dict[str, Any]]:
+    """
+    Scan a specific file at a specific commit with SonarQube.
+
+    Args:
+        repo_url: Repository URL
+        commit_sha: Commit SHA to checkout
+        file_path: Relative path to file to analyze
+        sonar_url: SonarQube server URL
+        sonar_token: SonarQube authentication token
+        cache_dir: Optional cache directory for scan results
+        use_docker: Whether to use Docker for sonar-scanner
+
+    Returns:
+        List of normalized issues for the file
+    """
+    # Check cache first
+    if cache_dir:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_file = cache_dir / f"{commit_sha}_{file_path.replace('/', '_')}.json"
+        if cache_file.exists():
+            return json.loads(cache_file.read_text())
+
+    project_key = derive_project_key(repo_url, commit_sha)
+
+    # Clone and checkout
+    work_dir = Path(tempfile.mkdtemp(prefix="sonar_commit_scan_"))
+    try:
+        clone_dir = work_dir / "repo"
+        clone_dir.mkdir()
+        
+        run_command(["git", "init"], cwd=clone_dir)
+        run_command(["git", "remote", "add", "origin", repo_url], cwd=clone_dir)
+        
+        # Try to fetch specific commit
+        try:
+            run_command(["git", "fetch", "--depth", "1", "origin", commit_sha], cwd=clone_dir)
+            run_command(["git", "checkout", "FETCH_HEAD"], cwd=clone_dir)
+        except RuntimeError:
+            # Fallback to full clone (blobless) if specific fetch fails
+            print(f"Direct fetch failed for {commit_sha}, falling back to partial clone", file=sys.stderr)
+            run_command(["git", "fetch", "--filter=blob:none", "origin"], cwd=clone_dir)
+            run_command(["git", "checkout", commit_sha], cwd=clone_dir)
+
+        # Verify file exists
+        if not (clone_dir / file_path).exists():
+            return []
+
+        # Run sonar scanner
+        if use_docker:
+            run_sonar_scanner_docker(clone_dir, project_key, sonar_url, sonar_token)
+        else:
+            # Write sonar-project.properties
+            props_content = (
+                f"sonar.projectKey={project_key}\n"
+                f"sonar.projectName={project_key}\n"
+                "sonar.sources=.\n"
+                f"sonar.host.url={sonar_url}\n"
+                f"sonar.login={sonar_token}\n"
+                "sonar.java.binaries=.\n"
+            )
+            (clone_dir / "sonar-project.properties").write_text(props_content)
+            run_command(["sonar-scanner"], cwd=clone_dir)
+
+        # Wait for analysis
+        poll_analysis_completion(project_key, sonar_url, sonar_token)
+
+        # Fetch issues for this file
+        issues = fetch_issues_for_file(project_key, file_path, sonar_url, sonar_token)
+        normalized = [normalize_issue(i) for i in issues]
+
+        # Cache results
+        if cache_dir:
+            cache_file.write_text(json.dumps(normalized, indent=2))
+
+        return normalized
+
+    finally:
+        shutil.rmtree(work_dir, ignore_errors=True)
+
+
+def scan_commit(
+    repo_url: str,
+    commit_sha: str,
+    sonar_url: str,
+    sonar_token: str,
+    cache_dir: Optional[Path] = None,
+    use_docker: bool = True,
+) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    Scan entire commit with SonarQube.
+
+    Returns:
+        Dictionary mapping file paths to lists of issues
+    """
+    # Check cache first
+    if cache_dir:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_file = cache_dir / f"{commit_sha}_full.json"
+        if cache_file.exists():
+            return json.loads(cache_file.read_text())
+
+    project_key = derive_project_key(repo_url, commit_sha)
+
+    # Clone and checkout
+    work_dir = Path(tempfile.mkdtemp(prefix="sonar_commit_scan_"))
+    try:
+        clone_dir = work_dir / "repo"
+        clone_dir.mkdir()
+        
+        run_command(["git", "init"], cwd=clone_dir)
+        run_command(["git", "remote", "add", "origin", repo_url], cwd=clone_dir)
+        
+        # Try to fetch specific commit
+        try:
+            run_command(["git", "fetch", "--depth", "1", "origin", commit_sha], cwd=clone_dir)
+            run_command(["git", "checkout", "FETCH_HEAD"], cwd=clone_dir)
+        except RuntimeError:
+            # Fallback to full clone (blobless) if specific fetch fails
+            print(f"Direct fetch failed for {commit_sha}, falling back to partial clone", file=sys.stderr)
+            run_command(["git", "fetch", "--filter=blob:none", "origin"], cwd=clone_dir)
+            run_command(["git", "checkout", commit_sha], cwd=clone_dir)
+
+        # Run sonar scanner
+        if use_docker:
+            run_sonar_scanner_docker(clone_dir, project_key, sonar_url, sonar_token)
+        else:
+            props_content = (
+                f"sonar.projectKey={project_key}\n"
+                f"sonar.projectName={project_key}\n"
+                "sonar.sources=.\n"
+                f"sonar.host.url={sonar_url}\n"
+                f"sonar.login={sonar_token}\n"
+                "sonar.java.binaries=.\n"
+            )
+            (clone_dir / "sonar-project.properties").write_text(props_content)
+            run_command(["sonar-scanner"], cwd=clone_dir)
+
+        # Wait for analysis
+        poll_analysis_completion(project_key, sonar_url, sonar_token)
+
+        # Fetch all issues
+        session = requests.Session()
+        session.auth = (sonar_token, "")
+
+        all_issues: List[Dict[str, Any]] = []
+        page = 1
+        rule_list = ",".join(RULE_NAME_MAP.keys())
+
+        while True:
+            resp = session.get(
+                f"{sonar_url}/api/issues/search",
+                params={
+                    "componentKeys": project_key,
+                    "types": "CODE_SMELL",
+                    "rules": rule_list,
+                    "p": page,
+                    "ps": 500,
+                },
+                timeout=30,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            batch = data.get("issues", [])
+            all_issues.extend(batch)
+            total = data.get("total", 0)
+            if page * 500 >= total:
+                break
+            page += 1
+
+        # Group by file
+        issues_by_file: Dict[str, List[Dict[str, Any]]] = {}
+        for issue in all_issues:
+            # Extract file path from component key (format: projectKey:filepath)
+            component = issue.get("component", "")
+            if ":" in component:
+                file_path = component.split(":", 1)[1]
+            else:
+                continue
+
+            normalized = normalize_issue(issue)
+            if file_path not in issues_by_file:
+                issues_by_file[file_path] = []
+            issues_by_file[file_path].append(normalized)
+
+        # Cache results
+        if cache_dir:
+            cache_file.write_text(json.dumps(issues_by_file, indent=2))
+
+        return issues_by_file
+
+    finally:
+        shutil.rmtree(work_dir, ignore_errors=True)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run SonarQube scans for a commit")
+    parser.add_argument("--repo", required=True, help="Git repository URL")
+    parser.add_argument("--commit", required=True, help="Commit SHA to analyze")
+    parser.add_argument("--sonar-url", required=True, help="SonarQube server URL")
+    parser.add_argument("--sonar-token", required=True, help="SonarQube authentication token")
+    parser.add_argument(
+        "--file",
+        dest="files",
+        action="append",
+        help="Specific file path to scan (can be repeated)",
+    )
+    parser.add_argument(
+        "--cache-dir",
+        type=Path,
+        help="Directory to store cached scan results",
+    )
+    parser.add_argument(
+        "--no-docker",
+        action="store_true",
+        help="Run sonar-scanner locally instead of Docker",
+    )
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    cache_dir = args.cache_dir
+    use_docker = not args.no_docker
+
+    if args.files:
+        results: Dict[str, List[Dict[str, Any]]] = {}
+        for rel_path in args.files:
+            issues = scan_commit_file(
+                repo_url=args.repo,
+                commit_sha=args.commit,
+                file_path=rel_path,
+                sonar_url=args.sonar_url,
+                sonar_token=args.sonar_token,
+                cache_dir=cache_dir,
+                use_docker=use_docker,
+            )
+            results[rel_path] = issues
+        print(json.dumps(results, indent=2))
+    else:
+        issues = scan_commit(
+            repo_url=args.repo,
+            commit_sha=args.commit,
+            sonar_url=args.sonar_url,
+            sonar_token=args.sonar_token,
+            cache_dir=cache_dir,
+            use_docker=use_docker,
+        )
+        print(json.dumps(issues, indent=2))
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

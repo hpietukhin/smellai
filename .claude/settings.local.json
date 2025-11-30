@@ -30,7 +30,17 @@
       "Bash(creosote --verbose:*)",
       "Bash(pre-commit run:*)",
       "Bash(git checkout:*)",
-      "Bash(git ls-tree:*)"
+      "Bash(git ls-tree:*)",
+      "Bash(uv run python:*)",
+      "Bash(uv run:*)",
+      "Bash(lsof:*)",
+      "Bash(ps:*)",
+      "Bash(sample:*)",
+      "Bash(kill:*)",
+      "Bash(pkill:*)",
+      "Bash(sqlite3:*)",
+      "Bash(xattr:*)",
+      "WebFetch(domain:medium.com)"
     ],
     "deny": []
   },

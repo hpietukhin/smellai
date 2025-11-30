@@ -18,6 +18,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REPO_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
+START_MLFLOW_SCRIPT="${REPO_ROOT}/start_mlflow_server.sh"
+
 # Default configuration
 MANIFEST="rminer_data/manifest.json"
 EXPERIMENT="rminer-evaluation"
@@ -193,7 +197,7 @@ if [[ "$SKIP_DATASET" == false ]]; then
     print_step "Creating MLflow dataset..."
     echo "  Limit: ${DATASET_LIMIT} records"
     
-    if uv run infra/mlflow/rminer_dataset.py \
+    if uv run scripts/create_rminer_dataset.py \
         --manifest "${MANIFEST}" \
         --limit "${DATASET_LIMIT}" \
         --experiment "${EXPERIMENT}" \
@@ -215,7 +219,7 @@ echo "  Model: ${MODEL}"
 echo "  Limit: ${LIMIT} records"
 echo ""
 
-if uv run src/pipelines/rminer_eval.py \
+if uv run smellai/pipelines/rminer_eval.py \
     --manifest "${MANIFEST}" \
     --experiment "${EXPERIMENT}" \
     --tracking-uri "${TRACKING_URI}" \
@@ -240,7 +244,7 @@ echo ""
 
 # List available datasets
 print_step "Available datasets:"
-uv run infra/rminer_dataset_cli.py list --tracking-uri "${TRACKING_URI}" 2>/dev/null || true
+uv run cli/datasets/rminer_dataset_cli.py list --tracking-uri "${TRACKING_URI}" 2>/dev/null || true
 
 echo ""
 print_step "To re-run evaluation with existing dataset:"
