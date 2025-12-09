@@ -94,25 +94,18 @@ def test_test_run_summary_failure():
 
 
 def test_ysoserial_detection(tmp_path):
-    """Test detection with real ysoserial pom.xml."""
-    # Read pom content from test data file
-    import os
+    """Test detection with real ysoserial cloned repo."""
+    from repo_utils import clone_repository
 
-    # Assuming the test data is in tests/test_data relative to the project root or this test file
-    # Since we are running pytest from root, we can try relative path
-    # Or better, construct path relative to this file
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    pom_path = os.path.join(current_dir, "test_data", "ysoserial_pom.xml")
+    repo_url = "https://github.com/frohoff/ysoserial.git"
 
-    with open(pom_path, "r") as f:
-        pom_content = f.read()
-
-    # Setup project structure
-    (tmp_path / "pom.xml").write_text(pom_content)
-    (tmp_path / "src/test/java/ysoserial").mkdir(parents=True)
+    # Clone into tmp_path
+    # clone_repository creates a subdirectory with the repo name in the target_dir
+    repo_name = clone_repository(repo_url, target_dir=tmp_path)
+    repo_path = tmp_path / repo_name
 
     # Verify detection
-    result = detect_build_system(str(tmp_path))
+    result = detect_build_system(str(repo_path))
     assert result == "maven"
 
 
