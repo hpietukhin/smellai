@@ -21,14 +21,17 @@ class MLflowServer:
         """Checks if the port is in use and returns the PID."""
         try:
             # Use lsof to find the PID listening on the port
-            pid = (
+            output = (
                 subprocess.check_output(
                     ["lsof", "-ti", f":{self.port}"], stderr=subprocess.DEVNULL
                 )
                 .decode()
                 .strip()
             )
-            return int(pid) if pid else None
+            if not output:
+                return None
+            # Return the first PID if multiple are found
+            return int(output.split("\n")[0])
         except subprocess.CalledProcessError:
             return None
         except FileNotFoundError:

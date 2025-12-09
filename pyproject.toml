@@ -28,10 +28,10 @@ dependencies = [
 ]
 
 [project.scripts]
-smellai-mlflow = "smellai.mlflow.cli:main"
+smellai-mlflow = "mlflow_utils.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["agents", "code_analysis", "models", "repo_utils", "rminer", "sonarqube", "mlflow"]
+packages = ["agents", "code_analysis", "models", "repo_utils", "rminer", "sonarqube", "mlflow_utils"]
 
 [tool.uv.sources]
 
