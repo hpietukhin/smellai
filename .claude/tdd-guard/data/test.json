@@ -1,15 +1,30 @@
 {
   "testModules": [
     {
-      "moduleId": "tests/test_react_agent_mlflow.py",
+      "moduleId": "tests/test_commit_scan.py",
       "tests": [
         {
-          "name": "collection_error_tests/test_react_agent_mlflow.py",
-          "fullName": "tests/test_react_agent_mlflow.py",
+          "name": "collection_error_tests/test_commit_scan.py",
+          "fullName": "tests/test_commit_scan.py",
           "state": "failed",
           "errors": [
             {
-              "message": "ImportError while importing test module '/Users/havriil.pietukhin/PycharmProjects/smellai/tests/test_react_agent_mlflow.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\ntests/test_react_agent_mlflow.py:9: in <module>\n    from smellai.pipelines import (\nsmellai/pipelines/__init__.py:5: in <module>\n    from .react_agent_mlflow import (\nsmellai/pipelines/react_agent_mlflow.py:32: in <module>\n    import mlflow\nE   ModuleNotFoundError: No module named 'mlflow'"
+              "message": "ImportError while importing test module '/Users/havriil.pietukhin/PycharmProjects/smellai3/smellai/tests/test_commit_scan.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\ntests/test_commit_scan.py:4: in <module>\n    from sonarqube import commit_scan\nE   ModuleNotFoundError: No module named 'sonarqube'"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "moduleId": "tests/test_rminer_utils.py",
+      "tests": [
+        {
+          "name": "collection_error_tests/test_rminer_utils.py",
+          "fullName": "tests/test_rminer_utils.py",
+          "state": "failed",
+          "errors": [
+            {
+              "message": "ImportError while importing test module '/Users/havriil.pietukhin/PycharmProjects/smellai3/smellai/tests/test_rminer_utils.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\ntests/test_rminer_utils.py:3: in <module>\n    from rminer.rminer_utils import DiffHunk, parse_diff_hunks\nE   ModuleNotFoundError: No module named 'rminer'"
             }
           ]
         }

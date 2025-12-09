@@ -1,16 +1,17 @@
-"""Configure test environment imports."""
+"""Configure test environment imports and logging."""
 
-import sys
-from pathlib import Path
-
-
-def _ensure_src_on_path() -> None:
-    """Inject project root so ``import src`` works under pytest."""
-
-    project_root = Path(__file__).resolve().parents[1]
-    root_str = str(project_root)
-    if root_str not in sys.path:
-        sys.path.insert(0, root_str)
+import pytest
 
 
-_ensure_src_on_path()
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_logging():
+    """Set up consistent logging for all tests.
+
+    This fixture runs automatically before all tests and configures
+    logging using the centralized logging_config module.
+    """
+    from smellai.logging_config import setup_logging
+
+    # Set up logging for tests - pytest.ini will control output
+    setup_logging()
+    yield

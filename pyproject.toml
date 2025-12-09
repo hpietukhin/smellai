@@ -1,57 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "smellai"
 version = "0.1.0"
 description = "LLM-based code smell detection and refactoring experiments"
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
-license = { text = "MIT" }
-authors = [{ name = "Havriil Pietukhin" }]
 dependencies = [
-  # LangChain ecosystem
-  "langgraph>=0.2.0",
-  "langchain>=0.3.0",
-  "langchain-community>=0.3.0",
-  "langchain-google-genai>=2.0.0",
-  # LLM integration
-  "litellm>=1.0.0",
-  # Vector database
-  "deeplake<4.0.0",
-  # Database
-  "mysql-connector-python>=9.0.0",
-  # Git operations
-  "GitPython>=3.1.0",
-  # Configuration
-  "pydantic>=2.0.0",
-  "pydantic-settings>=2.0.0",
-  "python-dotenv>=1.0.0",
-  # Utilities
-  "requests>=2.31.0",
-  "pandas>=2.2.0",
-  "networkx>=3.0.0",
-  "matplotlib>=3.8.0",
-  # Experiment tracking and tracing
-  "mlflow>=3.0.0",
+    "deeplake<4.0.0",
+    "GitPython>=3.1.0",
+    "langchain>=0.3.0",
+    "langchain-community>=0.3.0",
+    "langchain-google-genai>=2.0.0",
+    "langgraph>=0.2.0",
+    "litellm>=1.0.0",
+    "matplotlib>=3.8.0",
+    "mlflow>=3.0.0",
+    "mysql-connector-python>=9.0.0",
+    "networkx>=3.0.0",
+    "pandas>=2.2.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "requests>=2.31.0",
 ]
 
-[project.optional-dependencies]
-dev = [
-  # Testing
-  "pytest>=8.0.0",
-  "pytest-cov>=4.1.0",
-  "pytest-asyncio>=0.23.0",
-  # Code quality
-  "ruff>=0.5.0",
-  "mypy>=1.10.0",
-  # Interactive development
-  "ipython>=8.20.0",
-  "jupyter>=1.0.0",
-]
+[tool.hatch.build.targets.wheel]
+packages = ["agents", "code_analysis", "models", "repo_utils", "rminer", "sonarqube"]
 
-[tool.pytest.ini_options]
-testpaths = [
-    "tests",
-]
-tdd_guard_project_root = "."
+[tool.uv.sources]
 
 [dependency-groups]
 dev = [
@@ -59,7 +38,23 @@ dev = [
     "autopep8>=2.3.2",
     "datasets>=4.2.0",
     "isort>=7.0.0",
+    "ipython>=8.20.0",
+    "jupyter>=1.0.0",
+    "mypy>=1.10.0",
     "openai>=2.3.0",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.5.0",
     "set-env-colab-kaggle-dotenv>=0.1.4",
     "weave>=0.52.9",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[[tool.uv.index]]
+name = "pypi"
+default = true
+url = "https://pypi.org/simple"

@@ -34,10 +34,16 @@ def require_git_import(default: Any | None = None) -> Callable:
         def wrapper(*args, **kwargs):
             if not GIT_AVAILABLE:
                 if default is not None:
-                    logger.warning(f"Git module not available for {func.__name__}, returning default: {default}")
+                    logger.warning(
+                        f"Git module not available for {func.__name__}, returning default: {default}"
+                    )
                     return default
-                logger.error(f"Git module required for {func.__name__} but not installed")
-                raise ImportError("GitPython is not installed. Install it with: pip install gitpython")
+                logger.error(
+                    f"Git module required for {func.__name__} but not installed"
+                )
+                raise ImportError(
+                    "GitPython is not installed. Install it with: pip install gitpython"
+                )
             try:
                 return func(*args, **kwargs)
             except GitError as e:
@@ -114,20 +120,30 @@ def clone_repository(repo_url: str, target_dir: Path = Path("./repos")) -> str:
 @require_git_import()
 def checkout_repo(repo_dir: Path, branch: str = "main") -> None:
     repo = Repo(repo_dir)
-    if branch not in repo.heads:
-        logger.info(f"Branch {branch} does not exist, creating it.")
-        raise ValueError(f"Branch {branch} does not exist in the repository {repo_dir}: {repo.heads}")
-    logger.info(f"Checking out branch {branch}.")
-    repo.git.checkout(branch)
-    repo.git.pull()  # Ensure we have the latest changes
+    # Check if it's a commit SHA or branch name
+    if branch in repo.heads:
+        # It's a branch name
+        logger.info(f"Checking out branch {branch}.")
+        repo.git.checkout(branch)
+        repo.git.pull()  # Ensure we have the latest changes
+    else:
+        # Assume it's a commit SHA
+        logger.info(f"Checking out commit {branch}.")
+        repo.git.checkout(branch)
 
 
 def store_token():
     if not os.environ.get("GITHUB_TOKEN"):  # Using .get() for safer access
         raise NoGithubTokenFoundError()
-    logger.info(f"Setting up credentials with token: {os.environ['GITHUB_TOKEN'][:7]}")  # only first 7 for safety
+    logger.info(
+        f"Setting up credentials with token: {os.environ['GITHUB_TOKEN'][:7]}"
+    )  # only first 7 for safety
     cred = (
-        "protocol=https\n" "host=github.com\n" f"username=git\n" f"password={os.environ['GITHUB_TOKEN']}\n" "\n"
+        "protocol=https\n"
+        "host=github.com\n"
+        f"username=git\n"
+        f"password={os.environ['GITHUB_TOKEN']}\n"
+        "\n"
     ).encode()
     subprocess.run(["git", "credential", "approve"], input=cred)
 
@@ -154,7 +170,10 @@ def upload_onboarding_materials(project_name, output_dir, repo_dir):
 
     for filename in os.listdir(output_dir):
         if filename.endswith(".md"):
-            shutil.copy(os.path.join(output_dir, filename), os.path.join(onboarding_repo_location, filename))
+            shutil.copy(
+                os.path.join(output_dir, filename),
+                os.path.join(onboarding_repo_location, filename),
+            )
     # Now commit the changes
     # Equivalent to `git add onboarding_repo_location .`.git.add(A=True)  # Equivalent to `git add .`
     repo.git.add(onboarding_repo_location, A=True)
