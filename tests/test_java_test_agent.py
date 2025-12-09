@@ -1,0 +1,130 @@
+"""Tests for Java test analysis agent and tools."""
+
+from agents.tools.java_test_tools import (
+    detect_build_system,
+    TestResult,
+    TestRunSummary,
+)
+
+
+def test_detect_maven_project(tmp_path):
+    """Test Maven project detection."""
+    # Create fake pom.xml
+    (tmp_path / "pom.xml").write_text("<project></project>")
+
+    result = detect_build_system(str(tmp_path))
+    assert result == "maven"
+
+
+def test_detect_gradle_project(tmp_path):
+    """Test Gradle project detection."""
+    # Create fake build.gradle
+    (tmp_path / "build.gradle").write_text("plugins { id 'java' }")
+
+    result = detect_build_system(str(tmp_path))
+    assert result == "gradle"
+
+
+def test_detect_gradle_kts_project(tmp_path):
+    """Test Gradle Kotlin DSL project detection."""
+    # Create fake build.gradle.kts
+    (tmp_path / "build.gradle.kts").write_text("plugins { java }")
+
+    result = detect_build_system(str(tmp_path))
+    assert result == "gradle"
+
+
+def test_detect_no_build_system(tmp_path):
+    """Test no build system detected."""
+    result = detect_build_system(str(tmp_path))
+    assert result is None
+
+
+def test_maven_priority_over_gradle(tmp_path):
+    """Test Maven takes priority when both exist."""
+    (tmp_path / "pom.xml").write_text("<project></project>")
+    (tmp_path / "build.gradle").write_text("plugins { id 'java' }")
+
+    result = detect_build_system(str(tmp_path))
+    assert result == "maven"
+
+
+def test_test_result_dataclass():
+    """Test TestResult dataclass."""
+    result = TestResult(
+        name="com.example.TestClass.testMethod",
+        status="FAIL",
+        duration=1.5,
+        error_message="Expected 5 but got 3",
+        error_type="AssertionError",
+    )
+
+    assert result.name == "com.example.TestClass.testMethod"
+    assert result.status == "FAIL"
+    assert result.duration == 1.5
+    assert result.error_message == "Expected 5 but got 3"
+
+
+def test_test_run_summary_success():
+    """Test TestRunSummary success property."""
+    summary = TestRunSummary(
+        build_system="maven",
+        total=10,
+        passed=10,
+        failed=0,
+        errors=0,
+        exit_code=0,
+    )
+
+    assert summary.success is True
+
+
+def test_test_run_summary_failure():
+    """Test TestRunSummary failure detection."""
+    summary = TestRunSummary(
+        build_system="maven",
+        total=10,
+        passed=8,
+        failed=2,
+        errors=0,
+        exit_code=1,
+    )
+
+    assert summary.success is False
+
+
+def test_ysoserial_detection(tmp_path):
+    """Test detection with real ysoserial pom.xml."""
+    # Read pom content from test data file
+    import os
+
+    # Assuming the test data is in tests/test_data relative to the project root or this test file
+    # Since we are running pytest from root, we can try relative path
+    # Or better, construct path relative to this file
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    pom_path = os.path.join(current_dir, "test_data", "ysoserial_pom.xml")
+
+    with open(pom_path, "r") as f:
+        pom_content = f.read()
+
+    # Setup project structure
+    (tmp_path / "pom.xml").write_text(pom_content)
+    (tmp_path / "src/test/java/ysoserial").mkdir(parents=True)
+
+    # Verify detection
+    result = detect_build_system(str(tmp_path))
+    assert result == "maven"
+
+
+def test_test_run_summary_with_errors():
+    """Test TestRunSummary with errors."""
+    summary = TestRunSummary(
+        build_system="gradle",
+        total=5,
+        passed=4,
+        failed=0,
+        errors=1,
+        exit_code=1,
+    )
+
+    assert summary.success is False

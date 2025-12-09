@@ -189,3 +189,61 @@ uv run smellai/pipelines/rminer_eval.py \
 mlflow ui --backend-store-uri sqlite:///mlflow.db
 # Open http://localhost:5000
 ```
+
+## Java Test Analysis Agent
+
+LangGraph-based agent for analyzing Java projects and running tests. Automatically detects Maven/Gradle, executes tests, and provides LLM-powered failure analysis.
+
+### Quick Start
+
+```bash
+# Analyze a Java project
+uv run workflows/java_test_workflow.py --project /path/to/java/project
+
+# Use specific model
+uv run workflows/java_test_workflow.py \
+    --project /path/to/project \
+    --model gpt-4o
+
+# Use Anthropic provider
+uv run workflows/java_test_workflow.py \
+    --project /path/to/project \
+    --provider anthropic \
+    --model claude-3-5-sonnet-20241022
+
+# JSON output
+uv run workflows/java_test_workflow.py \
+    --project /path/to/project \
+    --json
+```
+
+### Python API
+
+```python
+from agents.java_test_agent import analyze_java_tests
+
+result = analyze_java_tests(
+    "/path/to/java/project",
+    model_name="gpt-4o-mini",
+    provider="openai"
+)
+
+print(result["response"])
+```
+
+### Features
+
+- ✅ Auto-detect Maven/Gradle build systems
+- ✅ Run tests and parse XML reports (Surefire/Gradle)
+- ✅ LLM-powered failure analysis and recommendations
+- ✅ Support for OpenAI and Anthropic models
+- ✅ Structured test result extraction (pass/fail, errors, stack traces)
+- ✅ JSON output for programmatic use
+
+### Documentation
+
+See [docs/java_test_agent.md](docs/java_test_agent.md) for detailed documentation including:
+- Architecture and implementation details
+- Integration with RefactoringMiner workflow
+- MLflow integration examples
+- Troubleshooting guide

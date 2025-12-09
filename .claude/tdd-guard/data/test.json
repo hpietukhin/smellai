@@ -1,32 +1,57 @@
 {
   "testModules": [
     {
-      "moduleId": "tests/test_commit_scan.py",
+      "moduleId": "tests/test_java_test_agent.py",
       "tests": [
         {
-          "name": "collection_error_tests/test_commit_scan.py",
-          "fullName": "tests/test_commit_scan.py",
-          "state": "failed",
-          "errors": [
-            {
-              "message": "ImportError while importing test module '/Users/havriil.pietukhin/PycharmProjects/smellai3/smellai/tests/test_commit_scan.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\ntests/test_commit_scan.py:4: in <module>\n    from sonarqube import commit_scan\nE   ModuleNotFoundError: No module named 'sonarqube'"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "moduleId": "tests/test_rminer_utils.py",
-      "tests": [
+          "name": "test_detect_maven_project",
+          "fullName": "tests/test_java_test_agent.py::test_detect_maven_project",
+          "state": "passed"
+        },
         {
-          "name": "collection_error_tests/test_rminer_utils.py",
-          "fullName": "tests/test_rminer_utils.py",
-          "state": "failed",
-          "errors": [
-            {
-              "message": "ImportError while importing test module '/Users/havriil.pietukhin/PycharmProjects/smellai3/smellai/tests/test_rminer_utils.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\ntests/test_rminer_utils.py:3: in <module>\n    from rminer.rminer_utils import DiffHunk, parse_diff_hunks\nE   ModuleNotFoundError: No module named 'rminer'"
-            }
-          ]
+          "name": "test_detect_gradle_project",
+          "fullName": "tests/test_java_test_agent.py::test_detect_gradle_project",
+          "state": "passed"
+        },
+        {
+          "name": "test_detect_gradle_kts_project",
+          "fullName": "tests/test_java_test_agent.py::test_detect_gradle_kts_project",
+          "state": "passed"
+        },
+        {
+          "name": "test_detect_no_build_system",
+          "fullName": "tests/test_java_test_agent.py::test_detect_no_build_system",
+          "state": "passed"
+        },
+        {
+          "name": "test_maven_priority_over_gradle",
+          "fullName": "tests/test_java_test_agent.py::test_maven_priority_over_gradle",
+          "state": "passed"
+        },
+        {
+          "name": "test_test_result_dataclass",
+          "fullName": "tests/test_java_test_agent.py::test_test_result_dataclass",
+          "state": "passed"
+        },
+        {
+          "name": "test_test_run_summary_success",
+          "fullName": "tests/test_java_test_agent.py::test_test_run_summary_success",
+          "state": "passed"
+        },
+        {
+          "name": "test_test_run_summary_failure",
+          "fullName": "tests/test_java_test_agent.py::test_test_run_summary_failure",
+          "state": "passed"
+        },
+        {
+          "name": "test_ysoserial_detection",
+          "fullName": "tests/test_java_test_agent.py::test_ysoserial_detection",
+          "state": "passed"
+        },
+        {
+          "name": "test_test_run_summary_with_errors",
+          "fullName": "tests/test_java_test_agent.py::test_test_run_summary_with_errors",
+          "state": "passed"
         }
       ]
     }

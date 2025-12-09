@@ -2,6 +2,8 @@ import logging
 import os
 import shutil
 import subprocess
+import uuid
+from contextlib import contextmanager
 from functools import wraps
 from pathlib import Path
 from typing import Callable, Any
@@ -197,3 +199,50 @@ def get_branch(repo_dir: Path) -> str:
     """
     repo = Repo(repo_dir)
     return repo.active_branch.name if repo.active_branch else "main"
+
+
+def create_temp_repo_folder() -> Path:
+    """
+    Creates a unique temporary directory for repository operations.
+    Returns the path to the created directory.
+    """
+    temp_path = Path(f"temp/{uuid.uuid4()}")
+    os.makedirs(temp_path, exist_ok=False)
+    return temp_path
+
+
+def remove_temp_repo_folder(folder_path: Path) -> None:
+    """
+    Safely removes a temporary repository folder.
+    Only removes folders starting with 'temp/' to prevent accidental deletion.
+    """
+    # Ensure we are working with a Path object
+    folder_path = Path(folder_path)
+    path_str = str(folder_path)
+
+    # Safety check: ensure it's a temp folder
+    # We check if it starts with temp/ or contains /temp/ to be safe but flexible
+    if not path_str.startswith("temp/") and "/temp/" not in path_str:
+        logger.warning(
+            f"Safety check failed: {folder_path} does not appear to be a temp folder. Skipping deletion."
+        )
+        return
+
+    if folder_path.exists():
+        try:
+            shutil.rmtree(folder_path)
+            logger.info(f"Removed temp folder: {folder_path}")
+        except Exception as e:
+            logger.error(f"Error removing temp folder {folder_path}: {e}")
+
+
+@contextmanager
+def temp_repo_context():
+    """
+    Context manager for creating and cleaning up a temporary repository folder.
+    """
+    temp_dir = create_temp_repo_folder()
+    try:
+        yield temp_dir
+    finally:
+        remove_temp_repo_folder(temp_dir)
