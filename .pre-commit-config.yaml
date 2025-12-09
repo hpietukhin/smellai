@@ -1,14 +1,10 @@
 repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.8.4
+  # Ruff version.
+  rev: v0.14.8
   hooks:
-  - id: ruff
-    args: [--fix, --exit-non-zero-on-fix]
-    files: ^(infra|src|tests)/
-
-- repo: https://github.com/psf/black
-  rev: 24.10.0
-  hooks:
-  - id: black
-    language_version: python3
-    files: ^(infra|src|tests)/
+    # Run the linter.
+    - id: ruff-check
+      args: [ --fix ]
+    # Run the formatter.
+    - id: ruff-format

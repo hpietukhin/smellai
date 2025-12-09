@@ -40,7 +40,8 @@
       "Bash(pkill:*)",
       "Bash(sqlite3:*)",
       "Bash(xattr:*)",
-      "WebFetch(domain:medium.com)"
+      "WebFetch(domain:medium.com)",
+      "Bash(tree:*)"
     ],
     "deny": []
   },
