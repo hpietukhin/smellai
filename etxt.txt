@@ -1,0 +1,11 @@
+A. pri prezentacii povedat ze graf je schopny prijat do seba dalsie dim/atributy: 
+    1. vaha pachu
+    2. oznacit hrany - oznacit farbou vrcholy
+
+B. casom pouzit vacsie a ostrejsie zdrojaky s pachmi
+
+C. refactoring miner - Marcus nieco taketo spominal; 
+
+D. RAG - fowler, miner. naragovat
+
+E. Marcus: roocode - vie; IntelliJ, VS Code - ze vedia refaktorovat? najst "Refaktorovanie s Roo-code" - youtube, etc.

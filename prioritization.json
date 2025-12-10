@@ -1,0 +1,209 @@
+[
+  {
+    "order": 1,
+    "smell_id": "ReportGenerator.java_0_GodClass",
+    "smell_type": "God Class",
+    "location": "ReportGenerator.java:",
+    "pz_score": 7,
+    "positive_impacts": 2,
+    "negative_impacts": 1
+  },
+  {
+    "order": 2,
+    "smell_id": "OrderProcessor.java_0_LongMethod",
+    "smell_type": "Long Method",
+    "location": "OrderProcessor.java:processOrder()",
+    "pz_score": 6,
+    "positive_impacts": 2,
+    "negative_impacts": 0
+  },
+  {
+    "order": 3,
+    "smell_id": "OrderProcessor.java_1_ComplexMethod",
+    "smell_type": "Complex Method",
+    "location": "OrderProcessor.java:processOrder()",
+    "pz_score": 6,
+    "positive_impacts": 2,
+    "negative_impacts": 0
+  },
+  {
+    "order": 4,
+    "smell_id": "OrderProcessor.java_2_ConditionalComplexity",
+    "smell_type": "Conditional Complexity",
+    "location": "OrderProcessor.java:processOrder()",
+    "pz_score": 6,
+    "positive_impacts": 2,
+    "negative_impacts": 0
+  },
+  {
+    "order": 5,
+    "smell_id": "ReportGenerator.java_1_LargeClass",
+    "smell_type": "Large Class",
+    "location": "ReportGenerator.java:",
+    "pz_score": 6,
+    "positive_impacts": 2,
+    "negative_impacts": 1
+  },
+  {
+    "order": 6,
+    "smell_id": "ConfigurationManager.java_0_LongMethod",
+    "smell_type": "Long Method",
+    "location": "ConfigurationManager.java:loadConfiguration()",
+    "pz_score": 6,
+    "positive_impacts": 2,
+    "negative_impacts": 1
+  },
+  {
+    "order": 7,
+    "smell_id": "ReportGenerator.java_4_LongMethod",
+    "smell_type": "Long Method",
+    "location": "ReportGenerator.java:",
+    "pz_score": 4,
+    "positive_impacts": 1,
+    "negative_impacts": 0
+  },
+  {
+    "order": 8,
+    "smell_id": "PaymentValidator.java_2_ComplexMethod",
+    "smell_type": "Complex Method",
+    "location": "PaymentValidator.java:",
+    "pz_score": 4,
+    "positive_impacts": 1,
+    "negative_impacts": 0
+  },
+  {
+    "order": 9,
+    "smell_id": "OrderProcessor.java_3_DuplicatedCode",
+    "smell_type": "Duplicated Code",
+    "location": "OrderProcessor.java:",
+    "pz_score": 2,
+    "positive_impacts": 0,
+    "negative_impacts": 0
+  },
+  {
+    "order": 10,
+    "smell_id": "OrderProcessor.java_4_SwitchStatement",
+    "smell_type": "Switch Statement",
+    "location": "OrderProcessor.java:",
+    "pz_score": 2,
+    "positive_impacts": 0,
+    "negative_impacts": 0
+  },
+  {
+    "order": 11,
+    "smell_id": "CustomerDataService.java_0_LongParameterList",
+    "smell_type": "Long Parameter List",
+    "location": "CustomerDataService.java:",
+    "pz_score": 2,
+    "positive_impacts": 0,
+    "negative_impacts": 1
+  },
+  {
+    "order": 12,
+    "smell_id": "CustomerDataService.java_1_FeatureEnvy",
+    "smell_type": "Feature Envy",
+    "location": "CustomerDataService.java:",
+    "pz_score": 2,
+    "positive_impacts": 0,
+    "negative_impacts": 0
+  },
+  {
+    "order": 13,
+    "smell_id": "CustomerDataService.java_2_DataClass",
+    "smell_type": "Data Class",
+    "location": "CustomerDataService.java:CustomerData class",
+    "pz_score": 2,
+    "positive_impacts": 0,
+    "negative_impacts": 0
+  },
+  {
+    "order": 14,
+    "smell_id": "ReportGenerator.java_2_DataClumps",
+    "smell_type": "Data Clumps",
+    "location": "ReportGenerator.java:",
+    "pz_score": 2,
+    "positive_impacts": 0,
+    "negative_impacts": 0
+  },
+  {
+    "order": 15,
+    "smell_id": "ReportGenerator.java_3_FeatureEnvy",
+    "smell_type": "Feature Envy",
+    "location": "ReportGenerator.java:",
+    "pz_score": 2,
+    "positive_impacts": 0,
+    "negative_impacts": 0
+  },
+  {
+    "order": 16,
+    "smell_id": "PaymentValidator.java_0_DuplicatedConditions",
+    "smell_type": "Duplicated Conditions",
+    "location": "PaymentValidator.java:",
+    "pz_score": 2,
+    "positive_impacts": 0,
+    "negative_impacts": 0
+  },
+  {
+    "order": 17,
+    "smell_id": "PaymentValidator.java_1_DuplicatedCode",
+    "smell_type": "Duplicated Code",
+    "location": "PaymentValidator.java:",
+    "pz_score": 2,
+    "positive_impacts": 0,
+    "negative_impacts": 0
+  },
+  {
+    "order": 18,
+    "smell_id": "ConfigurationManager.java_1_LongParameterList",
+    "smell_type": "Long Parameter List",
+    "location": "ConfigurationManager.java:",
+    "pz_score": 2,
+    "positive_impacts": 0,
+    "negative_impacts": 0
+  },
+  {
+    "order": 19,
+    "smell_id": "ConfigurationManager.java_2_DuplicatedCode",
+    "smell_type": "Duplicated Code",
+    "location": "ConfigurationManager.java:",
+    "pz_score": 2,
+    "positive_impacts": 0,
+    "negative_impacts": 0
+  },
+  {
+    "order": 20,
+    "smell_id": "ConfigurationManager.java_4_SwitchStatement",
+    "smell_type": "Switch Statement",
+    "location": "ConfigurationManager.java:",
+    "pz_score": 2,
+    "positive_impacts": 0,
+    "negative_impacts": 0
+  },
+  {
+    "order": 21,
+    "smell_id": "OrderProcessor.java_5_PrintStatements",
+    "smell_type": "Print Statements",
+    "location": "OrderProcessor.java:",
+    "pz_score": 1,
+    "positive_impacts": 0,
+    "negative_impacts": 0
+  },
+  {
+    "order": 22,
+    "smell_id": "ReportGenerator.java_5_PrintStatements",
+    "smell_type": "Print Statements",
+    "location": "ReportGenerator.java:",
+    "pz_score": 1,
+    "positive_impacts": 0,
+    "negative_impacts": 0
+  },
+  {
+    "order": 23,
+    "smell_id": "ConfigurationManager.java_3_PrintStatements",
+    "smell_type": "Print Statements",
+    "location": "ConfigurationManager.java:",
+    "pz_score": 1,
+    "positive_impacts": 0,
+    "negative_impacts": 0
+  }
+]
