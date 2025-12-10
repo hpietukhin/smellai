@@ -1,17 +1,4 @@
 {
-  "hooks": {
-    "PostToolUse": [
-      {
-        "hooks": [
-          {
-            "command": "pre-commit run --files {files}",
-            "type": "command"
-          }
-        ],
-        "matcher": "Edit(**/*.{py})"
-      }
-    ]
-  },
   "permissions": {
     "allow": [
       "WebFetch(domain:context7.com)",
@@ -56,9 +43,25 @@
       "WebFetch(domain:medium.com)",
       "Bash(tree:*)",
       "WebFetch(domain:docs.astral.sh)",
-      "Bash(env)"
+      "Bash(env)",
+      "Bash(find:*)",
+      "Bash(timeout 30 uv run:*)",
+      "Bash(uv pip:*)"
     ],
     "deny": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit(**/*.{py})",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pre-commit run --files {files}"
+          }
+        ]
+      }
+    ]
   },
   "prompt": "Before starting any work, run 'bd onboard' to understand the current project state and available issues."
 }

@@ -14,7 +14,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, START
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
-from langchain_community.chat_models import ChatLiteLLM
+from langchain_litellm import ChatLiteLLM
 
 from agents.tools.java_test_tools import get_java_test_tools
 from agents.java_test.config import DEFAULT_CONFIG, JavaTestAgentConfig

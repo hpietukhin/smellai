@@ -1,7 +1,6 @@
 import mlflow
-import subprocess
-import sys
 from typing import Optional, List, Any
+from .factory import DatasetFactory
 
 
 class DatasetManager:
@@ -38,37 +37,34 @@ class DatasetManager:
             return None
 
     def create_dataset(
-        self, manifest_path: str, limit: int, experiment: str, tracking_uri: str
+        self, factory: DatasetFactory, experiment: str, tracking_uri: str
     ):
-        """Creates a dataset by running the rminer/create_rminer_dataset.py script."""
-        print(f"Creating dataset from {manifest_path} (limit: {limit})...")
-        cmd = [
-            "uv",
-            "run",
-            "rminer/create_rminer_dataset.py",
-            "--manifest",
-            manifest_path,
-            "--limit",
-            str(limit),
-            "--experiment",
-            experiment,
-            "--tracking-uri",
-            tracking_uri,
-        ]
-        try:
-            subprocess.run(cmd, check=True)
-            print("Dataset creation script completed.")
-        except subprocess.CalledProcessError as e:
-            print(f"Error creating dataset: {e}")
-            raise
+        """Creates a dataset using the provided factory."""
+        print(f"Creating dataset using {factory.__class__.__name__}...")
 
-    def delete_dataset(self, name: str):
-        try:
-            from mlflow.genai.datasets import delete_dataset
+        records = factory.create_records()
 
-            delete_dataset(name)
-            print(f"Dataset {name} deleted.")
+        # 1. Register Dataset in MLflow
+        try:
+            from mlflow.genai.datasets import create_dataset as create_genai_dataset
+
+            # Ensure experiment exists
+            existing_exp = mlflow.get_experiment_by_name(experiment)
+            if existing_exp:
+                experiment_id = existing_exp.experiment_id
+            else:
+                experiment_id = mlflow.create_experiment(experiment)
+
+            dataset = create_genai_dataset(
+                name=factory.get_dataset_name(),
+                experiment_id=[experiment_id],
+                tags=factory.get_tags(),
+            )
+            dataset.merge_records(records)
+            print(f"Registered MLflow dataset: {dataset.dataset_id}")
         except ImportError:
-            print("Warning: mlflow.genai.datasets not found.")
+            print(
+                "Warning: mlflow.genai.datasets not found, skipping dataset registration."
+            )
         except Exception as e:
-            print(f"Error deleting dataset: {e}")
+            print(f"Warning: Failed to register dataset: {e}")

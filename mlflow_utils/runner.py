@@ -1,5 +1,5 @@
 from .server import MLflowServer
-from .datasets import DatasetManager
+from .datasets.manager import DatasetManager
 import subprocess
 import os
 

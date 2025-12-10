@@ -1,7 +1,8 @@
 import argparse
 import sys
 from .server import MLflowServer
-from .datasets import DatasetManager
+from .datasets.manager import DatasetManager
+from .datasets.rminer_factory import RMinerDatasetFactory
 from .runner import EvaluationRunner
 
 
@@ -77,9 +78,8 @@ def main():
                 sys.exit(1)
             print(manager.get_dataset(args.name))
         elif args.action == "create":
-            manager.create_dataset(
-                args.manifest, args.limit, args.experiment, args.tracking_uri
-            )
+            factory = RMinerDatasetFactory(args.manifest, args.limit)
+            manager.create_dataset(factory, args.experiment, args.tracking_uri)
         elif args.action == "delete":
             if not args.name:
                 print("Error: --name required for delete")
