@@ -1,0 +1,268 @@
+{
+  "description": "Manifest of code smells and their co-occurrences in test files",
+  "files": [
+    {
+      "filename": "OrderProcessor.java",
+      "smells": [
+        {
+          "type": "Long Method",
+          "rule": "java:S138",
+          "location": "processOrder()",
+          "lines": "23-168",
+          "severity": "major"
+        },
+        {
+          "type": "Complex Method",
+          "rule": "java:S1541",
+          "location": "processOrder()",
+          "lines": "23-168",
+          "severity": "major"
+        },
+        {
+          "type": "Conditional Complexity",
+          "rule": "java:S1067",
+          "location": "processOrder()",
+          "lines": "23-168",
+          "severity": "major"
+        },
+        {
+          "type": "Duplicated Code",
+          "rule": "detected",
+          "locations": ["lines 25-34", "lines 36-44", "lines 46-53"],
+          "description": "Validation logic repeated 3 times",
+          "severity": "major"
+        },
+        {
+          "type": "Switch Statement",
+          "rule": "detected",
+          "locations": ["lines 65-102", "lines 134-154"],
+          "description": "Two large switch statements",
+          "severity": "major"
+        },
+        {
+          "type": "Print Statements",
+          "rule": "java:S106",
+          "locations": ["multiple throughout"],
+          "description": "System.out.println used for debugging",
+          "severity": "minor"
+        }
+      ],
+      "positive_dependencies": [
+        "Refactoring Long Method would solve: Duplicated Code, Switch Statement, Print Statements, Conditional Complexity"
+      ]
+    },
+    {
+      "filename": "CustomerDataService.java",
+      "smells": [
+        {
+          "type": "Long Parameter List",
+          "rule": "java:S107",
+          "locations": [
+            "createCustomerAccount() - 8 params",
+            "updateCustomerProfile() - 9 params",
+            "validateCustomerData() - 10 params",
+            "formatCustomerAddress() - 8 params"
+          ],
+          "severity": "major"
+        },
+        {
+          "type": "Feature Envy",
+          "rule": "detected",
+          "description": "Methods work more with emailService and connection than own data",
+          "severity": "major"
+        },
+        {
+          "type": "Data Class",
+          "rule": "detected",
+          "location": "CustomerData class",
+          "description": "Class with only getters/setters, no behavior",
+          "severity": "major"
+        }
+      ],
+      "negative_dependencies": [
+        "Fixing Long Parameter List using Introduce Parameter Object creates CustomerData which is a Data Class"
+      ]
+    },
+    {
+      "filename": "ReportGenerator.java",
+      "smells": [
+        {
+          "type": "God Class",
+          "rule": "java:S1200",
+          "description": "Over 200 lines, multiple responsibilities",
+          "severity": "critical"
+        },
+        {
+          "type": "Large Class",
+          "rule": "java:S110",
+          "description": "Too many methods and fields",
+          "severity": "major"
+        },
+        {
+          "type": "Data Clumps",
+          "rule": "detected",
+          "parameters": ["startDate", "endDate", "region", "category"],
+          "description": "These 4 parameters appear together in 8+ methods",
+          "severity": "major"
+        },
+        {
+          "type": "Feature Envy",
+          "rule": "detected",
+          "description": "Methods work more with external collections (salesData, customerData, etc.) than own state",
+          "severity": "major"
+        },
+        {
+          "type": "Long Method",
+          "rule": "java:S138",
+          "locations": [
+            "generateCustomerReport()",
+            "calculateTotalSales()"
+          ],
+          "severity": "major"
+        },
+        {
+          "type": "Print Statements",
+          "rule": "java:S106",
+          "locations": ["scattered throughout all methods"],
+          "severity": "minor"
+        }
+      ],
+      "positive_dependencies": [
+        "Refactoring Large Class would solve: Data Clumps (extract to DateRangeFilter class), Feature Envy (move methods to data classes), Long Methods (distribute across classes)"
+      ]
+    },
+    {
+      "filename": "PaymentValidator.java",
+      "smells": [
+        {
+          "type": "Duplicated Conditions",
+          "rule": "java:S1871",
+          "locations": [
+            "validateCreditCardPayment() and validateDebitCardPayment() - nearly identical",
+            "determinePaymentRisk() and requiresAdditionalVerification() - similar logic"
+          ],
+          "severity": "major"
+        },
+        {
+          "type": "Duplicated Code",
+          "rule": "detected",
+          "description": "Validation blocks repeated across 4 payment methods",
+          "severity": "major"
+        },
+        {
+          "type": "Complex Method",
+          "rule": "java:S1541",
+          "locations": [
+            "determinePaymentRisk()",
+            "requiresAdditionalVerification()"
+          ],
+          "severity": "major"
+        }
+      ],
+      "positive_dependencies": [
+        "Fixing Duplicated Conditions would solve: Duplicated Code, reduce Complex Method issues"
+      ]
+    },
+    {
+      "filename": "ConfigurationManager.java",
+      "smells": [
+        {
+          "type": "Long Method",
+          "rule": "java:S138",
+          "location": "loadConfiguration()",
+          "lines": "25-109",
+          "severity": "major"
+        },
+        {
+          "type": "Long Parameter List",
+          "rule": "java:S107",
+          "locations": [
+            "loadConfiguration() - 8 params",
+            "updateConfiguration() - 8 params",
+            "getConfiguration() - 7 params",
+            "deleteConfiguration() - 6 params"
+          ],
+          "severity": "major"
+        },
+        {
+          "type": "Duplicated Code",
+          "rule": "detected",
+          "description": "Validation blocks repeated in all 4 main methods",
+          "severity": "major"
+        },
+        {
+          "type": "Print Statements",
+          "rule": "java:S106",
+          "locations": ["throughout all methods"],
+          "severity": "minor"
+        },
+        {
+          "type": "Switch Statement",
+          "rule": "detected",
+          "locations": [
+            "lines 38-72 (environment switch)",
+            "lines 85-107 (region switch)"
+          ],
+          "severity": "major"
+        }
+      ],
+      "positive_dependencies": [
+        "Refactoring Long Method and extracting validation would solve: Duplicated Code, reduce Long Parameter List (environment context object), eliminate Print Statements",
+        "Extract Strategy pattern for switch statements would reduce complexity"
+      ]
+    }
+  ],
+  "smell_dependencies": {
+    "positive": {
+      "Long Method": [
+        "Duplicated Code",
+        "Switch Statement",
+        "Print Statements",
+        "Conditional Complexity",
+        "Feature Envy"
+      ],
+      "Long Parameter List": [
+        "Data Clumps"
+      ],
+      "Large Class": [
+        "Data Clumps",
+        "Feature Envy",
+        "Long Method"
+      ],
+      "Duplicated Conditions": [
+        "Duplicated Code",
+        "Complex Method"
+      ]
+    },
+    "negative": {
+      "Long Parameter List": [
+        {
+          "refactoring": "Introduce Parameter Object",
+          "creates": "Data Class"
+        }
+      ],
+      "Long Method": [
+        {
+          "refactoring": "Extract Method (incorrect)",
+          "creates": "Long Parameter List"
+        }
+      ],
+      "Large Class": [
+        {
+          "refactoring": "Extract Class (poor extraction)",
+          "creates": "Data Class"
+        }
+      ]
+    }
+  },
+  "sonarqube_rules": {
+    "java:S138": "Functions should not have too many lines of code",
+    "java:S1541": "Methods should not be too complex",
+    "java:S1067": "Expressions should not be too complex",
+    "java:S107": "Methods should not have too many parameters",
+    "java:S1200": "Classes should not be coupled to too many other classes",
+    "java:S110": "Inheritance tree should not be too deep",
+    "java:S1871": "Two branches should not have the same implementation",
+    "java:S106": "Standard outputs should not be used directly"
+  }
+}

@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 
 from rminer.create_rminer_dataset import parse_diff_hunks, parse_refactoring_info
 from agents.rminer_eval.config import DEFAULT_CONFIG, RMinerEvalAgentConfig
+from agents.dependency_analysis.agent import analyze_dependencies, DependencyAnalysis
 
 
 class RefactoringMapping(BaseModel):
@@ -46,6 +47,7 @@ class RMinerEvalState(dict):
     refactoring_descriptions: List[str]
     diff_hunks: List[dict]
     sonar_issues: List[dict]
+    dependency_analysis: List[DependencyAnalysis]
     predictions: List[dict]
 
 
@@ -97,13 +99,23 @@ def create_rminer_eval_agent(model_name: str | None = None) -> StateGraph:
         )
 
         sonar_str = ""
+        dep_str = ""
         if state.get("sonar_issues"):
             sonar_str = "\n## SonarQube Issues\n" + "\n".join(
                 f"- {issue.get('message')} (Line {issue.get('line')}, {issue.get('severity')})"
                 for issue in state["sonar_issues"]
             )
 
-        prompt = f"""## File: {state['filename']}
+            # Analyze dependencies
+            deps = analyze_dependencies(state["sonar_issues"])
+            if deps:
+                dep_str = "\n## Dependency Analysis\n"
+                for d in deps:
+                    dep_str += f"- Smell: {d.smell_type}\n"
+                    dep_str += f"  - Positive Dependencies (Solve): {', '.join(d.positive_dependencies)}\n"
+                    dep_str += f"  - Negative Dependencies (Cause): {', '.join(d.negative_dependencies)}\n"
+
+        prompt = f"""## File: {state["filename"]}
 
 ## Refactorings
 {refactorings_str}
@@ -111,9 +123,10 @@ def create_rminer_eval_agent(model_name: str | None = None) -> StateGraph:
 ## Diff Hunks
 {hunks_str}
 {sonar_str}
+{dep_str}
 ## BEFORE Code
 ```java
-{state['before_code']}
+{state["before_code"]}
 ```
 """
 
@@ -222,6 +235,7 @@ def invoke_agent(
             "refactoring_descriptions": descriptions,
             "diff_hunks": [h.to_dict() for h in diff_hunks],
             "sonar_issues": sonar_issues or [],
+            "dependency_analysis": [],
             "predictions": [],
         }
     )
