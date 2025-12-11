@@ -201,25 +201,54 @@ class SmellPrioritizer:
         # Layout
         pos = nx.spring_layout(self.graph, k=2.0, seed=42, iterations=100)
 
-        # Node sizes based on calculated initial PZ (Severity + OutDegree)
-        node_sizes = []
-        node_colors = []
+        # Define shape mapping for different smell types
+        SHAPE_MAP = {
+            "God Class": "o",           # circle
+            "Long Method": "s",         # square
+            "Feature Envy": "^",        # triangle up
+            "Duplicated Code": "D",     # diamond
+            "Complex Method": "v",      # triangle down
+            "Long Parameter List": "p", # pentagon
+            "Data Clumps": "h",         # hexagon
+            "Lazy Class": "*",          # star
+            "Speculative Generality": "P",  # plus (filled)
+            "Message Chains": "X",      # x (filled)
+            "Middle Man": "<",          # triangle left
+            "Inappropriate Intimacy": ">",  # triangle right
+            "Shotgun Surgery": "8",     # octagon
+            "Divergent Change": "d",    # thin diamond
+        }
+
+        DEFAULT_SHAPE = "o"  # circle for unknown smell types
+
+        # Group nodes by smell type and severity for batch drawing
+        nodes_by_shape_and_color = {}
         labels = {}
 
         for node in self.graph.nodes():
             smell = self.graph.nodes[node]["data"]
             out_degree = self.graph.out_degree(node)
             size = (smell.severity_score + out_degree) * 600
-            node_sizes.append(size)
+
+            # Get shape for this smell type
+            shape = SHAPE_MAP.get(smell.smell_type, DEFAULT_SHAPE)
 
             # Color by severity
             score = smell.severity_score
             if score >= 3:
-                node_colors.append("#ff9999")  # Red-ish (High)
+                color = "#ff9999"  # Red-ish (High)
             elif score == 2:
-                node_colors.append("#ffcc99")  # Orange-ish (Medium)
+                color = "#ffcc99"  # Orange-ish (Medium)
             else:
-                node_colors.append("#99ff99")  # Green-ish (Low)
+                color = "#99ff99"  # Green-ish (Low)
+
+            # Group by (shape, color) for batch drawing
+            key = (shape, color)
+            if key not in nodes_by_shape_and_color:
+                nodes_by_shape_and_color[key] = {"nodes": [], "sizes": []}
+
+            nodes_by_shape_and_color[key]["nodes"].append(node)
+            nodes_by_shape_and_color[key]["sizes"].append(size)
 
             # Label: Type + Location (shortened)
             short_loc = smell.location.split(":")[0]
@@ -227,15 +256,23 @@ class SmellPrioritizer:
                 short_loc = "..." + short_loc[-17:]
             labels[node] = f"{smell.smell_type}\n{short_loc}"
 
-        # Draw
-        nx.draw_networkx_nodes(
-            self.graph,
-            pos,
-            node_size=node_sizes,
-            node_color=node_colors,
-            alpha=0.9,
-            edgecolors="black",
-        )
+        # Draw nodes grouped by shape and color
+        for (shape, color), data in nodes_by_shape_and_color.items():
+            node_positions = [pos[node] for node in data["nodes"]]
+            x_coords = [p[0] for p in node_positions]
+            y_coords = [p[1] for p in node_positions]
+
+            plt.scatter(
+                x_coords,
+                y_coords,
+                s=data["sizes"],
+                c=[color] * len(data["nodes"]),
+                marker=shape,
+                alpha=0.9,
+                edgecolors="black",
+                linewidths=1.5,
+                zorder=3
+            )
 
         # Draw edges with colors
         edge_colors = [self.graph[u][v]["color"] for u, v in self.graph.edges()]
@@ -247,14 +284,39 @@ class SmellPrioritizer:
             alpha=0.6,
             edge_color=edge_colors,
             arrowsize=20,
-            connectionstyle="arc3,rad=0.1",
+            connectionstyle="arc3,rad=0.1"
         )
         nx.draw_networkx_labels(
             self.graph, pos, labels=labels, font_size=8, font_weight="bold"
         )
 
-        # Add Legend
-        legend_elements = [
+        # Build legend with all unique smell types present in the graph
+        unique_smells = set(self.graph.nodes[node]["data"].smell_type for node in self.graph.nodes())
+
+        legend_elements = []
+
+        # Add smell type shapes to legend
+        for smell_type in sorted(unique_smells):
+            shape = SHAPE_MAP.get(smell_type, DEFAULT_SHAPE)
+            legend_elements.append(
+                Line2D(
+                    [0],
+                    [0],
+                    marker=shape,
+                    color="w",
+                    label=smell_type,
+                    markerfacecolor="gray",
+                    markersize=10,
+                    markeredgecolor="black",
+                )
+            )
+
+        # Add separator
+        if legend_elements:
+            legend_elements.append(Line2D([0], [0], color="none", label=""))
+
+        # Add severity colors
+        legend_elements.extend([
             Line2D(
                 [0],
                 [0],
@@ -262,7 +324,7 @@ class SmellPrioritizer:
                 color="w",
                 label="High Severity (3)",
                 markerfacecolor="#ff9999",
-                markersize=15,
+                markersize=10,
                 markeredgecolor="black",
             ),
             Line2D(
@@ -272,7 +334,7 @@ class SmellPrioritizer:
                 color="w",
                 label="Medium Severity (2)",
                 markerfacecolor="#ffcc99",
-                markersize=15,
+                markersize=10,
                 markeredgecolor="black",
             ),
             Line2D(
@@ -282,13 +344,15 @@ class SmellPrioritizer:
                 color="w",
                 label="Low Severity (1)",
                 markerfacecolor="#99ff99",
-                markersize=15,
+                markersize=10,
                 markeredgecolor="black",
             ),
+            Line2D([0], [0], color="none", label=""),
             Line2D([0], [0], color="green", lw=2, label="Positive Impact (Solves)"),
             Line2D([0], [0], color="red", lw=2, label="Negative Impact (Risks)"),
-        ]
-        plt.legend(handles=legend_elements, loc="upper right", title="Legend")
+        ])
+
+        plt.legend(handles=legend_elements, loc="upper right", title="Legend", fontsize=8)
 
         plt.title(
             "Code Smell Dependency & Importance Graph\n(Larger nodes = Higher Priority/PZ = Severity + Positive Impact)",
@@ -297,7 +361,7 @@ class SmellPrioritizer:
         plt.axis("off")
 
         plt.tight_layout()
-        plt.savefig(output_path)
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         LOGGER.info(f"Visualization saved to {output_path}")
         plt.close()
 
