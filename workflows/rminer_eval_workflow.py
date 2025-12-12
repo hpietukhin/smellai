@@ -10,7 +10,7 @@ Scorers:
 
 Usage:
     # Evaluate using inline data (from manifest)
-    uv run workflows/rminer_eval_workflow.py --manifest rminer_data/manifest.json --limit 5
+uv run workflows/rminer_eval_workflow.py --manifest rminer_data/manifest.json --limit 5
 
     # Evaluate using saved dataset
     uv run workflows/rminer_eval_workflow.py --dataset-name rminer-eval-dataset

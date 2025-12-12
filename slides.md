@@ -16,6 +16,77 @@ mdc: true
 
 System design and implementation
 
+---
+
+# Related work 1: Markovič & Polášek (2016)
+
+**Paper:** "Towards Rule Based Refactoring"
+
+**Core contribution:** Framework for understanding code smell dependencies
+
+**Key concepts:**
+* **Positive dependencies:** Refactoring smell A resolves smell B
+* **Negative dependencies:** Refactoring smell A introduces smell B
+
+**Smell groups classification:**
+* Bad Size (Large Class, Long Method, Long Parameter List)
+* Bad Location (Feature Envy, Duplicated Code, Switch Statement)
+* Bad Class Content (Data Class, Lazy Class)
+* Bad Inheritance, Needless Part, Attribute Problem, Bad Communication
+
+**Implementation:** Rule-based expert system using Jess (Java Expert System Shell)
+
+**Application in this work:** Theoretical foundation for dependency graph and prioritization algorithm
+
+
+---
+
+# Related work 2: RefactoringMiner 2.0 (2020)
+
+**Paper:** Tsantalis et al., IEEE Transactions on Software Engineering 2020
+
+**Core contribution:** Accurate refactoring detection tool without similarity thresholds
+
+**Technical approach:**
+* AST-based statement matching with specialized heuristics
+* Detects 40 refactoring types (Extract Method, Move Class, Rename Variable, etc.)
+* Processes git commits to identify applied refactorings
+
+**Evaluation oracle:**
+* 7,226 validated refactoring instances
+* 536 commits from 185 open-source projects
+* Multiple tools and expert validation
+
+**Performance:**
+* Precision: 99.6%, Recall: 94%
+* 2.6× faster than competing tools
+
+**Application in this work:** Ground truth dataset for evaluation and refactoring pattern analysis
+
+
+---
+
+# Related work 3: Code Foundation Models Survey (2025)
+
+**Paper:** "From Code Foundation Models to Agents and Applications" - BUAA-SKLCCSE and 30+ institutions
+
+**Scope:** Comprehensive survey of LLMs for code intelligence
+
+**Key topics:**
+* **Evolution:** GPT-4, Claude 4, DeepSeek-Coder, Qwen-Coder, StarCoder
+* **Training pipeline:** Data curation → Pre-training → Supervised fine-tuning → RL
+* **Agentic systems:** Autonomous coding agents (SWE-Bench, multi-step problem solving)
+* **Evaluation:** Statement/function/class-level tasks, repository-level benchmarks
+
+**Performance trajectory:** From <10% to >95% on HumanEval benchmark
+
+**Future trends:**
+* Specialized code intelligence over general LLMs
+* Autonomous software engineering agents
+* Scientific approach to scaling laws
+
+**Application in this work:** Context for LLM-based refactoring agents and evaluation methodologies
+
 
 ---
 

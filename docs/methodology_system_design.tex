@@ -8,11 +8,11 @@ This section describes the architecture and implementation of the developed mult
 The developed tool implements a multi-agent architecture where specialized AI agents collaborate to analyze code quality, detect smells, determine refactoring priorities, and execute refactorings. The system integrates:
 
 \begin{itemize}
-    \item \textbf{SonarQube} for initial code smell detection using rule-based static analysis
-    \item \textbf{LLM-based agents} built using LangGraph framework for intelligent analysis and refactoring
-    \item \textbf{MLflow} for experiment tracking, evaluation, and dataset management
-    \item \textbf{Dependency analysis engine} that models positive and negative relationships between code smells
-    \item \textbf{Priority calculation system} that determines optimal refactoring sequences based on severity and impact
+    \item SonarQube for initial code smell detection using rule-based static analysis
+    \item LLM-based agents built using LangGraph framework for intelligent analysis and refactoring
+    \item MLflow for experiment tracking, evaluation, and dataset management
+    \item Dependency analysis engine that models positive and negative relationships between code smells
+    \item Priority calculation system that determines optimal refactoring sequences based on severity and impact
 \end{itemize}
 
 The architecture follows a pipeline approach where each agent has a specific responsibility, and agents can communicate context through shared state. This design enables modular development and allows individual agents to be improved independently.
@@ -29,14 +29,14 @@ The first agent performs static analysis using SonarQube to identify code smells
     \item Analyzes Java source code at commit-level granularity
     \item Detects the following code smells mapped to SonarQube rules:
     \begin{itemize}
-        \item \textbf{Long Method} (java:S138) - Methods exceeding 60 lines of code
-        \item \textbf{Complex Method} (java:S1541) - Methods with high cyclomatic complexity
-        \item \textbf{Conditional Complexity} (java:S1067) - Deeply nested conditional expressions
-        \item \textbf{Long Parameter List} (java:S107) - Methods with more than 7 parameters
-        \item \textbf{God Class} (java:S1200) - Classes coupled to too many other classes
-        \item \textbf{Large Class} (java:S110) - Classes with excessive lines of code
-        \item \textbf{Duplicated Conditions} (java:S1871) - Identical conditional branches
-        \item \textbf{Print Statements} (java:S106) - Direct use of System.out/System.err
+        \item Long Method (java:S138) - Methods exceeding 60 lines of code
+        \item Complex Method (java:S1541) - Methods with high cyclomatic complexity
+        \item Conditional Complexity (java:S1067) - Deeply nested conditional expressions
+        \item Long Parameter List (java:S107) - Methods with more than 7 parameters
+        \item God Class (java:S1200) - Classes coupled to too many other classes
+        \item Large Class (java:S110) - Classes with excessive lines of code
+        \item Duplicated Conditions (java:S1871) - Identical conditional branches
+        \item Print Statements (java:S106) - Direct use of System.out/System.err
     \end{itemize}
     \item Returns severity levels (HIGH, MEDIUM, LOW) for each detected smell
     \item Provides line-level location information for each issue
@@ -73,11 +73,11 @@ The fourth agent determines the optimal sequence for refactoring detected smells
 The prioritization strategy is based on the work of Markovič and Polášek on code smell dependencies~\cite{markovic2016refaktorovanie}. The approach recognizes that code smells do not exist in isolation - refactoring one smell can affect others through:
 
 \begin{itemize}
-    \item \textbf{Positive dependencies (PZ)}: Refactoring smell A may simultaneously resolve smell B
+    \item Positive dependencies (PZ): Refactoring smell A may simultaneously resolve smell B
     \begin{itemize}
         \item Example: Extracting a Long Method often resolves Duplicated Code, Switch Statements, and Complex Method issues within that method
     \end{itemize}
-    \item \textbf{Negative dependencies (NZ)}: Refactoring smell A may introduce smell B
+    \item Negative dependencies (NZ): Refactoring smell A may introduce smell B
     \begin{itemize}
         \item Example: Applying ``Introduce Parameter Object'' to fix Long Parameter List may create a Data Class smell
         \item Example: Splitting a Large Class may introduce Long Method or Data Class smells in the extracted classes
@@ -106,31 +106,31 @@ The refactoring sequence is determined by iteratively selecting the smell with m
 The system implements a comprehensive dependency rule base (defined in \texttt{agents/dependency\_analysis/agent.py}):
 
 \begin{itemize}
-    \item \textbf{Long Method / Complex Method / Conditional Complexity}
+    \item Long Method / Complex Method / Conditional Complexity
     \begin{itemize}
         \item Positive: May resolve Switch Statement, Feature Envy, Duplicated Code, Divergent Change, Comments, Long Parameter List
         \item Negative: May create Long Method, Long Parameter List
     \end{itemize}
 
-    \item \textbf{Long Parameter List}
+    \item Long Parameter List
     \begin{itemize}
         \item Positive: May resolve Long Parameter List, Data Clumps
         \item Negative: May create Data Class
     \end{itemize}
 
-    \item \textbf{Large Class / God Class}
+    \item Large Class / God Class
     \begin{itemize}
         \item Positive: May resolve Data Clumps, Feature Envy, Bad Class Content
         \item Negative: May create Long Method, Data Class, Inappropriate Intimacy, Message Chains
     \end{itemize}
 
-    \item \textbf{Duplicated Conditions}
+    \item Duplicated Conditions
     \begin{itemize}
         \item Positive: May resolve Divergent Change, Shotgun Surgery
         \item Negative: May create Large Class, Bad Inheritance
     \end{itemize}
 
-    \item \textbf{Print Statements}
+    \item Print Statements
     \begin{itemize}
         \item Positive: May resolve Needless Part
         \item Negative: May create Data Class, Lazy Class
@@ -167,11 +167,11 @@ The fifth agent performs the actual code refactoring based on the prioritized sm
     \item Receives the prioritized list of smells from Agent 4
     \item For each smell in sequence, applies appropriate refactoring techniques:
     \begin{itemize}
-        \item \textbf{Long Method}: Extract Method refactoring
-        \item \textbf{Large Class/God Class}: Extract Class refactoring
-        \item \textbf{Long Parameter List}: Introduce Parameter Object
-        \item \textbf{Duplicated Code}: Extract Method and remove duplication
-        \item \textbf{Complex Method}: Decompose conditional logic
+        \item Long Method: Extract Method refactoring
+        \item Large Class/God Class: Extract Class refactoring
+        \item Long Parameter List: Introduce Parameter Object
+        \item Duplicated Code: Extract Method and remove duplication
+        \item Complex Method: Decompose conditional logic
     \end{itemize}
     \item Uses LLM capabilities to understand code context and generate semantically correct refactorings
     \item Preserves code functionality while improving structure
@@ -198,10 +198,10 @@ This agent reuses the test execution capabilities from Agent 2 but focuses on ve
 The system uses MLflow for comprehensive experiment tracking and evaluation. This enables:
 
 \begin{itemize}
-    \item \textbf{Dataset management}: Creating and versioning datasets from RefactoringMiner data
-    \item \textbf{Experiment tracking}: Recording model configurations, parameters, and metrics for each evaluation run
-    \item \textbf{Result comparison}: Comparing different approaches (vanilla LLM, RAG-enhanced, hybrid)
-    \item \textbf{Reproducibility}: Ensuring experiments can be reproduced with exact configurations
+    \item Dataset management: Creating and versioning datasets from RefactoringMiner data
+    \item Experiment tracking: Recording model configurations, parameters, and metrics for each evaluation run
+    \item Result comparison: Comparing different approaches (vanilla LLM, RAG-enhanced, hybrid)
+    \item Reproducibility: Ensuring experiments can be reproduced with exact configurations
 \end{itemize}
 
 The evaluation workflow is documented in \texttt{docs/README\_RMINER.md} and implemented in:
@@ -221,9 +221,9 @@ Nikolaos Tsantalis, Ameya Ketkar, and Danny Dig. ``RefactoringMiner 2.0.'' \text
 
 \paragraph{Dataset properties}
 \begin{itemize}
-    \item \textbf{Size}: 547 commits from 188 open-source projects
-    \item \textbf{Time range}: Commits between June 8, 2015 and August 7, 2015
-    \item \textbf{Content}: Real refactorings performed by developers, including:
+    \item Size: 547 commits from 188 open-source projects
+    \item Time range: Commits between June 8, 2015 and August 7, 2015
+    \item Content: Real refactorings performed by developers, including:
     \begin{itemize}
         \item Before and after code versions
         \item Refactoring type annotations (Extract Method, Move Method, etc.)
@@ -239,11 +239,11 @@ The dataset provides ground truth for evaluating the refactoring mapping agent (
 For development and validation purposes, the system includes manually crafted test cases demonstrating smell co-occurrence. These are located in \texttt{tests/test\_data/smell\_cooccurrence/} and include:
 
 \begin{itemize}
-    \item \textbf{OrderProcessor.java}: Demonstrates positive dependencies in the ``bad size'' category (Long Method, Complex Method, Duplicated Code, Switch Statement)
-    \item \textbf{CustomerDataService.java}: Demonstrates negative dependencies (Long Parameter List vs. Data Class trade-off)
-    \item \textbf{ReportGenerator.java}: Demonstrates God Class with multiple interconnected smells
-    \item \textbf{PaymentValidator.java}: Demonstrates duplicated conditions and their dependencies
-    \item \textbf{ConfigurationManager.java}: Demonstrates complex interplay of multiple smells
+    \item OrderProcessor.java: Demonstrates positive dependencies in the ``bad size'' category (Long Method, Complex Method, Duplicated Code, Switch Statement)
+    \item CustomerDataService.java: Demonstrates negative dependencies (Long Parameter List vs. Data Class trade-off)
+    \item ReportGenerator.java: Demonstrates God Class with multiple interconnected smells
+    \item PaymentValidator.java: Demonstrates duplicated conditions and their dependencies
+    \item ConfigurationManager.java: Demonstrates complex interplay of multiple smells
 \end{itemize}
 
 Each test file is annotated in \texttt{smells\_manifest.json} with the smells present, their locations, severities, and descriptions. This enables:
@@ -259,10 +259,10 @@ Each test file is annotated in \texttt{smells\_manifest.json} with the smells pr
 After each refactoring, the system evaluates code quality improvements using standard object-oriented metrics:
 
 \begin{itemize}
-    \item \textbf{WMC (Weighted Methods per Class)}: Sum of cyclomatic complexities of all methods in a class
-    \item \textbf{CBO (Coupling Between Objects)}: Number of classes to which a class is coupled
-    \item \textbf{RFC (Response For a Class)}: Number of methods that can potentially be executed in response to a message received by an object
-    \item \textbf{LCOM (Lack of Cohesion of Methods)}: Measures how methods and attributes are related
+    \item WMC (Weighted Methods per Class): Sum of cyclomatic complexities of all methods in a class
+    \item CBO (Coupling Between Objects): Number of classes to which a class is coupled
+    \item RFC (Response For a Class): Number of methods that can potentially be executed in response to a message received by an object
+    \item LCOM (Lack of Cohesion of Methods): Measures how methods and attributes are related
 \end{itemize}
 
 These metrics validate that refactorings achieve their intended goals. For example:
@@ -295,23 +295,23 @@ This feedback loop enables the system to learn which dependency rules are accura
 The system is implemented using:
 
 \begin{itemize}
-    \item \textbf{Python 3.11+}: Core implementation language
-    \item \textbf{LangGraph}: Framework for building multi-agent workflows with state management
-    \item \textbf{LangChain}: LLM orchestration and tool integration
-    \item \textbf{LiteLLM}: Unified interface for multiple LLM providers (OpenAI, Anthropic, Google)
-    \item \textbf{MLflow}: Experiment tracking and dataset management
-    \item \textbf{SonarQube}: Static code analysis engine
-    \item \textbf{NetworkX}: Graph analysis and dependency modeling
-    \item \textbf{Matplotlib}: Visualization of dependency graphs
-    \item \textbf{Pydantic}: Data validation and structured outputs from LLMs
+    \item Python 3.11+: Core implementation language
+    \item LangGraph: Framework for building multi-agent workflows with state management
+    \item LangChain: LLM orchestration and tool integration
+    \item LiteLLM: Unified interface for multiple LLM providers (OpenAI, Anthropic, Google)
+    \item MLflow: Experiment tracking and dataset management
+    \item SonarQube: Static code analysis engine
+    \item NetworkX: Graph analysis and dependency modeling
+    \item Matplotlib: Visualization of dependency graphs
+    \item Pydantic: Data validation and structured outputs from LLMs
 \end{itemize}
 
 The modular architecture allows different LLM models to be used for different agents based on task complexity:
 \begin{itemize}
-    \item \textbf{GPT-4o-mini}: Default model for most agents (cost-effective)
-    \item \textbf{GPT-4o}: For complex refactoring tasks requiring deeper reasoning
-    \item \textbf{Claude Sonnet}: Alternative for specific agent implementations
-    \item \textbf{Gemini 2.5}: Used in RAG experiments for code understanding
+    \item GPT-4o-mini: Default model for most agents (cost-effective)
+    \item GPT-4o: For complex refactoring tasks requiring deeper reasoning
+    \item Claude Sonnet: Alternative for specific agent implementations
+    \item Gemini 2.5: Used in RAG experiments for code understanding
 \end{itemize}
 
 \subsection{Workflow execution}
@@ -319,15 +319,15 @@ The modular architecture allows different LLM models to be used for different ag
 A complete analysis and refactoring workflow proceeds as follows:
 
 \begin{enumerate}
-    \item \textbf{Initial scan}: Agent 1 analyzes a commit using SonarQube and identifies code smells
-    \item \textbf{Test verification}: Agent 2 checks test coverage for affected methods
-    \item \textbf{Dependency analysis}: Agent 4 analyzes smell dependencies and calculates PZ scores
-    \item \textbf{Priority determination}: Agent 4 generates refactoring sequence based on maximum PZ strategy
-    \item \textbf{Visualization}: System generates dependency graphs and priority visualizations
-    \item \textbf{Refactoring execution}: Agent 5 applies refactorings in priority order
-    \item \textbf{Verification}: Agent 6 runs tests after each refactoring to ensure correctness
-    \item \textbf{Metrics evaluation}: System calculates code quality metrics before and after
-    \item \textbf{Result logging}: MLflow records all steps, decisions, and outcomes
+    \item Initial scan: Agent 1 analyzes a commit using SonarQube and identifies code smells
+    \item Test verification: Agent 2 checks test coverage for affected methods
+    \item Dependency analysis: Agent 4 analyzes smell dependencies and calculates PZ scores
+    \item Priority determination: Agent 4 generates refactoring sequence based on maximum PZ strategy
+    \item Visualization: System generates dependency graphs and priority visualizations
+    \item Refactoring execution: Agent 5 applies refactorings in priority order
+    \item Verification: Agent 6 runs tests after each refactoring to ensure correctness
+    \item Metrics evaluation: System calculates code quality metrics before and after
+    \item Result logging: MLflow records all steps, decisions, and outcomes
 \end{enumerate}
 
 This workflow ensures that refactorings are applied systematically, with continuous validation and detailed tracking for research analysis.

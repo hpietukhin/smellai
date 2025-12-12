@@ -74,3 +74,4 @@ wheels/
 share/python-wheels/
 /mlartifacts/
 /infra/sonarqube/mlartifacts/
+node_modules
