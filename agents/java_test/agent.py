@@ -3,6 +3,18 @@
 This module provides a LangGraph agent that can analyze Java projects,
 run tests, and report on test failures. The agent uses tools to detect
 build systems, execute tests, and parse results.
+
+# TODO SPEC-001: Implement test generation capabilities for methods without test coverage.
+# Agent 3 (Test Generation Agent) is currently a placeholder.
+# Need to implement test generation for uncovered methods.
+# MEDIUM priority.
+# (See TECHNICAL_SPECIFICATION.md §3.2)
+
+# TODO SPEC-002: Implement behavior preservation checks beyond test execution.
+# Agent 6 (Verification Agent) currently reuses Agent 2's test execution.
+# Need to implement additional behavior preservation checks beyond running tests.
+# MEDIUM priority.
+# (See TECHNICAL_SPECIFICATION.md §3.2)
 """
 
 from __future__ import annotations

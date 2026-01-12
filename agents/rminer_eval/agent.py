@@ -38,7 +38,13 @@ class RefactoringMappingOutput(BaseModel):
 
 
 class RMinerEvalState(dict):
-    """State for RMiner evaluation agent."""
+    """State for RMiner evaluation agent.
+
+    # TODO SPEC-003: Add simple persistence mechanism for long-running workflows.
+    # Currently state is in-memory only and cleared after each refactoring operation.
+    # Low priority - not critical for current evaluation-based workflow.
+    # (See TECHNICAL_SPECIFICATION.md §3.4)
+    """
 
     messages: Annotated[List[BaseMessage], add_messages]
     before_code: str
@@ -85,7 +91,14 @@ def create_rminer_eval_agent(model_name: str | None = None) -> StateGraph:
         use_structured = False
 
     def map_refactorings(state: RMinerEvalState) -> dict:
-        """Map refactorings to diff hunks."""
+        """Map refactorings to diff hunks.
+
+        # TODO SPEC-007: Implement token counting and truncation strategy for large files.
+        # Large files (e.g., "God Classes") may exceed LLM context windows.
+        # Need to implement token counting and truncation before prompt construction.
+        # HIGH priority.
+        # (See TECHNICAL_SPECIFICATION.md §4.3)
+        """
         refactorings_str = "\n".join(
             f"{i}. Type: {rt}\n   Description: {rd}"
             for i, (rt, rd) in enumerate(
@@ -97,6 +110,18 @@ def create_rminer_eval_agent(model_name: str | None = None) -> StateGraph:
             f"{i}. Lines {h['old_start']}-{h['old_start'] + h['old_count'] - 1}"
             for i, h in enumerate(state["diff_hunks"])
         )
+
+        # TODO SPEC-004: Document when sonar_issues context is included vs excluded.
+        # Currently included if state contains sonar_issues, but decision criteria not documented.
+        # (See TECHNICAL_SPECIFICATION.md §4.3)
+
+        # TODO SPEC-005: Document when dependency_analysis context is included vs excluded.
+        # Currently computed from sonar_issues, but inclusion criteria not documented.
+        # (See TECHNICAL_SPECIFICATION.md §4.3)
+
+        # TODO SPEC-006: Add reference link to exact prompt structure datamodels in code.
+        # Prompt construction should reference the specific datamodels being used.
+        # (See TECHNICAL_SPECIFICATION.md §4.3)
 
         sonar_str = ""
         dep_str = ""

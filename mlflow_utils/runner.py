@@ -5,6 +5,21 @@ import os
 
 
 class EvaluationRunner:
+    """Runner for MLflow evaluation workflows.
+
+    # TODO SPEC-015: Investigate parallel evaluation by breaking datasets into chunks.
+    # Current implementation is sequential only.
+    # Consider breaking datasets into chunks for different agent instances.
+    # MEDIUM priority.
+    # (See TECHNICAL_SPECIFICATION.md §6.3)
+
+    # TODO SPEC-018: Investigate parallel evaluation capabilities and test concurrency handling.
+    # This is a duplicate of SPEC-015, same implementation task.
+    # Need to test with multiple agents running concurrently.
+    # MEDIUM priority.
+    # (See TECHNICAL_SPECIFICATION.md §8.2)
+    """
+
     def run(self, config: dict):
         # config keys: manifest, experiment, tracking_uri, model, limit, dataset_limit, skip_dataset, skip_ui
 

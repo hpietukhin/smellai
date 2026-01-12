@@ -1,5 +1,7 @@
 SmellAI - Thesis Experiments
 
+> **📋 Documentation**: [TECHNICAL_SPECIFICATION.md](TECHNICAL_SPECIFICATION.md) is the authoritative source for system architecture and design. This README covers quick start and usage.
+
 W&B Quickstart
 
 1. Install: `pip install wandb`

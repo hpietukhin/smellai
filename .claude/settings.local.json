@@ -46,7 +46,8 @@
       "Bash(env)",
       "Bash(find:*)",
       "Bash(timeout 30 uv run:*)",
-      "Bash(uv pip:*)"
+      "Bash(uv pip:*)",
+      "Skill(planning-with-files:planning-with-files)"
     ],
     "deny": []
   },

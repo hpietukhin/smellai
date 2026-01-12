@@ -40,6 +40,10 @@ RULE_NAME_MAP = {
     "java:S106": "Print Statements",
 }
 
+# TODO SPEC-012: Verify this severity mapping table exists in codebase and document exact location.
+# Mapping shown in specification but location needs verification.
+# LOW priority - informational verification task.
+# (See TECHNICAL_SPECIFICATION.md §5.1)
 SEVERITY_MAP = {
     "BLOCKER": "HIGH",
     "CRITICAL": "HIGH",

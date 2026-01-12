@@ -7,6 +7,15 @@ from typing import Optional
 
 
 class MLflowServer:
+    """MLflow server management.
+
+    # TODO SPEC-016: Implement proper concurrency handling for MLflow server management.
+    # Multiple evaluation scripts may conflict over SQLite locks or port 5000.
+    # Need proper locking and coordination mechanisms.
+    # MEDIUM priority.
+    # (See TECHNICAL_SPECIFICATION.md §6.3)
+    """
+
     def __init__(
         self,
         port: int = 5000,

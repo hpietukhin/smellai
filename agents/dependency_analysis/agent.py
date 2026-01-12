@@ -33,6 +33,11 @@ class DependencyAnalysis(BaseModel):
     )
 
 
+# TODO SPEC-009: Create comprehensive map of dependency rules with detailed citations.
+# Rules are based on Markovič & Polášek research.
+# Need comprehensive mapping with paper references and detailed citations.
+# MEDIUM priority.
+# (See TECHNICAL_SPECIFICATION.md §4.4)
 DEPENDENCY_RULES = {
     "Long Method": {
         "positive": [

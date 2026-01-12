@@ -11,6 +11,11 @@ Key functions:
 - find_consecutive_commits: Detect clusters based on ID proximity
 - calculate_semantic_similarity: Compute relatedness scores
 - compute_statistics: Generate summary statistics
+
+# TODO SPEC-017: Verify manifest format matches raw RefactoringMiner 2.0 output.
+# Need to verify if intermediate processing is needed between RM output and manifest format.
+# LOW priority - verification task.
+# (See TECHNICAL_SPECIFICATION.md §6.5)
 """
 
 from __future__ import annotations

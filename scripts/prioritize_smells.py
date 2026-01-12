@@ -123,6 +123,17 @@ class SmellPrioritizer:
         """
         Calculates the priority sequence based on PZ (Positive Impact).
         PZ = Intrinsic Severity + Impact on other smells (Out-degree weights).
+
+        # TODO SPEC-010: Implement cycle detection mechanism and max-step limit.
+        # If refactoring A creates smell B, and refactoring B creates smell A,
+        # mark as outlier and prevent infinite loops.
+        # HIGH priority.
+        # (See TECHNICAL_SPECIFICATION.md §4.4)
+
+        # TODO SPEC-011: Investigate Airflow capabilities for handling problematic cyclic dependencies.
+        # Research whether Airflow can help manage cyclic dependency situations.
+        # LOW priority.
+        # (See TECHNICAL_SPECIFICATION.md §4.4)
         """
         # We will simulate the "remove max PZ" process
 

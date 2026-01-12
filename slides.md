@@ -12,9 +12,12 @@ transition: slide-left
 mdc: true
 ---
 
-# Multi-agent system for code smell detection and refactoring
+# Refactoring software systems using AI  
 
-System design and implementation
+Supervisor: doc. Ing. Ivan Polášek, PhD  
+Autor: Havriil Pietukhin
+
+
 
 ---
 
@@ -41,6 +44,13 @@ System design and implementation
 
 ---
 
+<style scoped>
+.slidev-layout {
+  transform: scale(0.85);
+  transform-origin: top left;
+}
+</style>
+
 # Related work 2: RefactoringMiner 2.0 (2020)
 
 **Paper:** Tsantalis et al., IEEE Transactions on Software Engineering 2020
@@ -64,11 +74,20 @@ System design and implementation
 **Application in this work:** Ground truth dataset for evaluation and refactoring pattern analysis
 
 
+
 ---
+
+
+<style scoped>
+.slidev-layout {
+  transform: scale(0.85);
+  transform-origin: top left;
+}
+</style>
 
 # Related work 3: Code Foundation Models Survey (2025)
 
-**Paper:** "From Code Foundation Models to Agents and Applications" - BUAA-SKLCCSE and 30+ institutions
+**Paper:** "From Code Foundation Models to Agents and Applications" - BUAA-SKLCCSE et al.
 
 **Scope:** Comprehensive survey of LLMs for code intelligence
 
@@ -80,17 +99,116 @@ System design and implementation
 
 **Performance trajectory:** From <10% to >95% on HumanEval benchmark
 
-**Future trends:**
-* Specialized code intelligence over general LLMs
-* Autonomous software engineering agents
-* Scientific approach to scaling laws
+---
 
-**Application in this work:** Context for LLM-based refactoring agents and evaluation methodologies
+<style scoped>
+.slidev-layout {
+  transform: scale(0.85);
+  transform-origin: top left;
+}
+</style>
+
+## Autonomous Agents and Refactoring
+
+**Repository-Level Development Agents:**
+
+* **CodePlan** - Structured planning for compilation, execution, and debugging
+  - Extends debugging loop with automatic tool calls and explicit execution reasoning
+  - Multi-round verbalized feedback substantially improves robustness
+  - Coordinates compile-test-debug cycles with strategic decision making
+
+* **OpenHands** - Event-stream architecture for agent-environment interaction
+  - Docker sandbox ensures secure code execution
+  - Diverse execution environments: bash terminal, Jupyter IPython, playwright browser
+  - Enhances refinement by diversifying repair strategies instead of repeating fixes
+  - Multi-agent collaboration with specialized sub-agents
+
+---
+
+<style scoped>
+.slidev-layout {
+  transform: scale(0.85);
+  transform-origin: top left;
+}
+</style>
+
+
+## Tool-Integrated and Memory-Enhanced Agents
+
+**HyperAgent** - Four-role team architecture
+* Planner: Strategic task decomposition
+* Navigator: Repository and codebase navigation
+* Editor: Precision code modifications
+* Executor: Test execution and validation
+* State-of-the-art performance on RepoExec by allocating different models to different functions
+
+**CodeAct** - Extends actions to executable Python code
+* Integrated Python interpreter for dynamic code generation
+* Multi-turn interaction with control flow features
+* Self-debugging capabilities and intermediate result storage
+
+**OpenCode** - Controllable and extensible intelligent programming environment
+* Plan Agent: Analysis and planning
+* Build Agent: Executing modifications
+* General Agent: Auxiliary queries
+* Decouples reasoning from action while ensuring safety
+
+---
+
+<style scoped>
+.slidev-layout {
+  transform: scale(0.85);
+  transform-origin: top left;
+}
+</style>
+
+
+## Dependency-Aware and RAG Systems
+
+**Commit0** - Interactive environment for complete library development
+* Test-driven development workflow
+* Highlights difficulty of maintaining cross-file consistency
+* Agents must understand import graphs and API relations
+
+**RepoCoder & CodeChain** - Explicit repository dependency modeling
+* Generate modules in dependency-sorted order
+* Retrieve relevant snippets for each component
+* Shortens context length by orders of magnitude while retaining coherence
+
+ Scaling to repository level requires not just larger context windows but persistent memory and tool-aware interaction
+
+---
+
+<style scoped>
+.slidev-layout {
+  transform: scale(0.85);
+  transform-origin: top left;
+}
+</style>
+
+## Future Trends
+
+**From General to Specialized Code Intelligence:**
+* Domain-specific optimization yields substantial gains
+* Dedicated coding assistants outperform general LLMs on complex tasks
+
+**Agentic Training and Complex Scenario Mastery:**
+* Models trained to operate autonomously across multi-step scenarios
+* Not just writing code, but understanding project contexts, navigating codebases
+* Execute iterative debugging, collaborate with developers through extended interactions
+
+**Scaling Laws and Scientific Development:**
+* Principled understanding of how performance scales with parameters, data, compute
+* Data-driven optimization of scaling trade-offs unique to programming domains
+* Mixture-of-experts architectures optimized for code tasks
+
+**Application in this work:** 
+Context for LLM-based refactoring agents, methodologies for evaluating multi-agent systems, combining static analysis with agentic reasoning, repository-level understanding of code smell dependencies
 
 
 ---
 
-# System overview
+# Our approach
 
 A multi-agent architecture where specialized AI agents collaborate to analyze code quality, detect smells, and execute refactorings.
 
