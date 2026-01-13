@@ -8,6 +8,7 @@ and diff hunks to determine which code changes correspond to which refactorings.
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Annotated, List
 
@@ -20,6 +21,8 @@ from pydantic import BaseModel, Field
 from rminer.create_rminer_dataset import parse_diff_hunks, parse_refactoring_info
 from agents.rminer_eval.config import DEFAULT_CONFIG, RMinerEvalAgentConfig
 from agents.dependency_analysis.agent import analyze_dependencies, DependencyAnalysis
+
+LOGGER = logging.getLogger(__name__)
 
 
 class RefactoringMapping(BaseModel):
@@ -86,7 +89,8 @@ def create_rminer_eval_agent(model_name: str | None = None) -> StateGraph:
     try:
         structured_model = model.with_structured_output(RefactoringMappingOutput)
         use_structured = True
-    except Exception:
+    except (NotImplementedError, AttributeError) as e:
+        LOGGER.info("Model %s does not support structured output: %s", model_name, e)
         structured_model = model
         use_structured = False
 
@@ -177,7 +181,8 @@ def create_rminer_eval_agent(model_name: str | None = None) -> StateGraph:
                 mappings_data = [
                     RefactoringMapping(**m) for m in parsed.get("mappings", [])
                 ]
-            except Exception:
+            except json.JSONDecodeError as e:
+                LOGGER.warning("Failed to parse LLM response as JSON: %s", e)
                 mappings_data = []
 
         predictions = []
@@ -258,7 +263,7 @@ def invoke_agent(
             "filename": pair["file_path"],
             "refactoring_types": types,
             "refactoring_descriptions": descriptions,
-            "diff_hunks": [h.to_dict() for h in diff_hunks],
+            "diff_hunks": [h.model_dump() for h in diff_hunks],
             "sonar_issues": sonar_issues or [],
             "dependency_analysis": [],
             "predictions": [],

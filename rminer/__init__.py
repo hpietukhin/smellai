@@ -49,6 +49,10 @@ def __getattr__(name):
         )
 
         return locals()[name]
+    elif name == "DiffHunk":
+        from datasets.models import DiffHunk  # noqa: F401
+
+        return DiffHunk
     elif name in [
         "load_rminer_data",
         "group_by_repository",
@@ -57,12 +61,10 @@ def __getattr__(name):
         "compute_statistics",
         "parse_diff_hunks",
         "compute_diff_hunks_from_files",
-        "DiffHunk",
         "fetch_full_refactoring_json",
         "build_dependency_graph",
     ]:
         from .rminer_utils import (  # noqa: F401
-            DiffHunk,
             build_dependency_graph,
             calculate_semantic_similarity,
             compute_diff_hunks_from_files,

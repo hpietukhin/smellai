@@ -25,10 +25,10 @@ import logging
 import math
 import re
 from collections import Counter, defaultdict
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
+from datasets.models import DiffHunk
 from models.refactoring import (
     CommitCluster,
     RefactoringStats,
@@ -69,67 +69,47 @@ def get_diff(
         return ""
 
 
-@dataclass
-class DiffHunk:
-    """Structured representation of a single diff hunk."""
-
-    old_start: int
-    old_count: int
-    new_start: int
-    new_count: int
-    removed_lines: List[str] = field(default_factory=list)
-    added_lines: List[str] = field(default_factory=list)
-    context_lines: List[str] = field(default_factory=list)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "old_start": self.old_start,
-            "old_count": self.old_count,
-            "new_start": self.new_start,
-            "new_count": self.new_count,
-            "removed_lines": list(self.removed_lines),
-            "added_lines": list(self.added_lines),
-            "context_lines": list(self.context_lines),
-        }
-
-
 def parse_diff_hunks(diff_text: str) -> List[DiffHunk]:
     """Parse unified diff text into structured hunks."""
-
     hunks: List[DiffHunk] = []
-    current: Optional[DiffHunk] = None
+
+    # Collect hunk data before creating immutable Pydantic models
+    current_data: Optional[Dict[str, Any]] = None
+
+    def _finalize_hunk():
+        if current_data:
+            hunks.append(DiffHunk(**current_data))
 
     for line in diff_text.splitlines():
         match = _HUNK_PATTERN.match(line)
         if match:
-            if current:
-                hunks.append(current)
-
-            current = DiffHunk(
-                old_start=int(match.group(1)),
-                old_count=int(match.group(2) or 1),
-                new_start=int(match.group(3)),
-                new_count=int(match.group(4) or 1),
-            )
+            _finalize_hunk()
+            current_data = {
+                "old_start": int(match.group(1)),
+                "old_count": int(match.group(2) or 1),
+                "new_start": int(match.group(3)),
+                "new_count": int(match.group(4) or 1),
+                "removed_lines": [],
+                "added_lines": [],
+                "context_lines": [],
+            }
             continue
 
-        if not current:
+        if not current_data:
             continue
 
         if line.startswith("---") or line.startswith("+++"):
             continue
         if line.startswith("-"):
-            current.removed_lines.append(line[1:])
+            current_data["removed_lines"].append(line[1:])
         elif line.startswith("+"):
-            current.added_lines.append(line[1:])
+            current_data["added_lines"].append(line[1:])
         elif line.startswith(" "):
-            current.context_lines.append(line[1:])
+            current_data["context_lines"].append(line[1:])
         elif line.startswith("\\ No newline at end of file"):
             continue
 
-    if current:
-        hunks.append(current)
-
+    _finalize_hunk()
     return hunks
 
 

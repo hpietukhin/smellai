@@ -246,3 +246,46 @@ def temp_repo_context():
         yield temp_dir
     finally:
         remove_temp_repo_folder(temp_dir)
+
+
+# Enhanced repository operations (new)
+from repo_utils.operations import (
+    clone_and_checkout,
+    checkout_commit,
+    get_previous_commit,
+    find_project_root,
+    RepositoryError,
+)
+
+# Enhanced test execution (new)
+from repo_utils.test_execution import (
+    run_tests_enhanced,
+    get_build_command,
+    has_wrapper,
+)
+
+__all__ = [
+    # Existing functions
+    "clone_repository",
+    "checkout_repo",
+    "remote_repo_exists",
+    "get_repo_name",
+    "store_token",
+    "upload_onboarding_materials",
+    "get_git_commit_hash",
+    "get_branch",
+    "create_temp_repo_folder",
+    "remove_temp_repo_folder",
+    "temp_repo_context",
+    "require_git_import",
+    # New operations
+    "clone_and_checkout",
+    "checkout_commit",
+    "get_previous_commit",
+    "find_project_root",
+    "RepositoryError",
+    # New test execution
+    "run_tests_enhanced",
+    "get_build_command",
+    "has_wrapper",
+]

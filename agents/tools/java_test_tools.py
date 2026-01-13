@@ -6,6 +6,7 @@ and parsing test results for Java projects. Supports Maven and Gradle.
 
 from __future__ import annotations
 
+import logging
 import subprocess
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
@@ -13,6 +14,8 @@ from pathlib import Path
 from typing import Literal, Optional
 
 from langchain_core.tools import tool
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
@@ -211,8 +214,8 @@ def _parse_maven_results(project_path: Path) -> list[TestResult]:
                         failure_trace=failure_trace,
                     )
                 )
-        except Exception:
-            # Skip malformed XML files
+        except ET.ParseError as e:
+            LOGGER.warning("Skipping malformed XML file %s: %s", xml_file, e)
             continue
 
     return results
@@ -278,8 +281,8 @@ def _parse_gradle_results(project_path: Path) -> list[TestResult]:
                         failure_trace=failure_trace,
                     )
                 )
-        except Exception:
-            # Skip malformed XML files
+        except ET.ParseError as e:
+            LOGGER.warning("Skipping malformed XML file %s: %s", xml_file, e)
             continue
 
     return results

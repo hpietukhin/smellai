@@ -47,7 +47,12 @@
       "Bash(find:*)",
       "Bash(timeout 30 uv run:*)",
       "Bash(uv pip:*)",
-      "Skill(planning-with-files:planning-with-files)"
+      "Skill(planning-with-files:planning-with-files)",
+      "Skill(planning-with-files)",
+      "Bash(unzip:*)",
+      "Bash(python3:*)",
+      "Skill(ast-grep:ast-grep)",
+      "Bash(ast-grep run:*)"
     ],
     "deny": []
   },

@@ -1,6 +1,7 @@
 import textwrap
 
-from rminer.rminer_utils import DiffHunk, parse_diff_hunks
+from datasets.models import DiffHunk
+from rminer.rminer_utils import parse_diff_hunks
 
 
 DOCKERFILE_PATCH = textwrap.dedent(
@@ -35,6 +36,6 @@ def test_parse_diff_hunks_real_repo_patch() -> None:
         "RUN mv target/ysoserial-*all*.jar target/ysoserial.jar" in hunk.context_lines
     )
 
-    hunk_dict = hunk.to_dict()
+    hunk_dict = hunk.model_dump()
     assert hunk_dict["old_start"] == 14
     assert hunk_dict["added_lines"] == ["FROM eclipse-temurin:8-jdk-alpine"]

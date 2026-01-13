@@ -21,14 +21,17 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
-import subprocess
 import sys
-from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 
 from dotenv import load_dotenv
+
+from datasets.models import DiffHunk
+from rminer.rminer_utils import (
+    compute_diff_hunks_from_files,
+    parse_refactoring_info,
+)
 
 try:
     from smellai.sonarqube.commit_scan import scan_commit
@@ -38,82 +41,12 @@ except ImportError:
 load_dotenv()
 
 
-@dataclass
-class DiffHunk:
-    """A hunk from git diff."""
-
-    old_start: int
-    old_count: int
-    new_start: int
-    new_count: int
-    removed_lines: List[str] = field(default_factory=list)
-    added_lines: List[str] = field(default_factory=list)
-    context_lines: List[str] = field(default_factory=list)
-
-    def to_dict(self):
-        return asdict(self)
-
-
 def parse_diff_hunks(before_file: Path, after_file: Path) -> List[DiffHunk]:
-    """Compute diff hunks between before and after files."""
-    try:
-        result = subprocess.run(
-            [
-                "git",
-                "diff",
-                "--no-index",
-                "--unified=3",
-                str(before_file),
-                str(after_file),
-            ],
-            capture_output=True,
-            text=True,
-        )
+    """Compute diff hunks between before and after files.
 
-        hunk_pattern = re.compile(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
-        hunks = []
-        current_hunk = None
-
-        for line in result.stdout.split("\n"):
-            match = hunk_pattern.match(line)
-            if match:
-                if current_hunk:
-                    hunks.append(current_hunk)
-
-                current_hunk = DiffHunk(
-                    old_start=int(match.group(1)),
-                    old_count=int(match.group(2)) if match.group(2) else 1,
-                    new_start=int(match.group(3)),
-                    new_count=int(match.group(4)) if match.group(4) else 1,
-                )
-            elif current_hunk:
-                if line.startswith("---") or line.startswith("+++"):
-                    continue
-                elif line.startswith("-"):
-                    current_hunk.removed_lines.append(line[1:])
-                elif line.startswith("+"):
-                    current_hunk.added_lines.append(line[1:])
-                elif line.startswith(" "):
-                    current_hunk.context_lines.append(line[1:])
-
-        if current_hunk:
-            hunks.append(current_hunk)
-
-        return hunks
-    except Exception as e:
-        print(f"Warning: Failed to parse diff: {e}", file=sys.stderr)
-        return []
-
-
-def parse_refactoring_info(pair: dict) -> Tuple[List[str], List[str]]:
-    """Extract refactoring types and descriptions."""
-    ref_type = pair.get("refactoring_type", "")
-    ref_desc = pair.get("refactoring_description", "")
-
-    types = [t.strip() for t in ref_type.split("|")] if ref_type else []
-    descriptions = [d.strip() for d in ref_desc.split("\n")] if ref_desc else []
-
-    return types, descriptions
+    This is a convenience wrapper around compute_diff_hunks_from_files.
+    """
+    return compute_diff_hunks_from_files(before_file, after_file)
 
 
 def build_genai_records(
@@ -189,7 +122,7 @@ def build_genai_records(
             "expectations": {
                 "num_refactorings": len(types),
                 "num_hunks": len(diff_hunks),
-                "diff_hunks": [h.to_dict() for h in diff_hunks],
+                "diff_hunks": [h.model_dump() for h in diff_hunks],
                 "refactoring_types": types,
                 "refactoring_descriptions": descriptions,
                 "file_path": pair["file_path"],
