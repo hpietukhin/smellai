@@ -100,42 +100,77 @@ The system implements six specialized agents in a research-oriented workflow.
 
 **Agent descriptions**:
 
-**Agent 1: Code smell detection agent**
-- Technology: SonarQube API integration
-- Location: `sonarqube/commit_scan.py`
-- Function: Detects 8 code smell types with severity levels
-- Output: Normalized smell detection records
+### Agent status table
 
-**Agent 2: Test existence verification agent**
+| Agent | Name | Location | Status |
+|-------|------|----------|--------|
+| **A0** | Test coverage verification | `agents/java_test/agent.py` | ✅ Working |
+| **A1** | Code smell detection | `sonarqube/commit_scan.py` | ✅ Working |
+| **A2** | Developer query | TBD | 🔄 Planned |
+| **A3** | Smell prioritization | `agents/dependency_analysis/agent.py`, `scripts/prioritize_smells.py` | ✅ Working |
+| **A4** | Refactoring prompt preparation | TBD | 🔄 Planned |
+| **A5** | Refactoring execution | `agents/rminer_eval/agent.py` | ✅ Working |
+| **A6** | Behavior preservation | `agents/java_test/agent.py` (reuses A0) | ✅ Working |
+| **A7** | Test generation | TBD | 🔄 Planned |
+
+### Detailed agent specifications
+
+**A0: Test coverage verification agent**
 - Technology: LangGraph + LangChain tools
 - Location: `agents/java_test/agent.py`
-- Function: Detects Maven/Gradle, runs tests, parses XML results
+- Function: Detects Maven/Gradle build systems, runs tests, parses XML results
 - Output: Test run summary with pass/fail/error/skipped status
+- Called by: Workflow initialization and A6 (behavior preservation)
+- Calls: A7 if test coverage is insufficient
 
-**Agent 3: Test generation agent**
-- Status: Placeholder (will be implemented in future)
-- Function: Generate tests for uncovered methods
-- TODO: Implement test generation capabilities for methods without test coverage
+**A1: Code smell detection agent**
+- Technology: SonarQube API integration
+- Location: `sonarqube/commit_scan.py`
+- Function: Detects 8 code smell types with severity levels (Complex Method, Long Method, Large Class, etc.)
+- Output: Normalized smell detection records with location and severity
 
-**Agent 4: Smell prioritization agent**
+**A2: Developer query agent (planned)**
+- Status: Planned (currently auto-selects all detected smells)
+- Function: Query developer to select which smells to address
+- Method: Interactive prompt or pre-configured priorities
+- TODO: Implement developer interaction interface
+
+**A3: Smell prioritization agent**
 - Technology: NetworkX + dependency rules
 - Location: `agents/dependency_analysis/agent.py`, `scripts/prioritize_smells.py`
-- Function: Analyzes positive/negative dependencies, calculates priority scores
-- Output: Prioritized refactoring sequence + visualization graphs
+- Function: Analyzes positive/negative smell dependencies, calculates priority scores using PZ formula
+- Formula: `PZ_i = Severity_i + Σ(w_impact for each positive dependency)`
+- Output: Prioritized refactoring sequence + visualization graphs (NetworkX)
 
-**Agent 5: Refactoring execution agent**
+**A4: Refactoring prompt preparation agent (planned)**
+- Status: Planned (currently prompts generated inline in A5)
+- Function: Prepares refactoring prompts based on prioritized smell list
+- Method: Retrieves from prompt database or generates based on smell type
+- TODO: Implement prompt database and retrieval logic
+
+**A5: Refactoring execution agent**
 - Technology: LangGraph + LiteLLM
 - Location: `agents/rminer_eval/agent.py`
-- Function: Maps refactorings to diff hunks using LLM reasoning
+- Function: Maps refactorings to diff hunks using LLM reasoning, applies refactorings in priority order
 - Output: Refactoring-to-hunk mappings with reasoning
+- Runs in: Loop over prioritized smell list from A3
 
-**Agent 6: Test execution and verification agent**
+**A6: Behavior preservation verification agent**
 - Function: Verifies that applied refactorings preserve code behavior by running tests
-- Implementation: Reuses Agent 2's test execution capabilities (may be consolidated into same agent)
-- Note: Tests are run on code after refactoring is applied to verify correctness
-- TODO: Implement behavior preservation checks beyond test execution
+- Implementation: Reuses A0's test execution capabilities
+- Note: Tests are run on code after each refactoring is applied to verify correctness
+- Action: Calls A7 if tests are not found
+- TODO: Implement behavior preservation checks beyond test execution (e.g., semantic equivalence analysis)
+
+**A7: Test generation agent (planned)**
+- Status: Planned (will be implemented in future)
+- Function: Generate tests for uncovered methods or classes
+- Called by: A0 or A6 when test coverage is insufficient
+- TODO: Implement test generation capabilities using LLM-based test synthesis
 
 ### 3.3 Technology stack
+
+#### Core technology summary
 
 | Component | Technology | Version | Purpose |
 |-----------|-----------|---------|---------|
@@ -150,6 +185,99 @@ The system implements six specialized agents in a research-oriented workflow.
 | Visualization | Matplotlib | Latest | Graph rendering |
 | Data Validation | Pydantic | 2.0+ | Type-safe data models |
 | Package Manager | uv | Latest | Dependency management |
+
+#### Detailed technology breakdown
+
+**1. LLM Orchestration**
+- `langgraph` >=0.2.0 - Multi-agent workflow orchestration
+- `langchain` >=0.3.0 - LLM framework and tool definitions
+- `langchain-community` >=0.3.0 - Community-contributed integrations
+- `langchain-openai` - OpenAI provider integration
+- `langchain-anthropic` - Anthropic provider integration
+- `litellm` >=1.0.0 - Unified interface for OpenAI, Anthropic, Cerebras, Google
+
+**2. LLM Providers** (at least one required)
+- **OpenAI**: GPT-4o, GPT-4o-mini (default for most agents)
+  - Requires: `OPENAI_API_KEY` environment variable
+- **Anthropic**: Claude 3.5 Sonnet, Claude Opus
+  - Requires: `ANTHROPIC_API_KEY` environment variable (optional)
+- **Cerebras**: Fast inference (experimental)
+  - Requires: `CEREBRAS_API_KEY` environment variable (optional)
+
+**3. Experiment tracking**
+- `mlflow` >=3.0.0 - Experiment tracking, evaluation framework, model registry
+  - Automatic LangGraph tracing via `mlflow.langchain.autolog()`
+  - Default tracking: `sqlite:///mlflow.db`
+  - Dataset management and versioning
+
+**4. Static analysis**
+- **SonarQube**: `sonarqube:10.6.0-community` (Docker container)
+  - Code smell detection (8 smell types)
+  - Requires: `SONAR_TOKEN` environment variable
+  - Default URL: `http://localhost:9000`
+
+**5. Development tools**
+
+*Dependency management*:
+- `uv` (recommended) - Fast dependency resolution and installation
+- `pip` - Alternative package manager
+
+*Code quality*:
+- `ruff` >=0.5.0 - Linting and formatting
+- `mypy` >=1.10.0 - Type checking
+- `pre-commit` - Git hooks for code quality
+
+*Testing*:
+- `pytest` >=8.0.0 - Test framework
+- `pytest-cov` >=4.1.0 - Coverage reporting
+- `pytest-asyncio` >=0.23.0 - Async test support
+
+*Environment management*:
+- `python-dotenv` >=1.0.0 - .env file loading
+- `pydantic-settings` >=2.0.0 - Settings management
+
+**6. Data and model libraries**
+
+*Data validation*:
+- `pydantic` >=2.0.0 - Structured output from LLMs, entity models validation
+
+*Data manipulation*:
+- `pandas` >=2.2.0 - Data analysis and processing
+- `datasets` >=4.2.0 (dev) - Dataset processing utilities
+
+*HTTP client*:
+- `requests` >=2.31.0 - SonarQube API integration
+
+**7. Infrastructure**
+
+*Containerization*:
+- Docker Engine >=24.0
+- Docker Compose >=2.20
+
+*Version control*:
+- Git >=2.30
+- GitPython >=3.1.0 - Python Git integration
+
+**8. System dependencies**
+
+*Required*:
+- Python 3.11+ (3.11 or 3.12)
+- Docker Engine 24.0+ (for SonarQube)
+- Docker Compose 2.20+
+- Git 2.30+
+- Maven 3.6+ or Gradle 6.0+ (for Java test analysis)
+
+*Optional*:
+- MySQL 8.0+ (only if using DACOS dataset adapter)
+- uv package manager (recommended for faster dependency resolution)
+
+**9. Planned technologies** (not yet implemented)
+
+*Vector database* (for future LLM-based smell detection):
+- DeepLake <4.0.0 - Vector storage for smell knowledge base
+- Google Generative AI Embeddings - Semantic search
+
+*Note*: Current implementation uses SonarQube for smell detection. LLM-based detection with RAG is planned future work.
 
 ### 3.4 Code organization and design patterns
 
@@ -219,7 +347,7 @@ The system implements six specialized agents in a research-oriented workflow.
 **Missing components**:
 1. **Dataset adapter for input data**: No generic adapter interface for different input formats. Current implementation hardcodes RefactoringMiner JSON parsing. Future work should abstract this behind a common interface.
 
-2. **Test generation agent** (Agent 3): Placeholder only, not implemented as it's not the primary research focus.
+2. **Test generation agent (A7)**: Placeholder only, not implemented as it's not the primary research focus.
 
 3. **Batch processing optimization**: Sequential evaluation only; no parallel processing support.
 
@@ -472,7 +600,7 @@ The system provides LangChain tools for agent function calling. Tools are Python
 - **Input**: `project_path` (str) - Path to Java project directory
 - **Output**: String describing detected build system or error message
 - **Behavior**: Checks for `pom.xml` (Maven) or `build.gradle`/`build.gradle.kts` (Gradle)
-- **Used by**: Java test agent (Agent 2)
+- **Used by**: Java test agent (A0/A6)
 
 **Tool 2: `run_java_tests`**
 - **Purpose**: Execute tests and return summary
@@ -487,7 +615,7 @@ The system provides LangChain tools for agent function calling. Tools are Python
   - `error` (str, if build system not detected)
 - **Behavior**: Runs `mvn clean test` or `gradle clean test`, parses XML reports (Surefire/Gradle format)
 - **Timeout**: 300 seconds (5 minutes)
-- **Used by**: Java test agent (Agent 2)
+- **Used by**: Java test agent (A0/A6)
 
 **Tool 3: `get_test_output`**
 - **Purpose**: Retrieve recent test execution logs
@@ -495,7 +623,7 @@ The system provides LangChain tools for agent function calling. Tools are Python
 - **Output**: String containing stdout and stderr (last 2000 characters)
 - **Behavior**: Re-runs tests without clean (fast), captures console output
 - **Timeout**: 60 seconds (1 minute)
-- **Used by**: Java test agent (Agent 2) for detailed failure analysis
+- **Used by**: Java test agent (A0/A6) for detailed failure analysis
 
 **Tool export**: `get_java_test_tools()` returns list of all three tools
 

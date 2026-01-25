@@ -1,251 +1,205 @@
-SmellAI - Thesis Experiments
+SmellAI - Multi-Agent Refactoring System
 
 > **📋 Documentation**: [TECHNICAL_SPECIFICATION.md](TECHNICAL_SPECIFICATION.md) is the authoritative source for system architecture and design. This README covers quick start and usage.
 
-W&B Quickstart
+## What is this?
 
-1. Install: `pip install wandb`
-2. Login: `wandb login` (or set `WANDB_API_KEY`)
-3. Project: defaults to `mt` (override via env)
-4. Minimal usage:
-```python
-import os, wandb
-os.environ.setdefault("WANDB_PROJECT", "mt")
-run = wandb.init(project=os.getenv("WANDB_PROJECT"))
-wandb.config.update({"experiment": "demo"})
-wandb.log({"metric": 1})
-run.finish()
+A multi-agent system for code smell detection, dependency-aware prioritization, and behavior-preserving refactoring. The system implements 8 specialized agents (A0-A7) that orchestrate a complete refactoring workflow: detecting code smells via SonarQube (A1), prioritizing them using dependency graph analysis (A3), executing refactorings in optimal order (A5), and verifying behavior preservation through test execution (A0/A6). Built for master's thesis research on LLM-based refactoring evaluation using ground truth datasets (RefactoringMiner 2.0, SWE-Refactor). Uses LangGraph for multi-agent orchestration, MLflow for experiment tracking, and SonarQube for automated smell detection.
+
+**Key capabilities**:
+- 🔍 Automated code smell detection (8 smell types via SonarQube)
+- 📊 Dependency-aware prioritization (NetworkX graph analysis)
+- 🤖 LLM-based refactoring mapping (OpenAI, Anthropic, Cerebras)
+- ✅ Behavior preservation verification (Maven/Gradle test execution)
+- 📈 Experiment tracking and analysis (MLflow)
+- 🔄 Multiple dataset support via adapter pattern
+
+**Agent workflow**: A0 (Test Coverage) → A1 (SonarQube Scan) → A2 (Developer Query) → A3 (Prioritization) → A4 (Prompt Prep) → A5 (Refactoring Loop) → A6 (Behavior Verification) → A7 (Test Generation if needed)
+
+## Quick start
+
+```bash
+# 1. Install dependencies
+uv pip install .
+
+# 2. Configure environment variables
+cp .env.example .env
+# Edit .env with your API keys (OPENAI_API_KEY, SONAR_TOKEN)
+
+# 3. Start SonarQube (for smell detection)
+docker compose -f sonarqube/docker-compose.yml up -d
+
+# 4. Create evaluation dataset (RefactoringMiner)
+uv run scripts/create_rminer_dataset.py \
+    --manifest rminer_data/manifest.json \
+    --limit 5 \
+    --experiment rminer-evaluation
+
+# 5. Run evaluation
+uv run workflows/rminer_eval_workflow.py \
+    --dataset-name rminer-eval-dataset \
+    --experiment rminer-evaluation
+
+# 6. View results
+mlflow ui --backend-store-uri sqlite:///mlflow.db
+# Open http://localhost:5000
 ```
 
-Project setup
+See [Working Example](#working-example) for complete end-to-end tutorial.
 
-Prerequisites
-- uv (installs Python automatically if needed)
+## Installation
 
-Install dependencies
+**Prerequisites:**
+- Python 3.11+ (installed automatically by uv)
+- Docker (for SonarQube)
+- Maven 3.6+ or Gradle 6.0+ (for Java test analysis)
+
+**Install dependencies:**
 ```bash
 # uv handles Python version and dependencies automatically
 uv pip install .
 ```
 
-Environment variables
-Copy `.env.example` to `.env` and fill in your values:
+**Install uv** (if not already installed):
+- macOS/Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- See https://docs.astral.sh/uv/ for other platforms
+
+### Environment variables
+
+Copy `.env.example` to `.env` and configure with your API keys:
 ```bash
 cp .env.example .env
 # Edit .env with your actual values
 ```
 
-Required variables:
-- `WANDB_API_KEY`: your W&B API key (or run `uvx wandb login`)
-- `WANDB_PROJECT`: defaults to `mt`
-- `CLASSES_CSV_PATH`: path to pre-edited classes CSV
-- `REFACTORINGS_CSV_PATH`: path to pre-edited refactorings CSV
+**Required variables:**
+- `OPENAI_API_KEY`: OpenAI API key for GPT models (get from https://platform.openai.com/api-keys)
+- `CEREBRAS_API_KEY`: Cerebras API key for fast inference (alternative LLM provider)
+- `SONAR_TOKEN`: SonarQube authentication token (create in SonarQube UI: My Account → Security)
+- `SONAR_URL`: SonarQube server URL (default: `http://localhost:9000`)
 
-Run a minimal experiment
-```python
-from src.pipelines.experiment_pipeline import load_dataset, run_experiment
+**Optional variables:**
+- `MLFLOW_TRACKING_URI`: MLflow tracking database (default: `sqlite:///mlflow.db`)
+- `ANTHROPIC_API_KEY`: Anthropic API key for Claude models (optional alternative provider)
 
-# Optional: pass paths explicitly instead of env
-config = {
-    "classes_csv": "/absolute/path/to/classes.csv",
-    "refactorings_csv": "/absolute/path/to/refactorings.csv",
-}
+## Datasets
 
-df_classes, df_refactorings = load_dataset(config)
-run_experiment(
-    df_classes,
-    df_refactorings,
-    dataset_name="demo-dataset",
-    dataset_version="v0",
-    connector_name="mysql",
-)
-```
+The system supports multiple evaluation datasets via adapter pattern (`datasets/` directory):
 
-## Dependency Management with uv
+### RefactoringMiner 2.0 (Primary)
 
-### Basic Setup
-- Install uv: see `https://docs.astral.sh/uv/` (macOS/Linux/Homebrew supported)
-- Install deps: `uv pip install .` (from pyproject.toml)
-- CLI tools via uvx: `uvx wandb login`
-- Lock dependencies: `uv pip compile pyproject.toml -o uv.lock`
-- Reproducible install: `uv pip sync uv.lock`
+Ground truth for refactoring mapping evaluation. Contains real refactorings from 188 open-source projects.
 
-### Jupyter Notebook Integration
-
-#### Setup for Notebooks
+**Create dataset:**
 ```bash
-# 1. Add ipykernel and uv as dev dependencies
-uv add --dev ipykernel uv
-
-# 2. Create a dedicated Jupyter kernel for this project
-uv run ipython kernel install --user --env VIRTUAL_ENV $(pwd)/.venv --name=smellai
-
-# 3. Optional: Seed environment with pip for %pip magic support
-uv venv --seed
-```
-
-#### Managing Dependencies in Notebooks
-
-**Method 1: Using uv commands (Recommended)**
-```python
-# Add dependencies permanently to pyproject.toml
-!uv add pydantic numpy matplotlib
-
-# Install dependencies temporarily (session only)
-!uv pip install requests beautifulsoup4
-
-# Add development dependencies
-!uv add --dev pytest black ruff
-```
-
-**Method 2: Using %pip magic (if seeded)**
-```python
-# Only works if environment was created with --seed
-%pip install package-name
-```
-
-#### Best Practices for Notebook Dependencies
-
-1. **Persistent Dependencies**: Use `!uv add package-name` to add packages to your project permanently
-2. **Temporary Testing**: Use `!uv pip install package-name` for quick experiments
-3. **Development Tools**: Use `!uv add --dev package-name` for testing/linting tools
-4. **Project Isolation**: Always use the dedicated kernel (`smellai`) to ensure proper environment isolation
-
-#### Example Notebook Cell Structure
-```python
-# Cell 1: Install dependencies
-!uv add autopep8 autoflake weave isort openai datasets --dev
-
-# Cell 2: Handle compatibility issues
-!uv pip install "httpx<0.28"  # Temporary fix for OpenAI compatibility
-
-# Cell 3: Import and use
-import weave
-import openai
-# ... rest of your code
-```
-
-#### Troubleshooting
-- **Kernel not found**: Restart Jupyter and select the `smellai` kernel
-- **Package not found**: Ensure you're using the correct kernel and run `!uv pip list` to verify installation
-- **Import errors**: Restart kernel after installing new packages
-
-## RefactoringMiner Evaluation Workflow
-
-This project includes MLflow-based evaluation pipelines for refactoring mapping agents.
-
-### Quick Start
-
-#### 1. Create an MLflow Dataset
-```bash
-# Create dataset from RefactoringMiner manifest
-# NOTE: --experiment must match what you use in evaluation
 uv run scripts/create_rminer_dataset.py \
     --manifest rminer_data/manifest.json \
     --limit 20 \
-    --experiment rminer-evaluation \
-    --tracking-uri sqlite:///mlflow.db
-
-# Note the dataset_id printed at the end (e.g., "d-abc123def456")
+    --experiment rminer-evaluation
 ```
 
-#### 2. List Available Datasets
+**List datasets:**
 ```bash
-# List all datasets
-uv run scripts/manage_datasets.py list --tracking-uri sqlite:///mlflow.db
-
-# List datasets with JSON output
-uv run scripts/manage_datasets.py list --json
+uv run scripts/manage_datasets.py list
 ```
 
-#### 3. Inspect a Dataset
+**Inspect dataset:**
 ```bash
-# Get dataset by name
 uv run scripts/manage_datasets.py get --name rminer-eval-dataset --show-records
-
-# Get dataset by ID
-uv run scripts/manage_datasets.py get --id d-abc123def456 --show-records
 ```
 
-#### 4. Run Evaluation
+**Run evaluation:**
 ```bash
-# Run evaluation pipeline
-# NOTE: --dataset-id is preferred if you have it
-uv run smellai/pipelines/rminer_eval.py \
+uv run workflows/rminer_eval_workflow.py \
     --dataset-name rminer-eval-dataset \
-    --experiment rminer-evaluation \
-    --tracking-uri sqlite:///mlflow.db \
     --model gpt-4o-mini
 ```
 
-### Configuration
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--tracking-uri` | `sqlite:///mlflow.db` | MLflow tracking server |
-| `--experiment` | `rminer-evaluation` | Experiment name (must be consistent) |
-| `--model` | `gpt-4o-mini` | LLM model for agent |
-
-### View Results
+**View results:**
 ```bash
 mlflow ui --backend-store-uri sqlite:///mlflow.db
 # Open http://localhost:5000
 ```
 
-## Java Test Analysis Agent
+See [docs/README_RMINER.md](docs/README_RMINER.md) for detailed RefactoringMiner workflow documentation.
 
-LangGraph-based agent for analyzing Java projects and running tests. Automatically detects Maven/Gradle, executes tests, and provides LLM-powered failure analysis.
+### SWE-Refactor (Alternative)
 
-### Quick Start
+Alternative refactoring dataset with before/after code examples. Located in `swe_refactor/` directory.
+
+### DACOS (Alternative)
+
+MySQL-based dataset for code smell detection evaluation. Requires MySQL 8.0+ and dataset import.
+
+**Note**: Datasets are interchangeable via adapter interface in `datasets/base.py`. All evaluation workflows work with any supported dataset.
+
+## Agent workflows
+
+### A0/A6: Java test analysis (Test Coverage & Behavior Verification)
+
+Auto-detects Maven/Gradle, runs tests, provides LLM-powered failure analysis.
 
 ```bash
-# Analyze a Java project
 uv run workflows/java_test_workflow.py --project /path/to/java/project
-
-# Use specific model
-uv run workflows/java_test_workflow.py \
-    --project /path/to/project \
-    --model gpt-4o
-
-# Use Anthropic provider
-uv run workflows/java_test_workflow.py \
-    --project /path/to/project \
-    --provider anthropic \
-    --model claude-3-5-sonnet-20241022
-
-# JSON output
-uv run workflows/java_test_workflow.py \
-    --project /path/to/project \
-    --json
 ```
 
-### Python API
+See [docs/java_test_agent.md](docs/java_test_agent.md) for detailed documentation.
 
-```python
-from agents.java_test_agent import analyze_java_tests
+### A1: SonarQube smell detection
 
-result = analyze_java_tests(
-    "/path/to/java/project",
-    model_name="gpt-4o-mini",
-    provider="openai"
-)
+Start SonarQube container and scan repository for code smells.
 
-print(result["response"])
+```bash
+# Start SonarQube
+docker compose -f sonarqube/docker-compose.yml up -d
+
+# Scan repository
+uv run sonarqube/commit_scan.py --repo-url https://github.com/user/repo --commit abc123
 ```
 
-### Features
+See [docs/sonarqube_smells.md](docs/sonarqube_smells.md) for smell types and configuration.
 
-- ✅ Auto-detect Maven/Gradle build systems
-- ✅ Run tests and parse XML reports (Surefire/Gradle)
-- ✅ LLM-powered failure analysis and recommendations
-- ✅ Support for OpenAI and Anthropic models
-- ✅ Structured test result extraction (pass/fail, errors, stack traces)
-- ✅ JSON output for programmatic use
+### A3: Dependency-aware prioritization
 
-### Documentation
+Analyzes smell dependencies and calculates optimal refactoring order.
 
-See [docs/java_test_agent.md](docs/java_test_agent.md) for detailed documentation including:
-- Architecture and implementation details
-- Integration with RefactoringMiner workflow
-- MLflow integration examples
-- Troubleshooting guide
+```bash
+uv run scripts/prioritize_smells.py --smells-file smells.json
+```
+
+Generates prioritization graphs visualizing positive/negative dependencies.
+
+### A5: Refactoring execution
+
+LLM-based refactoring mapping and execution (see RefactoringMiner workflow above).
+
+## Working example
+
+For a complete end-to-end tutorial with all agents, see [docs/react_agent_mlflow.md](docs/react_agent_mlflow.md).
+
+This guide covers:
+- Setting up SonarQube and MLflow
+- Running complete evaluation workflow
+- Analyzing results and metrics
+- Troubleshooting common issues
+
+## Advanced usage
+
+### Dependency management with uv
+
+- Lock dependencies: `uv pip compile pyproject.toml -o uv.lock`
+- Reproducible install: `uv pip sync uv.lock`
+- Add package: `uv add package-name`
+
+### Jupyter notebook integration
+
+See detailed Jupyter setup in [TECHNICAL_SPECIFICATION.md](TECHNICAL_SPECIFICATION.md) section 3.5.
+
+## Documentation
+
+- **[TECHNICAL_SPECIFICATION.md](TECHNICAL_SPECIFICATION.md)** - Complete system architecture and design
+- **[docs/SYSTEM_DESIGN_SUMMARY.md](docs/SYSTEM_DESIGN_SUMMARY.md)** - Multi-agent architecture overview
+- **[docs/architecture.md](docs/architecture.md)** - Detailed component descriptions
+- **[docs/java_test_agent.md](docs/java_test_agent.md)** - Java test analysis agent
+- **[docs/README_RMINER.md](docs/README_RMINER.md)** - RefactoringMiner workflow
+- **[docs/sonarqube_smells.md](docs/sonarqube_smells.md)** - SonarQube integration and smell types

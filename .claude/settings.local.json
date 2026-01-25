@@ -52,7 +52,8 @@
       "Bash(unzip:*)",
       "Bash(python3:*)",
       "Skill(ast-grep:ast-grep)",
-      "Bash(ast-grep run:*)"
+      "Bash(ast-grep run:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   },

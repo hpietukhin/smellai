@@ -1,27 +1,153 @@
 # Architecture Document: LLM-Based Code Smell Detection
 
-**Version**: 1.0  
-**Date**: 2025-10-18  
-**Status**: Draft  
+**Version**: 1.0
+**Date**: 2025-10-18
+**Status**: Draft
 **Project**: Master's Thesis - Code Smell Detection Using LLMs
+
+> **⚠️ Important Notes:**
+>
+> **Multiple dataset support**: This system supports multiple evaluation datasets via adapter pattern (see `datasets/` directory):
+> - **RefactoringMiner 2.0** - Primary dataset for refactoring mapping analysis
+> - **DACOS (MySQL)** - Alternative dataset for code smell detection analysis
+> - **SWE-Refactor** - Alternative refactoring dataset
+>
+> Datasets are interchangeable through unified adapter interface. This document describes the multi-agent architecture that works with all supported datasets.
+>
+> **Source of truth**: For current implementation details and up-to-date technical specifications, see [TECHNICAL_SPECIFICATION.md](../TECHNICAL_SPECIFICATION.md) (v1.1, 2026-01-12)
 
 ## 1. System Overview
 
 ### 1.1 Purpose
-CLI tool for evaluating LLM-based code smell detection against ground truth annotations from the DACOS dataset. The system compares LLM detection accuracy using rubric-based evaluation with an LLM-as-judge approach.
 
-### 1.2 Phase 1 Scope (2-month prototype)
-- Single LangGraph agent: LLM-as-judge for smell detection evaluation
-- MLflow for tracing, experiment tracking, and evaluation metrics
-- Ground truth from MySQL DACOS dataset
-- SonarQube baseline (separate process, not integrated in eval pipeline)
-- Focus: Java code smell detection quality assessment
+Multi-agent system for code smell detection, dependency-aware prioritization, and behavior-preserving refactoring. The system evaluates LLM capabilities in refactoring mapping and code smell analysis using ground truth datasets.
 
-### 1.3 Out of Scope (Phase 1)
-- Multi-agent workflows (coordinator, test generation, refactoring)
-- Automated refactoring
-- Real-time SonarQube integration in eval pipeline
+### 1.2 System Scope
+
+**Primary workflow**: Multi-agent system (A0-A7) orchestrating code smell detection, prioritization, refactoring execution, and behavior preservation verification.
+
+**Agent sequence**:
+- **A0**: Test coverage verification (calls A7 if tests missing)
+- **A1**: Code smell detection via SonarQube integration
+- **A2**: Developer query for smell selection (planned)
+- **A3**: Dependency-aware prioritization using graph analysis
+- **A4**: Refactoring prompt preparation (planned)
+- **A5**: Refactoring execution in prioritized order
+- **A6**: Behavior preservation verification via test execution
+- **A7**: Test generation when coverage insufficient (planned)
+
+**Workflow diagram**:
+
+```
+                     ┌─────────────────────────┐
+                     │   Input: Git Repository │
+                     └────────────┬────────────┘
+                                  │
+                                  ▼
+                     ┌─────────────────────────┐
+                     │ A0: Test Coverage Check │
+                     │ - Detect Maven/Gradle   │
+                     │ - Run existing tests    │
+                     │ - Parse test results    │
+                     └────────────┬────────────┘
+                                  │
+                         ┌────────┴─────────┐
+                         │ Tests missing?   │
+                         └────┬────────┬────┘
+                              │ No     │ Yes
+                              │        │
+                              │        ▼
+                              │  ┌─────────────────────┐
+                              │  │ A7: Test Generation │◄─────┐
+                              │  │ (Planned)           │      │
+                              │  └─────────────────────┘      │
+                              │                               │
+                              ▼                               │
+                 ┌────────────────────────────┐               │
+                 │ A1: SonarQube Smell Scan   │               │
+                 │ - Docker container         │               │
+                 │ - 8 smell types            │               │
+                 │ - Severity levels          │               │
+                 └────────────┬───────────────┘               │
+                              │                               │
+                              ▼                               │
+                 ┌────────────────────────────┐               │
+                 │ A2: Developer Query        │               │
+                 │ (Planned - auto-select)    │               │
+                 └────────────┬───────────────┘               │
+                              │                               │
+                              ▼                               │
+                 ┌────────────────────────────┐               │
+                 │ A3: Dependency Analysis    │               │
+                 │ - NetworkX graph           │               │
+                 │ - PZ = Severity + Impact   │               │
+                 │ - Priority sequence        │               │
+                 └────────────┬───────────────┘               │
+                              │                               │
+                              ▼                               │
+                 ┌────────────────────────────┐               │
+                 │ A4: Prompt Preparation     │               │
+                 │ (Planned - inline)         │               │
+                 └────────────┬───────────────┘               │
+                              │                               │
+                              ▼                               │
+                 ┌────────────────────────────┐               │
+                 │ A5: Refactoring Loop       │               │
+            ┌────┤ - LLM-based mapping        │               │
+            │    │ - Apply refactorings       │               │
+            │    │ - In priority order        │               │
+            │    └────────────┬───────────────┘               │
+            │                 │                               │
+            │                 ▼                               │
+            │    ┌────────────────────────────┐               │
+            │    │ A6: Behavior Verification  │               │
+            │    │ - Run tests (reuse A0)     │               │
+            │    │ - Check pass/fail          │               │
+            │    └────────┬──────────┬────────┘               │
+            │             │          │                        │
+            │    ┌────────┴──┐  ┌────┴────────┐              │
+            │    │ Tests OK? │  │ Tests fail/ │              │
+            │    │           │  │ not found?  │──────────────┘
+            │    └────┬──────┘  └─────────────┘
+            │         │ Yes
+            │         ▼
+            │    ┌─────────────┐
+            │    │ More smells?│
+            │    └────┬────┬───┘
+            │         │ No │ Yes
+            │         │    └────────┘
+            │         │
+            │         ▼
+            │    ┌──────────────────────────┐
+            └───►│ Output: Refactored Code  │
+                 │ + MLflow Metrics         │
+                 └──────────────────────────┘
+
+Legend:
+  ━━  Main workflow path
+  ──  Conditional/error path
+  A0-A7: Agent designation
+  (Planned): Not yet implemented
+```
+
+**Core capabilities**:
+- MLflow-based experiment tracking and analysis
+- SonarQube integration for automated code smell detection (8 smell types)
+- RefactoringMiner integration for ground truth refactoring data
+- Java test execution and analysis (Maven/Gradle support)
+- NetworkX-based dependency graph analysis
+- LangGraph agent orchestration
+
+**Evaluation datasets** (interchangeable via adapter pattern in `datasets/`):
+- **RefactoringMiner 2.0**: Ground truth for refactoring mapping analysis (primary)
+- **DACOS (MySQL)**: Alternative dataset for smell detection analysis
+- **SWE-Refactor**: Alternative refactoring dataset
+
+### 1.3 Future enhancements
+- Complete A2, A4, A7 agent implementations
+- Real-time SonarQube integration in main workflow (currently separate baseline)
 - Advanced MLflow features (model registry, deployment)
+- Multi-file refactoring support
 
 ## 2. System Components
 
@@ -47,16 +173,16 @@ CLI tool for evaluating LLM-based code smell detection against ground truth anno
             │                                 │
             ▼                                 ▼
 ┌───────────────────────┐         ┌──────────────────────────┐
-│   MySQL Connector     │         │  Git Operations          │
-│  - Read DACOS samples │         │  - Sparse/shallow clone  │
-│  - Fetch ground truth │         │  - Checkout commit SHA   │
-│  - Query by filters   │         │  - Cleanup after eval    │
+│  Dataset Adapters     │         │  Git Operations          │
+│  - DACOS (MySQL)      │         │  - Full clone            │
+│  - RefactoringMiner   │         │  - Checkout commit SHA   │
+│  - SWE-Refactor       │         │  - Cleanup after eval    │
 └───────────────────────┘         └──────────────────────────┘
             │                                 │
             ▼                                 ▼
 ┌───────────────────────┐         ┌──────────────────────────┐
-│  DACOS MySQL DB       │         │  Git Repositories        │
-│  (tagman5.sample)     │         │  (cloned at commit SHA)  │
+│  Evaluation Datasets  │         │  Git Repositories        │
+│  - Multiple sources   │         │  (cloned at commit SHA)  │
 └───────────────────────┘         └──────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
@@ -69,54 +195,66 @@ CLI tool for evaluating LLM-based code smell detection against ground truth anno
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│                 Supporting Components                       │
+│              Planned Components (Future Work)               │
 │  ┌─────────────────────┐    ┌────────────────────────┐    │
 │  │  DeepLake Vector DB │    │  LLM Detector Module   │    │
 │  │  (smell knowledge)  │    │  (RAG-based detection) │    │
+│  │  Status: Planned    │    │  Status: Planned       │    │
 │  └─────────────────────┘    └────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### 2.2 Component Descriptions
 
-#### 2.2.1 LangGraph Pipeline
-**Purpose**: Core evaluation workflow
-**Implementation**: Single-agent graph with linear flow
+#### 2.2.1 LangGraph Multi-Agent Pipeline
+**Purpose**: Multi-agent orchestration for code smell detection, prioritization, and refactoring
+**Implementation**: Multi-agent graph with A0-A7 workflow (see section 1.2)
 **Tracing**: Automatic MLflow tracing via `mlflow.langchain.autolog()`
-**State Schema**:
-```python
-class EvaluationState(TypedDict):
-    sample_id: int
-    file_path: str
-    file_content: str
-    ground_truth: List[SmellAnnotation]
-    llm_detections: List[SmellDetection]
-    evaluation_result: EvaluationResult
-    error: Optional[str]
-```
 
-**Agent: LLM-as-Judge**
-- Uses rubric-based evaluation (EXCELLENT/GOOD/ACCEPTABLE/POOR/INCORRECT)
-- Compares LLM detections against ground truth
-- Calculates precision, recall, per-smell scores
-- Returns structured evaluation result
+**Current agent implementations**:
+- **A0 (Test Coverage)**: `agents/java_test/agent.py` - Maven/Gradle test execution
+- **A1 (Smell Detection)**: `sonarqube/commit_scan.py` - SonarQube integration
+- **A3 (Prioritization)**: `scripts/prioritize_smells.py` - Dependency graph analysis
+- **A5 (Refactoring Mapping)**: `agents/rminer_eval/agent.py` - LLM-based refactoring mapping
+- **A6 (Behavior Verification)**: Reuses A0 test execution
 
-**Evaluation Matching Criteria** (approximate location):
-- **EXCELLENT**: Correct smell type + exact file + correct class/method name
-- **GOOD**: Correct smell type + exact file + approximate location (same class, different method)
-- **ACCEPTABLE**: Correct smell type + correct file (location unclear)
-- **POOR**: Wrong smell type but correct general area
-- **INCORRECT**: Wrong smell type and wrong location
+**Planned agents**:
+- **A2**: Developer query for smell selection
+- **A4**: Refactoring prompt preparation
+- **A7**: Test generation for uncovered code
 
-**Note**: Since ground truth lacks line numbers, judge evaluates based on:
-- File path match (from sample.path_to_file)
-- Class name match (from class_metrics.type_name or method_metrics.type_name)
-- Method name match if applicable (from method_metrics.method_name)
+#### 2.2.2 Dataset Adapters
+**Purpose**: Unified interface for multiple evaluation datasets
+**Implementation**: Adapter pattern in `datasets/` directory
+**Location**: `datasets/base.py`, `datasets/rminer.py`, `datasets/swe_refactor.py`, `datasets/dacos.py` (planned)
 
-### 2.2.3 MySQL Connector
-**Purpose**: DACOS dataset access  
-**Database**: MySQL (localhost, database: dacos)  
-**Dataset Reference**: Nandani, H., Saad, M., & Sharma, T. (2023). DACOS—A Manually Annotated Dataset of Code Smells. MSR 2023. [arXiv:2303.08729]  
+**Supported datasets**:
+
+1. **RefactoringMiner 2.0** (primary)
+   - Ground truth for refactoring mapping analysis
+   - Source: JSON manifests from RefactoringMiner tool
+   - Reference: Tsantalis, Ketkar, Dig. IEEE TSE 2022
+   - Adapter: `datasets/rminer.py`
+
+2. **SWE-Refactor**
+   - Alternative refactoring dataset
+   - Source: ZIP archive with before/after code
+   - Reference: "SWE-Refactor: A Repository with Multiple Generations of Refactored Code"
+   - Adapter: `datasets/swe_refactor.py`
+
+3. **DACOS** (alternative, MySQL-based)
+   - Alternative dataset for code smell detection analysis
+   - Source: MySQL database (tagman5 schema)
+   - Reference: Nandani, H., Saad, M., & Sharma, T. (2023). MSR 2023
+   - Adapter: `datasets/dacos.py` (planned)
+
+**Note**: All datasets provide unified interface via `Dataset` base class. Evaluation workflows work with any supported dataset through adapter abstraction.
+
+#### 2.2.3 DACOS Dataset (Alternative Dataset Option)
+**Purpose**: Code smell detection ground truth (when using DACOS adapter)
+**Database**: MySQL (localhost, database: dacos)
+**Dataset Reference**: Nandani, H., Saad, M., & Sharma, T. (2023). DACOS—A Manually Annotated Dataset of Code Smells. MSR 2023. [arXiv:2303.08729]
+**Status**: Alternative dataset option; RefactoringMiner is primary dataset  
 
 **Schema Overview**:
 ```sql
@@ -174,31 +312,36 @@ is_design_smell: bit(1)
 - Read-only access (no writes)
 
 #### 2.2.4 Git Operations
-**Purpose**: Source code retrieval at specific commits  
-**Strategy**: Sparse/shallow clones to save time and space
+**Purpose**: Source code retrieval at specific commits
+**Implementation**: Full repository cloning (sparse checkout removed from design - see TECHNICAL_SPECIFICATION.md:1024)
+**Location**: `repo_utils/operations.py`
+
 ```bash
-# Sparse-checkout for specific file paths
-git clone --depth 1 --filter=blob:none --sparse <repo_url>
+# Full clone with shallow depth for specific commit
+git clone --depth 1 <repo_url>
+cd <repo_dir>
 git checkout <commit_sha>
-git sparse-checkout set <file_path>
 ```
+
+**Rationale**: Full checkout required for accurate SonarQube static analysis (cross-file analysis, coupling detection, inheritance issues require complete codebase).
 
 **Cleanup**: Remove cloned repos after evaluation batch completes
 
-#### 2.2.5 LLM Detector Module
+#### 2.2.5 LLM Detector Module (Planned)
 **Purpose**: Code smell detection using LLM with RAG
+**Status**: Planned future enhancement
 **Components**:
 - DeepLake vector database (smell knowledge from smells repo, persistent local storage)
-- LiteLLM with Cerebras provider (detection LLM)
+- LiteLLM with multiple provider support (detection LLM)
 - Retrieval-augmented generation for smell definitions
 - Structured output (Pydantic models)
 
-**Detection Process**:
+**Planned detection process**:
 1. Retrieve relevant smell documentation from vector DB
 2. Analyze file content with RAG context
 3. Return structured detections (type, location, severity, description)
 
-**Note**: DeepLake configured to use in-memory storage (`mem://deeplake/smells`) by default for development speed. Persistent storage at `./data/deeplake/smells` available for production use.
+**Current implementation**: SonarQube-based smell detection (Agent A1) is the primary method. LLM-based detection planned for future research.
 
 #### 2.2.6 SonarQube Baseline (Separate Process)
 **Purpose**: Classical tool baseline for comparison
@@ -241,21 +384,21 @@ git sparse-checkout set <file_path>
     ↓ (automatically traced by MLflow)
 ┌─────────────────────────────────────────┐
 │ 1. Fetch Sample Metadata                │
-│    - Query MySQL for sample record      │
+│    - Query dataset adapter               │
 │    - Extract: project_name, path,       │
-│      commit SHA, ground truth smells    │
+│      commit SHA, ground truth data      │
 └────────────┬────────────────────────────┘
              ↓
 ┌─────────────────────────────────────────┐
 │ 2. Clone Repository                     │
-│    - Sparse checkout at commit SHA      │
+│    - Full clone at commit SHA           │
 │    - Extract file content               │
 └────────────┬────────────────────────────┘
              ↓
 ┌─────────────────────────────────────────┐
-│ 3. Run LLM Detection                    │
-│    - Load smell knowledge (DeepLake)    │
-│    - RAG-enhanced detection             │
+│ 3. Run Smell Detection                  │
+│    - SonarQube scan (current)           │
+│    - OR LLM detection (planned)         │
 │    - Return structured detections       │
 └────────────┬────────────────────────────┘
              ↓
@@ -395,13 +538,11 @@ class DACOSSample(BaseModel):
 ```python
 **Note**: Pipeline configuration is managed via environment variables (.env file) and function parameters. No dedicated configuration module exists in current implementation. Key configuration points:
 
-- **LLM Model**: `cerebras/llama3.1-8b` (via LiteLLM)
-- **Embedding Model**: `models/text-embedding-004` (Google Generative AI)
-- **Vector DB Path**: `mem://deeplake/smells` (in-memory, default) or `./data/deeplake/smells` (persistent)
-- **MySQL Connection**: MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD (from .env)
-- **MLflow**: MLFLOW_TRACKING_URI, MLFLOW_EXPERIMENT_NAME (from .env, defaults to `./mlruns` and `code-smell-evaluation`)
-- **SonarQube**: SONAR_URL, SONAR_TOKEN (from .env)
-- **API Keys**: CEREBRAS_API_KEY, GOOGLE_API_KEY (from .env)
+- **LLM Providers**: OpenAI (OPENAI_API_KEY), Cerebras (CEREBRAS_API_KEY), Anthropic (ANTHROPIC_API_KEY optional)
+- **MLflow**: MLFLOW_TRACKING_URI (default: `sqlite:///mlflow.db`)
+- **SonarQube**: SONAR_URL (default: `http://localhost:9000`), SONAR_TOKEN (required)
+- **Dataset Adapters**: Configured via adapter classes in `datasets/` directory
+- **Vector DB** (planned): DeepLake configuration for future LLM-based smell detection
 ```
 
 ## 5. Integration Points
@@ -536,7 +677,7 @@ mlflow.log_metrics({
 ### 6.1 Performance
 - **Target**: Evaluate 100 samples in <30 minutes (sequential)
 - **Bottleneck**: Git clone operations
-- **Mitigation**: Sparse/shallow clones, cleanup after batches
+- **Mitigation**: Shallow clones (depth=1), cleanup after batches, batch processing
 
 ### 6.2 Reproducibility
 **Constitution Compliance**:
@@ -598,28 +739,28 @@ mlflow.log_metrics({
 | Component | Technology | Version | Notes |
 |-----------|-----------|---------|-------|
 | Language | Python | 3.11+ | Type hints required |
-| Orchestration | LangGraph | Latest | Single-agent workflow |
+| Orchestration | LangGraph | Latest | Multi-agent workflow (A0-A7) |
 | Tracking & Tracing | MLflow | 3.0+ | Experiment tracking, observability |
-| Database | MySQL | 8.0+ | DACOS dataset |
-| Vector Store | DeepLake | <4.0.0 | Persistent local storage |
-| LLM | LiteLLM + Cerebras | llama3.1-8b | Detection & judging |
-| Embeddings | Google | text-embedding-004 | RAG retrieval |
-| Baseline Tool | SonarQube | 10.6.0-community | Docker container |
-| Git | GitPython | Latest | Sparse clone support |
+| Static Analysis | SonarQube | 10.6.0-community | Docker container (Agent A1) |
+| LLM Providers | OpenAI, Cerebras, Anthropic | Latest | Via LiteLLM unified interface |
+| Git | GitPython | Latest | Full repository cloning |
+| Graph Analysis | NetworkX | Latest | Dependency prioritization (Agent A3) |
 | Testing | pytest | Latest | Unit/integration tests |
 | Code Quality | ruff, mypy | Latest | Linting, type checking |
 | Package Manager | uv | Latest | Dependency management |
+| Datasets | MySQL (optional) | 8.0+ | DACOS dataset (alternative option) |
+| Vector Store (planned) | DeepLake | <4.0.0 | Future LLM-based smell detection |
 
 ## 8. Deployment Architecture
 
 ### 8.1 Local Development Setup
 ```
-├── MySQL (localhost:3306) - DACOS database
-├── SonarQube (Docker, localhost:9000) - baseline tool
-├── MLflow (./mlruns) - tracing and experiment tracking
-├── DeepLake (./data/deeplake/) - smell knowledge (persistent)
-├── Git clones (/tmp/smell-eval-clones) - temporary
-└── Python environment (venv/uv) - pipeline execution
+├── SonarQube (Docker, localhost:9000) - code smell detection (Agent A1)
+├── MLflow (sqlite:///mlflow.db) - experiment tracking and tracing
+├── Dataset adapters (datasets/) - RefactoringMiner/SWE-Refactor/DACOS
+├── Git clones (temporary) - full repository clones
+├── Python environment (.venv via uv) - agent execution
+└── MySQL (localhost:3306, optional) - DACOS dataset if using DACOS adapter
 ```
 
 ### 8.2 File Structure
@@ -647,9 +788,11 @@ project/
 ├── eval_results/                   # Evaluation outputs (git-ignored)
 ├── docs/                           # Documentation
 │   ├── architecture.md
-│   ├── tech_stack.md
-│   ├── tasks.md
-│   └── sonarqube_smells.md
+│   ├── TECHNICAL_SPECIFICATION.md  # Authoritative technical reference (includes tech stack)
+│   ├── SYSTEM_DESIGN_SUMMARY.md
+│   ├── java_test_agent.md
+│   ├── sonarqube_smells.md
+│   └── README_RMINER.md
 ├── .env                            # Environment variables (git-ignored)
 ├── .env.example                    # Template for secrets
 ├── pyproject.toml                  # Dependencies (uv format)

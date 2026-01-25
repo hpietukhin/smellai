@@ -39,7 +39,7 @@ uv run scripts/manage_datasets.py get --id d-abc123def456 --show-records
 ```bash
 # Run evaluation pipeline
 # NOTE: --dataset-id is preferred if you have it
-uv run agent_workflows/rminer_eval.py \
+uv run workflows/rminer_eval_workflow.py \
     --dataset-name rminer-eval-dataset \
     --experiment rminer-evaluation \
     --tracking-uri sqlite:///mlflow.db \
