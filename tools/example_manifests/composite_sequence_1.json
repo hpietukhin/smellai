@@ -1,0 +1,62 @@
+{
+  "name": "Composite Refactoring Sequence #1: Extract + Move Methods",
+  "description": "Real-world example from Guava project: 13 refactorings in sequence (10 Move Method + 3 Move And Rename Method)",
+  "project": "guava",
+  "commit": "a9c3d3ac6822",
+  "files": [
+    {
+      "filename": "AbstractScheduledServiceTest.java",
+      "smells": [
+        {
+          "type": "God Class",
+          "location": "line 1",
+          "severity": "HIGH",
+          "description": "Class has too many responsibilities (testing multiple scheduler variants)"
+        },
+        {
+          "type": "Long Method",
+          "location": "line 45",
+          "severity": "HIGH",
+          "description": "testBig() method is 150+ lines, handles multiple test scenarios"
+        },
+        {
+          "type": "Duplicated Code",
+          "location": "line 120",
+          "severity": "MEDIUM",
+          "description": "Similar test setup code repeated across testFixedDelaySchedule and testFixedRateSchedule"
+        },
+        {
+          "type": "Feature Envy",
+          "location": "line 200",
+          "severity": "MEDIUM",
+          "description": "testCustomScheduler methods extensively use AbstractIdleService functionality"
+        }
+      ]
+    },
+    {
+      "filename": "AbstractIdleServiceTest.java",
+      "smells": [
+        {
+          "type": "Missing Abstraction",
+          "location": "line 50",
+          "severity": "LOW",
+          "description": "Common failure testing logic should be extracted"
+        },
+        {
+          "type": "Long Parameter List",
+          "location": "line 89",
+          "severity": "LOW",
+          "description": "testStart_failed has 5+ parameters for various failure scenarios"
+        }
+      ]
+    }
+  ],
+  "refactoring_sequence": [
+    "Move testCustomSchedulerFailure to new ServiceFailureTest class",
+    "Move testBig to new SchedulerStressTest class",
+    "Move testCustomScheduler_deadlock to ServiceConcurrencyTest",
+    "Extract common setup into helper methods",
+    "Move and rename testStop_failed → testServiceStopFailure",
+    "Move and rename testStart_failed → testServiceStartFailure"
+  ]
+}

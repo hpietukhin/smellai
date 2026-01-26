@@ -344,6 +344,19 @@ def create_swe_eval_agent(
             from swe_refactor.persistence.models import RefactoringAttempt
 
             analytics_db = state["analytics_db"]
+
+            # Capture git diff if compilation was successful
+            code_diff = None
+            if compile_result.success:
+                try:
+                    from git import Repo
+
+                    repo = Repo(project_path)
+                    # Get diff between HEAD and working tree (uncommitted changes)
+                    code_diff = repo.git.diff("HEAD")
+                except Exception as e:
+                    LOGGER.warning("A6: Failed to capture git diff: %s", e)
+
             attempt = RefactoringAttempt(
                 session_id=state.get("session_id", "unknown"),
                 iteration=state.get("refactoring_iteration", 0),
@@ -355,6 +368,7 @@ def create_swe_eval_agent(
                 retries=state.get("retry_count", 0),
                 smells_resolved=len(diff["resolved"]),
                 smells_created=len(diff["created"]),
+                code_diff=code_diff,
             )
             analytics_db.log_refactoring_attempt(attempt)
 

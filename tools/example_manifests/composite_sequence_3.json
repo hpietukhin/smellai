@@ -1,0 +1,59 @@
+{
+  "name": "Composite Refactoring Sequence #3: Extract Methods from Complex Logic",
+  "description": "Real-world example from Commons-Lang: 22 Extract Method refactorings",
+  "project": "commons-lang",
+  "commit": "5d146cd06965",
+  "files": [
+    {
+      "filename": "StringUtils.java",
+      "smells": [
+        {
+          "type": "Long Method",
+          "location": "line 3450",
+          "severity": "HIGH",
+          "description": "indexOf() method is 200+ lines with nested loops"
+        },
+        {
+          "type": "Complex Method",
+          "location": "line 3450",
+          "severity": "HIGH",
+          "description": "Cyclomatic complexity of 25+ in string searching logic"
+        },
+        {
+          "type": "Long Method",
+          "location": "line 4100",
+          "severity": "HIGH",
+          "description": "replace() method with 180 lines of character manipulation"
+        },
+        {
+          "type": "Duplicated Code",
+          "location": "line 3500",
+          "severity": "MEDIUM",
+          "description": "Similar boundary checking logic in indexOf, lastIndexOf, contains"
+        },
+        {
+          "type": "Long Method",
+          "location": "line 5200",
+          "severity": "MEDIUM",
+          "description": "substring() helper is 100+ lines with edge case handling"
+        },
+        {
+          "type": "Complex Conditional",
+          "location": "line 3600",
+          "severity": "MEDIUM",
+          "description": "Nested if-else with 8+ conditions for null/empty checks"
+        }
+      ]
+    }
+  ],
+  "refactoring_sequence": [
+    "Extract checkBoundary() from indexOf()",
+    "Extract findFirstOccurrence() from indexOf()",
+    "Extract handleEmptyString() from indexOf()",
+    "Extract validateInput() from indexOf()",
+    "Extract similar helpers from lastIndexOf()",
+    "Extract common logic from replace() - 5 separate extractions",
+    "Extract substring edge case handlers - 8 separate extractions",
+    "Extract null/empty checking logic - 4 separate extractions"
+  ]
+}

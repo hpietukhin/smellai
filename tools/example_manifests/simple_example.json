@@ -1,0 +1,43 @@
+{
+  "name": "Simple Example: Small Class with Dependencies",
+  "description": "Educational example showing smell dependencies",
+  "project": "example-project",
+  "commit": "sample123",
+  "files": [
+    {
+      "filename": "UserService.java",
+      "smells": [
+        {
+          "type": "Long Method",
+          "location": "line 45",
+          "severity": "HIGH",
+          "description": "createUser() is 80 lines - should be split into smaller methods"
+        },
+        {
+          "type": "Long Method",
+          "location": "line 130",
+          "severity": "MEDIUM",
+          "description": "validateUser() is 50 lines with complex validation logic"
+        },
+        {
+          "type": "Duplicated Code",
+          "location": "line 200",
+          "severity": "MEDIUM",
+          "description": "Similar error handling in createUser() and updateUser()"
+        },
+        {
+          "type": "God Class",
+          "location": "line 1",
+          "severity": "LOW",
+          "description": "UserService handles validation, persistence, and email notifications"
+        }
+      ]
+    }
+  ],
+  "refactoring_sequence": [
+    "Extract validateEmail() from validateUser()",
+    "Extract sendWelcomeEmail() from createUser()",
+    "Extract common error handling to handleError()",
+    "Move email logic to new EmailService class"
+  ]
+}

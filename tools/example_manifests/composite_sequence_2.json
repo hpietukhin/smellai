@@ -1,0 +1,60 @@
+{
+  "name": "Composite Refactoring Sequence #2: Large-Scale Reorganization",
+  "description": "Real-world example from Checkstyle: 34 Extract And Move Method refactorings",
+  "project": "checkstyle",
+  "commit": "bfb3e5f5e416",
+  "files": [
+    {
+      "filename": "AttributeNodeTest.java",
+      "smells": [
+        {
+          "type": "God Class",
+          "location": "line 1",
+          "severity": "HIGH",
+          "description": "Test class has 400+ lines with 30+ test methods"
+        },
+        {
+          "type": "Long Method",
+          "location": "line 98",
+          "severity": "HIGH",
+          "description": "testGetChildren() is 120 lines with complex exception handling"
+        },
+        {
+          "type": "Complex Method",
+          "location": "line 150",
+          "severity": "MEDIUM",
+          "description": "High cyclomatic complexity in test setup (CC > 15)"
+        },
+        {
+          "type": "Duplicated Code",
+          "location": "line 98",
+          "severity": "HIGH",
+          "description": "Exception testing pattern repeated in 15+ test methods"
+        },
+        {
+          "type": "Magic Numbers",
+          "location": "line 200",
+          "severity": "LOW",
+          "description": "Hardcoded index values (0, 1, 2) used throughout tests"
+        }
+      ]
+    },
+    {
+      "filename": "XPathUtilTest.java",
+      "smells": [
+        {
+          "type": "Missing Abstraction",
+          "location": "line 20",
+          "severity": "MEDIUM",
+          "description": "Common exception testing logic should be a shared utility"
+        }
+      ]
+    }
+  ],
+  "refactoring_sequence": [
+    "Extract getExpectedThrowable() helper from testGetChildren()",
+    "Move extracted helper to XPathTestUtil utility class",
+    "Extract similar exception handling from 33 other test methods",
+    "Move all extracted methods to centralized test utility"
+  ]
+}

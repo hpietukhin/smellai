@@ -14,6 +14,17 @@ uv run workflows/java_test_workflow.py \
     --model gpt-4o
 ```
 
+## Visualization
+
+Interactive web UI for analyzing multi-agent refactoring execution:
+
+```bash
+uv run python tools/visualize_smell_prioritization.py
+# Open http://localhost:8080
+```
+
+See [../VISUALIZATION_USAGE.md](../VISUALIZATION_USAGE.md) for complete guide.
+
 ## Python API
 
 ```python

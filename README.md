@@ -169,6 +169,26 @@ uv run scripts/prioritize_smells.py --smells-file smells.json
 
 Generates prioritization graphs visualizing positive/negative dependencies.
 
+### Agent Execution Visualizer
+
+Interactive web UI for analyzing agent execution and understanding refactoring decisions:
+
+```bash
+uv run python tools/visualize_smell_prioritization.py
+# Open http://localhost:8080
+```
+
+**Features:**
+- 📊 Agent execution timeline (node invocations, durations)
+- 🕸️ Smell dependency graph with PZ prioritization
+- 📝 Iteration details (outcomes, retries, smells resolved/created)
+- 🔧 Tool call logs for debugging
+- 📄 Code diff viewer showing actual changes
+- 💡 Decision rationale (PZ scores, dependencies)
+- 📚 Real-world composite refactoring examples
+
+See [VISUALIZATION_USAGE.md](VISUALIZATION_USAGE.md) for complete guide.
+
 ### A5: Refactoring execution
 
 LLM-based refactoring mapping and execution (see RefactoringMiner workflow above).

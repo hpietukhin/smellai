@@ -95,6 +95,7 @@ class RefactoringAttempt(SQLModel, table=True):
     retries: int = 0  # Number of retry attempts
     smells_resolved: int = 0  # Count of smells removed
     smells_created: int = 0  # Count of new smells introduced
+    code_diff: Optional[str] = None  # Git diff showing code changes
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
