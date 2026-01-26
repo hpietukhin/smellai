@@ -13,7 +13,7 @@ Key requirements:
 - Follow Java naming conventions
 - Maintain proper indentation and formatting
 - Do NOT add comments explaining the refactoring
-- Do NOT add extra features or "improvements"
+- Do NOT add extra features or improvements beyond the refactoring
 """
 
 
