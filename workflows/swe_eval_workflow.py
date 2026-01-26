@@ -24,6 +24,7 @@ Usage:
 
 import argparse
 import sys
+import uuid
 from pathlib import Path
 
 import mlflow
@@ -86,11 +87,42 @@ def main() -> int:
         action="store_true",
         help="Draw agent graph to PNG",
     )
+    parser.add_argument(
+        "--enable-composite",
+        action="store_true",
+        help="Enable composite refactoring mode (A1-A6 loop)",
+    )
+    parser.add_argument(
+        "--max-refactorings",
+        type=int,
+        default=5,
+        help="Max refactoring iterations (N-action limit)",
+    )
+    parser.add_argument(
+        "--analytics-db",
+        type=str,
+        default="analytics.db",
+        help="Analytics database path",
+    )
+    parser.add_argument(
+        "--sonar-url",
+        type=str,
+        default="http://localhost:9000",
+        help="SonarQube server URL",
+    )
+    parser.add_argument(
+        "--sonar-cache-dir",
+        type=str,
+        default="./sonar_cache",
+        help="SonarQube cache directory",
+    )
     args = parser.parse_args()
 
     if args.draw_graph:
         print("Generating agent graph...")
-        agent = create_swe_eval_agent(model_name=args.model)
+        agent = create_swe_eval_agent(
+            model_name=args.model, enable_composite=args.enable_composite
+        )
         try:
             png_bytes = agent.get_graph().draw_mermaid_png()
             output_path = "swe_eval_agent_graph.png"
@@ -133,12 +165,23 @@ def main() -> int:
         auto_start_server=True,
     )
 
+    # Initialize analytics DB for composite mode
+    analytics_db = None
+    if args.enable_composite:
+        from swe_refactor.persistence.database import AnalyticsDB
+
+        analytics_db = AnalyticsDB(args.analytics_db)
+        print(f"Analytics DB: {args.analytics_db}")
+
     print(f"Model: {args.model}")
+    print(f"Mode: {'Composite' if args.enable_composite else 'Basic'}")
     print(f"Records: {len(records)}")
     print(f"Workspace: {args.workspace}")
 
     print("Creating agent...")
-    agent = create_swe_eval_agent(model_name=args.model)
+    agent = create_swe_eval_agent(
+        model_name=args.model, enable_composite=args.enable_composite
+    )
 
     genai_records = [
         {
@@ -162,7 +205,15 @@ def main() -> int:
         """Prediction function for MLflow evaluation."""
         record_dict = metadata.get("record", {})
         record = RefactoringRecord(**record_dict)
-        return invoke_agent(agent, record, args.workspace)
+        return invoke_agent(
+            agent,
+            record,
+            args.workspace,
+            analytics_db=analytics_db,
+            max_refactorings=args.max_refactorings,
+            sonar_url=args.sonar_url,
+            sonar_cache_dir=args.sonar_cache_dir,
+        )
 
     print(f"Running evaluation on {len(genai_records)} records...")
 
