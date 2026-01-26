@@ -29,6 +29,8 @@ from pathlib import Path
 
 import mlflow
 from dotenv import load_dotenv
+from mlflow.entities import Feedback
+from mlflow.genai.scorers import scorer
 
 from agents.swe_eval import create_swe_eval_agent, invoke_agent
 from swe_refactor.dataset import load_swe_refactor_dataset, RefactoringRecord
@@ -37,23 +39,46 @@ from mlflow_utils import setup_mlflow_tracking
 load_dotenv()
 
 
-def compile_success_scorer(outputs: dict, inputs: dict) -> float:
+@scorer
+def compile_success_scorer(outputs: dict) -> Feedback:
     """Score: 1.0 if compilation succeeded, 0.0 otherwise."""
-    return 1.0 if outputs.get("compile_success", False) else 0.0
+    success = outputs.get("compile_success", False)
+    return Feedback(
+        value=1.0 if success else 0.0,
+        rationale="Compilation succeeded" if success else "Compilation failed"
+    )
 
 
-def test_pass_scorer(outputs: dict, inputs: dict) -> float:
+@scorer
+def test_pass_scorer(outputs: dict) -> Feedback:
     """Score: 1.0 if tests passed, 0.0 otherwise (NA if no compilation)."""
-    if not outputs.get("compile_success", False):
-        return 0.0
-    return 1.0 if outputs.get("test_success", False) else 0.0
+    compile_ok = outputs.get("compile_success", False)
+    test_ok = outputs.get("test_success", False)
+
+    if not compile_ok:
+        return Feedback(value=0.0, rationale="Compilation failed, tests not run")
+
+    return Feedback(
+        value=1.0 if test_ok else 0.0,
+        rationale="Tests passed" if test_ok else "Tests failed"
+    )
 
 
-def overall_success_scorer(outputs: dict, inputs: dict) -> float:
+@scorer
+def overall_success_scorer(outputs: dict) -> Feedback:
     """Score: 1.0 if both compile and tests pass, 0.0 otherwise."""
     compile_ok = outputs.get("compile_success", False)
     test_ok = outputs.get("test_success", False)
-    return 1.0 if (compile_ok and test_ok) else 0.0
+    success = compile_ok and test_ok
+
+    if success:
+        rationale = "Both compilation and tests passed"
+    elif not compile_ok:
+        rationale = "Compilation failed"
+    else:
+        rationale = "Compilation passed but tests failed"
+
+    return Feedback(value=1.0 if success else 0.0, rationale=rationale)
 
 
 def main() -> int:
@@ -186,24 +211,20 @@ def main() -> int:
     genai_records = [
         {
             "inputs": {
-                "project_name": r.projectName,
-                "commit_id": r.commitId,
-                "type": r.type,
+                "record_dict": r.model_dump(),
             },
             "outputs": {},
-            "metadata": {"record": r.model_dump()},
+            "tags": {
+                "project": r.projectName,
+                "commit": r.commitId[:8],
+                "type": r.type,
+            },
         }
         for r in records
     ]
 
-    def predict_fn(
-        project_name: str,
-        commit_id: str,
-        type: str,
-        **metadata,
-    ) -> dict:
+    def predict_fn(record_dict: dict) -> dict:
         """Prediction function for MLflow evaluation."""
-        record_dict = metadata.get("record", {})
         record = RefactoringRecord(**record_dict)
         return invoke_agent(
             agent,

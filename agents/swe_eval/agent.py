@@ -435,7 +435,9 @@ def create_swe_eval_agent(
         # Log to analytics DB if available
         if analytics_db := state.get("analytics_db"):
             for smell in detected_smells:
-                analytics_db.log_smell_event(smell)
+                # Create a copy to avoid session binding issues
+                smell_copy = SmellEvent(**smell.model_dump())
+                analytics_db.log_smell_event(smell_copy)
 
         # Save initial snapshot (iteration 0)
         initial_smells = (

@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,15 +34,30 @@ class RefactoringRecord(BaseModel):
     sourceCodeAfterForWhole: str = Field(description="Full source file after")
 
     # Build configuration
-    compileJDK: int = Field(description="JDK version for compilation (e.g., 11)")
+    compileJDK: int = Field(description="JDK version for compilation (e.g., 8, 11, 17, 21)")
     compileCommand: str = Field(description="Build command to use")
-    hasTestC: bool = Field(description="Whether commit has test coverage")
+    compileResultBefore: bool = Field(description="Whether code compiled successfully before refactoring")
+    compileResultCurrent: bool = Field(description="Whether code compiles successfully after refactoring")
+    hasTestC: bool | None = Field(default=None, description="Whether commit has test coverage (None if unknown)")
 
     # Optional metadata (may not be in all records)
+    isPureRefactoring: bool | None = None
     description: str | None = None
     packageNameBefore: str | None = None
     classNameBefore: str | None = None
     methodNameBefore: str | None = None
+
+    @field_validator("compileJDK", mode="before")
+    @classmethod
+    def convert_jdk_version(cls, v):
+        """Convert JDK version from float (1.8) or int (11, 17, 21) to int."""
+        if isinstance(v, float):
+            # Handle Java 1.8 stored as float
+            if v == 1.8:
+                return 8
+            # Round other float values
+            return int(round(v))
+        return int(v)
 
 
 class SWERefactorDataset:
