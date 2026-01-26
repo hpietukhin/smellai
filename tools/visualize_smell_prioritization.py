@@ -424,13 +424,19 @@ def main_page():
     visualizer.load_data(None)
     initial_options = visualizer.get_echart_options()
 
+    logger.info(
+        f"Initial options has {len(initial_options.get('series', [{}])[0].get('data', []))} nodes"
+    )
+
     # Create a container that takes full viewport height minus header
     with ui.element("div").style(
-        "width: 100%; height: calc(100vh - 50px); padding: 16px; box-sizing: border-box;"
+        "width: 100%; height: calc(100vh - 50px); padding: 16px; box-sizing: border-box; background-color: #f5f5f5;"
     ):
         visualizer.chart = ui.echart(
             options=initial_options, on_point_click=visualizer.handle_click
-        ).style("width: 100%; height: 100%; min-height: 600px;")
+        ).style(
+            "width: 100%; height: 100%; min-height: 600px; background-color: white;"
+        )
 
     # Update UI elements after chart is created
     visualizer.update_chart()
