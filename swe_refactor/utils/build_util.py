@@ -72,12 +72,22 @@ def compile_project(
                         If None, auto-detects Maven or Gradle
 
     Returns:
-        CompileResult with success status and logs
+        CompileResult with success status and logs.
+
+        Note: On compilation failure, returns CompileResult(success=False) with
+        error details rather than raising an exception. Caller must check
+        result.success and decide whether to raise based on their requirements.
 
     Raises:
         ValueError: If no build system detected
     """
     project_path = Path(project_path)
+
+    # Validate project path
+    if not project_path.exists():
+        raise ValueError(f"Project path does not exist: {project_path}")
+    if not project_path.is_dir():
+        raise ValueError(f"Project path is not a directory: {project_path}")
 
     # Determine compile command
     if compile_command is None:
@@ -117,18 +127,25 @@ def compile_project(
                         stdout=fallback_result.stdout,
                         stderr=fallback_result.stderr,
                     )
-                except subprocess.CalledProcessError:
-                    continue  # Try next fallback
+                except subprocess.CalledProcessError as fallback_error:
+                    LOGGER.warning(
+                        "Fallback command failed (exit code %d): %s",
+                        fallback_error.returncode,
+                        fallback_cmd
+                    )
+                    continue
 
         # All attempts failed - extract error summary
         LOGGER.error("Compilation failed with command: %s", compile_command)
-        error_summary = _extract_error_summary(e.stdout + e.stderr)
+        stdout = getattr(e, 'stdout', '')
+        stderr = getattr(e, 'stderr', '')
+        error_summary = _extract_error_summary(stdout + stderr)
 
         return CompileResult(
             success=False,
             command=compile_command,
-            stdout=e.stdout,
-            stderr=e.stderr,
+            stdout=stdout,
+            stderr=stderr,
             error_summary=error_summary,
         )
 
