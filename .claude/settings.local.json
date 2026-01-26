@@ -53,7 +53,9 @@
       "Bash(python3:*)",
       "Skill(ast-grep:ast-grep)",
       "Bash(ast-grep run:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   },
