@@ -17,6 +17,6 @@ DEFAULT_CONFIG = {
     SWEEvalAgentConfig.MODEL_NAME: "claude-sonnet-4-5-20250929",
     SWEEvalAgentConfig.WORKSPACE_DIR: "/tmp/swe-eval-workspace",
     SWEEvalAgentConfig.MAX_RETRIES: 3,
-    SWEEvalAgentConfig.COMPILE_TIMEOUT: 600,  # 10 minutes
-    SWEEvalAgentConfig.TEST_TIMEOUT: 600,  # 10 minutes
+    SWEEvalAgentConfig.COMPILE_TIMEOUT: 600,
+    SWEEvalAgentConfig.TEST_TIMEOUT: 600,
 }
