@@ -24,6 +24,9 @@ def clone_repository(
         subprocess.CalledProcessError: If git clone fails
         FileExistsError: If target_dir already exists (fail-fast, no silent skip)
     """
+    if not repo_url or not repo_url.strip():
+        raise ValueError("Repository URL cannot be empty")
+
     target_dir = Path(target_dir)
 
     if target_dir.exists():
@@ -48,14 +51,21 @@ def force_checkout_commit(
 ) -> None:
     """Force checkout to specific commit, discarding local changes.
 
+    WARNING: This operation is DESTRUCTIVE. Use only on isolated clone directories,
+    never on user workspaces. Per project policy, destructive git operations
+    require explicit user approval.
+
     Args:
-        project_path: Path to git repository
+        project_path: Path to git repository (isolated clone only)
         commit_id: Commit hash or ref to checkout
 
     Raises:
-        ValueError: If project_path is not a git repository
+        ValueError: If project_path is not a git repository or commit_id is empty
         subprocess.CalledProcessError: If git commands fail
     """
+    if not commit_id or not commit_id.strip():
+        raise ValueError("Commit ID cannot be empty")
+
     project_path = Path(project_path)
 
     if not (project_path / ".git").exists():
@@ -100,9 +110,12 @@ def get_previous_commit(
         Parent commit hash
 
     Raises:
-        ValueError: If project_path is not a git repository
+        ValueError: If project_path is not a git repository or commit_id is empty
         subprocess.CalledProcessError: If git command fails (e.g., commit has no parent)
     """
+    if not commit_id or not commit_id.strip():
+        raise ValueError("Commit ID cannot be empty")
+
     project_path = Path(project_path)
 
     if not (project_path / ".git").exists():
@@ -147,9 +160,13 @@ def replace_java_code(
     if not file_path.parent.exists():
         raise FileNotFoundError(f"Parent directory does not exist: {file_path.parent}")
 
+    # Validate file exists (replacement requires existing file)
+    if not file_path.exists():
+        raise FileNotFoundError(f"File does not exist: {file_path}")
+
     try:
         file_path.write_text(new_code, encoding="utf-8")
         LOGGER.info("Replaced code in %s", file_path)
-    except Exception as e:
+    except OSError as e:
         LOGGER.error("Failed to write file %s: %s", file_path, e)
         raise
