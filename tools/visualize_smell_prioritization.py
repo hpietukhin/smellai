@@ -12,6 +12,7 @@ Loads agent execution data from analytics database and displays:
 
 import json
 import logging
+import argparse
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
@@ -35,6 +36,7 @@ from swe_refactor.persistence.database import AnalyticsDB
 from swe_refactor.persistence.models import (
     SmellEvent,
     RefactoringAttempt,
+    TestRun,
     ToolCall,
     TokenUsage,
 )
@@ -62,6 +64,7 @@ class PrioritizationVisualizer:
         self.refactoring_attempts: List[RefactoringAttempt] = []
         self.tool_calls: List[ToolCall] = []
         self.smell_events_by_iteration: Dict[int, List[SmellEvent]] = {}
+        self.test_runs_by_iteration: Dict[int, TestRun] = {}
 
         # Current iteration for timeline playback
         self.current_iteration = 0
@@ -76,6 +79,8 @@ class PrioritizationVisualizer:
         self.tool_logs_area = None
         self.diff_viewer = None
         self.manifest_info_label = None
+        self.test_results_label = None
+        self.quality_metrics_label = None
 
         # Iteration controls (enabled only in database mode)
         self.iteration_slider = None
@@ -140,6 +145,17 @@ class PrioritizationVisualizer:
                     self.smell_events_by_iteration[event.iteration] = []
                 self.smell_events_by_iteration[event.iteration].append(event)
 
+            # Load test runs by iteration
+            self.test_runs_by_iteration = {}
+            stmt = (
+                select(TestRun)
+                .where(TestRun.session_id == session_id)
+                .order_by(TestRun.iteration)
+            )
+            all_test_runs = list(session.exec(stmt).all())
+            for tr in all_test_runs:
+                self.test_runs_by_iteration[tr.iteration] = tr
+
         self.max_iterations = len(self.refactoring_attempts)
         self.current_iteration = 0
 
@@ -162,7 +178,7 @@ class PrioritizationVisualizer:
         self._enable_iteration_controls(True)
 
         logger.info(
-            f"Loaded {self.max_iterations} iterations, {len(self.tool_calls)} tool calls"
+            f"Loaded {self.max_iterations} iterations, {len(self.tool_calls)} tool calls, {len(self.test_runs_by_iteration)} test runs"
         )
 
     def load_iteration_smells(self, iteration: int):
@@ -754,6 +770,76 @@ class PrioritizationVisualizer:
 
         return md
 
+    def get_test_results_markdown(self) -> str:
+        """Generate markdown showing test results for current iteration."""
+        import json
+
+        if not self.refactoring_attempts or self.current_iteration >= len(self.refactoring_attempts):
+            return "_No test data available_"
+
+        iteration = self.refactoring_attempts[self.current_iteration].iteration
+        test_run = self.test_runs_by_iteration.get(iteration)
+
+        if not test_run:
+            return "_No test run recorded for this iteration_"
+
+        md = f"**Test Run (Iteration {iteration})**\n\n"
+        md += "✅ **Status:** All tests passed\n\n" if test_run.success else "❌ **Status:** Tests failed\n\n"
+        md += f"**Total:** {test_run.total} | ✅ {test_run.passed} | ❌ {test_run.failed} | ⏭️ {test_run.skipped}\n\n"
+        md += f"**Duration:** {test_run.duration:.2f}s\n\n"
+
+        if test_run.failed_tests:
+            try:
+                failed = json.loads(test_run.failed_tests)
+                if failed:
+                    md += "---\n\n**Failed Tests:**\n\n"
+                    for t in failed[:5]:
+                        md += f"🔴 `{t['name']}`\n\n"
+                        if t.get('error'):
+                            md += f"   _{t['error'][:100]}..._\n\n"
+            except: pass
+
+        if test_run.test_names:
+            try:
+                names = json.loads(test_run.test_names)
+                # Find tests relevant to refactored class
+                attempt = self.refactoring_attempts[self.current_iteration]
+                class_name = attempt.smell_id.split(":")[1].replace(".java", "") if ":" in attempt.smell_id else ""
+                relevant = [n for n in names if class_name and class_name in n]
+                
+                md += "---\n\n**Relevant Tests:**\n\n"
+                for t in (relevant or names)[:6]:
+                    md += f"• `{t}`\n\n"
+                if len(relevant or names) > 6:
+                    md += f"_... and {len(relevant or names) - 6} more_\n"
+            except: pass
+
+        return md
+
+    def get_quality_metrics_markdown(self) -> str:
+        """Generate markdown showing code quality metrics."""
+        if not self.analytics_db or not self.current_session:
+            return "_Load a database to see metrics_"
+
+        summary = self.analytics_db.get_session_summary(self.current_session)
+        events = self.smell_events_by_iteration.get(self.current_iteration, [])
+        detected = [e for e in events if e.action.value == "detected"]
+
+        by_severity = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
+        for e in detected:
+            if e.severity in by_severity:
+                by_severity[e.severity] += 1
+
+        md = f"**Smells Detected:** {len(detected)}\n\n"
+        md += f"🔴 High: {by_severity['HIGH']} | 🟡 Medium: {by_severity['MEDIUM']} | 🟢 Low: {by_severity['LOW']}\n\n"
+        md += "---\n\n"
+        md += f"✅ Success: {summary['successful_refactorings']}/{summary['total_iterations']}\n\n"
+        md += f"🎯 Resolved: {summary['smells_resolved']} | ⚠️ Created: {summary['smells_created']}\n\n"
+        net = summary['smells_resolved'] - summary['smells_created']
+        md += f"📈 Net Impact: {net:+d}\n"
+
+        return md
+
     def on_iteration_change(self, iteration: int):
         """Handle iteration change in timeline playback."""
         self.current_iteration = iteration
@@ -770,6 +856,14 @@ class PrioritizationVisualizer:
         # Update diff viewer
         if self.diff_viewer:
             self.diff_viewer.content = self.get_code_diff()
+
+        # Update test results
+        if self.test_results_label:
+            self.test_results_label.content = self.get_test_results_markdown()
+
+        # Update quality metrics
+        if self.quality_metrics_label:
+            self.quality_metrics_label.content = self.get_quality_metrics_markdown()
 
     def update_chart(self):
         if self.chart:
@@ -813,6 +907,15 @@ class PrioritizationVisualizer:
 
         if self.analytics_db and self.tool_logs_area:
             self.tool_logs_area.content = self.get_tool_logs_markdown()
+
+        if self.analytics_db and self.test_results_label:
+            self.test_results_label.content = self.get_test_results_markdown()
+
+        if self.analytics_db and self.quality_metrics_label:
+            self.quality_metrics_label.content = self.get_quality_metrics_markdown()
+
+        if self.analytics_db and self.diff_viewer:
+            self.diff_viewer.content = self.get_code_diff()
 
 
 visualizer = PrioritizationVisualizer()
@@ -1025,23 +1128,39 @@ def main_page():
         .style("width: 500px;")
     ):
         ui.markdown("### Iteration Details").classes("text-xs")
-        with ui.scroll_area().classes("h-[200px] w-full"):
+        with ui.scroll_area().classes("h-[120px] w-full"):
             visualizer.iteration_details = ui.markdown(
                 "_Load a database to see iteration details_"
             ).classes("text-[10px]")
 
-        ui.separator().classes("my-4")
+        ui.separator().classes("my-2")
+
+        ui.markdown("### Code Quality Metrics").classes("text-xs")
+        with ui.scroll_area().classes("h-[100px] w-full"):
+            visualizer.quality_metrics_label = ui.markdown(
+                "_Load a database to see quality metrics_"
+            ).classes("text-[10px]")
+
+        ui.separator().classes("my-2")
+
+        ui.markdown("### Test Results").classes("text-xs")
+        with ui.scroll_area().classes("h-[150px] w-full"):
+            visualizer.test_results_label = ui.markdown(
+                "_Load a database to see test results_"
+            ).classes("text-[10px]")
+
+        ui.separator().classes("my-2")
 
         ui.markdown("### Tool Call Logs").classes("text-xs")
-        with ui.scroll_area().classes("h-[150px] w-full"):
+        with ui.scroll_area().classes("h-[100px] w-full"):
             visualizer.tool_logs_area = ui.markdown(
                 "_Load a database to see tool calls_"
             ).classes("text-[10px]")
 
-        ui.separator().classes("my-4")
+        ui.separator().classes("my-2")
 
         ui.markdown("### Code Diff").classes("text-xs")
-        with ui.scroll_area().classes("h-[300px] w-full"):
+        with ui.scroll_area().classes("h-[200px] w-full"):
             visualizer.diff_viewer = ui.code("", language="diff").classes("text-[10px]")
 
     # Main content area - split between graph and timeline
@@ -1070,5 +1189,27 @@ def main_page():
     # Update UI elements after chart is created
     visualizer.update_chart()
 
+    # Auto-load database if specified via command line
+    if hasattr(app, 'db_path') and app.db_path:
+        try:
+            visualizer.load_database(app.db_path)
+            session_selector.options = visualizer.sessions
+            session_selector.value = visualizer.sessions[0] if visualizer.sessions else None
+            session_selector.visible = True
+        except Exception as e:
+            logger.error(f"Failed to auto-load database: {e}")
 
-ui.run(title="AI Agent Execution Visualizer", port=8080)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="AI Agent Execution Visualizer")
+    parser.add_argument("--db", type=str, help="Path to analytics database to auto-load")
+    parser.add_argument("--port", type=int, default=8080, help="Port to run server on")
+    args = parser.parse_args()
+
+    # Store db path for auto-loading
+    app.db_path = args.db
+
+    ui.run(title="AI Agent Execution Visualizer", port=args.port)
+else:
+    app.db_path = None
+    ui.run(title="AI Agent Execution Visualizer", port=8080)
