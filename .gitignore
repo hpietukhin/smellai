@@ -48,9 +48,21 @@ eval_results/
 data/deeplake/
 temp/
 *.log
+*.db
+
+# Generated images
+*.png
+
+# Test visualizations
+test_visualizations/
+
+# Large data files
+*.zip
+swe_refactor/*.pdf
 
 # MLflow tracking
 mlruns/
+mlartifacts/
 
 # SonarQube
 .scannerwork/
@@ -72,6 +84,7 @@ sdist/
 var/
 wheels/
 share/python-wheels/
-/mlartifacts/
-/infra/sonarqube/mlartifacts/
-node_modules
+# Node.js
+node_modules/
+package-lock.json
+pnpm-lock.yaml
