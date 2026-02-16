@@ -17,7 +17,7 @@ dependencies = [
     "langgraph>=0.2.0",
     "litellm>=1.0.0",
     "matplotlib>=3.8.0",
-    "mlflow>=3.0.0",
+    "mlflow[mcp]>=3.5.1",
     "mysql-connector-python>=9.0.0",
     "networkx>=3.0.0",
     "pandas>=2.2.0",
@@ -25,6 +25,8 @@ dependencies = [
     "pydantic-settings>=2.0.0",
     "python-dotenv>=1.0.0",
     "requests>=2.31.0",
+    "langchain-litellm>=0.3.5",
+    "sqlmodel>=0.0.22",
 ]
 
 [project.scripts]
