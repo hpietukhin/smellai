@@ -316,440 +316,115 @@ Note: Extract Class is now covered by the full RMiner oracle (108 TP instances),
 
 ---
 
-# Concrete Example 1: OrderProcessor.java
-
-<style scoped>
-pre { font-size: 0.78em; line-height: 1.4; }
-</style>
-
-From `tests/test_data/smell_cooccurrence/` — a 176-line method with **6 co-occurring smells**.
-
-<div class="grid grid-cols-2 gap-4">
-<div>
-
-**SonarQube detects:**
-- Long Method (java:S138) — 145 lines
-- Complex Method (java:S1541) — nested switches
-- Conditional Complexity (java:S1067)
-- Print Statements (java:S106) — 15 instances
-- *(Undetected: Duplicated Code, Switch Statement)*
-
-</div>
-<div>
-
-```java
-// processOrder() — 145 lines, 9 params
-public boolean processOrder(
-    String orderId, String customerId,
-    List<String> productIds, List<Integer> quantities,
-    List<BigDecimal> prices, String paymentMethod,
-    String shippingAddress, String customerType,
-    boolean isExpressShipping) {
-
-  // Duplicated validation x3 blocks
-  if (orderId == null || orderId.trim().isEmpty()) { ... }
-  if (customerId == null || ...) { ... }
-  if (productIds == null || ...) { ... }
-
-  // Switch statement smell — discount logic
-  switch (customerType) {
-    case "PREMIUM": /* nested ifs */ break;
-    case "GOLD":    /* nested ifs */ break;
-    case "SILVER":  /* nested ifs */ break;
-    ...
-  }
-
-  // Another switch — payment processing
-  switch (paymentMethod) {
-    case "CREDIT_CARD": ... break;
-    case "PAYPAL": ... break;
-    ...
-  }
-}
-```
-
-</div>
-</div>
-
----
-
-# OrderProcessor: Best-First Search Plan
-
-
-```mermaid
-graph LR
-  S0["S₀: processOrder()<br/>{LM, CM, CC, PS, DC, SS}<br/>h = 13"] -->|"① Extract<br/>validateInputs()"| S1["S₁: {CM, CC, PS, SS}<br/>✅ DC resolved<br/>h = 8"]
-
-  S1 -->|"② Extract<br/>calcDiscount()"| S2["S₂: {CC, PS}<br/>✅ CM, SS resolved<br/>h = 3"]
-
-  S2 -->|"③ Extract<br/>processPayment()"| S3["S₃: {PS}<br/>h = 1"]
-
-  S3 -->|"④ Logger"| S4["S₄: {} ✅<br/>h = 0"]
-
-  style S0 fill:#ff6b6b,color:#fff
-  style S1 fill:#ffa94d,color:#fff
-  style S2 fill:#ffd43b,color:#333
-  style S3 fill:#a9e34b,color:#333
-  style S4 fill:#51cf66,color:#fff
-```
-
-Steps ①②③ use **Extract Method** — fully evaluable with SWE-Refactor dataset.
-Step ④ (Replace with Logger) — no dataset ground truth, but trivially verifiable.
-
----
-
-# OrderProcessor: Step ① Extract Validation
-
-<style scoped>
-pre { font-size: 0.78em; line-height: 1.4; }
-</style>
-
-<div class="grid grid-cols-2 gap-4">
-<div>
-
-**BEFORE** — duplicated validation in processOrder():
-```java
-public boolean processOrder(...) {
-  System.out.println("Processing order: " + orderId);
-  if (orderId == null || orderId.trim().isEmpty()) {
-    System.out.println("Error: Invalid order ID");
-    return false;
-  }
-  if (customerId == null || customerId.trim().isEmpty()) {
-    System.out.println("Error: Invalid customer ID");
-    return false;
-  }
-  if (productIds == null || productIds.isEmpty()) {
-    System.out.println("Error: No products in order");
-    return false;
-  }
-  if (quantities == null || quantities.isEmpty()) { ... }
-  if (prices == null || prices.isEmpty()) { ... }
-  if (paymentMethod == null || ...) { ... }
-  if (shippingAddress == null || ...) { ... }
-
-  // ... 100+ more lines of logic
-}
-```
-
-</div>
-<div>
-
-**AFTER** — extracted validateOrderInputs():
-```java
-public boolean processOrder(...) {
-  if (!validateOrderInputs(orderId, customerId,
-      productIds, quantities, prices,
-      paymentMethod, shippingAddress)) {
-    return false;
-  }
-  // ... remaining logic (now shorter)
-}
-
-private boolean validateOrderInputs(
-    String orderId, String customerId,
-    List<String> productIds,
-    List<Integer> quantities,
-    List<BigDecimal> prices,
-    String paymentMethod,
-    String shippingAddress) {
-  if (orderId == null || orderId.trim().isEmpty())
-    return false;
-  if (customerId == null || customerId.trim().isEmpty())
-    return false;
-  // ... consolidated validation
-  return true;
-}
-```
-
-**Resolves:** Long Method (partially), Duplicated Code
-
-</div>
-</div>
-
----
-
-# OrderProcessor: Step ② Extract Discount Logic
-
-<style scoped>
-pre { font-size: 0.78em; line-height: 1.4; }
-</style>
-
-<div class="grid grid-cols-2 gap-4">
-<div>
-
-**BEFORE** — switch statement in processOrder():
-```java
-BigDecimal discount = BigDecimal.ZERO;
-switch (customerType) {
-  case "PREMIUM":
-    if (subtotal.compareTo(new BigDecimal("200")) >= 0)
-      discount = subtotal.multiply(
-        new BigDecimal("0.15"));
-    else if (subtotal.compareTo(DISCOUNT_THRESHOLD) >= 0)
-      discount = subtotal.multiply(
-        new BigDecimal("0.10"));
-    else
-      discount = subtotal.multiply(
-        new BigDecimal("0.05"));
-    System.out.println(
-      "Premium discount: " + discount);
-    break;
-  case "GOLD":
-    // ... 15 more lines
-  case "SILVER":
-    // ... 8 more lines
-  case "REGULAR":
-    // ... 8 more lines
-}
-```
-
-</div>
-<div>
-
-**AFTER** — extracted calculateDiscount():
-```java
-// In processOrder():
-BigDecimal discount =
-  calculateDiscount(customerType, subtotal);
-
-private BigDecimal calculateDiscount(
-    String customerType, BigDecimal subtotal) {
-  return switch (customerType) {
-    case "PREMIUM" -> calculatePremiumDiscount(subtotal);
-    case "GOLD"    -> calculateGoldDiscount(subtotal);
-    case "SILVER"  -> calculateSilverDiscount(subtotal);
-    case "REGULAR" -> calculateRegularDiscount(subtotal);
-    default        -> BigDecimal.ZERO;
-  };
-}
-
-private BigDecimal calculatePremiumDiscount(
-    BigDecimal subtotal) {
-  if (subtotal.compareTo(new BigDecimal("200")) >= 0)
-    return subtotal.multiply(new BigDecimal("0.15"));
-  if (subtotal.compareTo(DISCOUNT_THRESHOLD) >= 0)
-    return subtotal.multiply(new BigDecimal("0.10"));
-  return subtotal.multiply(new BigDecimal("0.05"));
-}
-```
-
-**Resolves:** Complex Method, Switch Statement, Cond. Complexity
-
-</div>
-</div>
-
----
-
-# OrderProcessor: Generated Tests
-
-<style scoped>
-pre { font-size: 0.75em; line-height: 1.4; }
-</style>
-
-Agent A7 (Test Generation) produces tests **before refactoring** to verify behavior preservation.
-
-<div class="grid grid-cols-2 gap-4">
-<div>
-
-**Tests for extracted validateOrderInputs():**
-```java
-@Test
-void shouldRejectNullOrderId() {
-  assertFalse(processor.processOrder(
-    null, "C1", List.of("P1"), List.of(1),
-    List.of(BigDecimal.TEN), "CREDIT_CARD",
-    "123 Main St", "REGULAR", false));
-}
-
-@Test
-void shouldRejectEmptyProductList() {
-  assertFalse(processor.processOrder(
-    "O1", "C1", List.of(), List.of(),
-    List.of(), "CREDIT_CARD",
-    "123 Main St", "REGULAR", false));
-}
-
-@Test
-void shouldAcceptValidOrder() {
-  assertTrue(processor.processOrder(
-    "O1", "C1", List.of("P1"), List.of(2),
-    List.of(new BigDecimal("25.00")),
-    "CREDIT_CARD", "123 Main St",
-    "REGULAR", false));
-}
-```
-
-</div>
-<div>
-
-**Tests for extracted calculateDiscount():**
-```java
-@Test
-void premiumOver200Gets15Percent() {
-  BigDecimal subtotal = new BigDecimal("300.00");
-  BigDecimal discount =
-    processor.calculateDiscount("PREMIUM", subtotal);
-  assertEquals(
-    new BigDecimal("45.00"), discount);
-}
-
-@Test
-void goldOver150Gets12Percent() {
-  BigDecimal subtotal = new BigDecimal("200.00");
-  BigDecimal discount =
-    processor.calculateDiscount("GOLD", subtotal);
-  assertEquals(
-    new BigDecimal("24.00"), discount);
-}
-
-@Test
-void unknownTypeGetsNoDiscount() {
-  BigDecimal discount =
-    processor.calculateDiscount("VIP",
-      new BigDecimal("500.00"));
-  assertEquals(BigDecimal.ZERO, discount);
-}
-```
-
-</div>
-</div>
-
----
-
-# Concrete Example 2: ReportGenerator.java (God Class)
+# Real Example 1: HttpJobExecutor (SWE-Refactor)
 
 <style scoped>
 pre { font-size: 0.72em; line-height: 1.4; }
 </style>
 
-280-line God Class with **6 co-occurring smells** — multiple unrelated responsibilities.
+From **shardingsphere-elasticjob** project, commit `1bdc817c`. Two refactorings on the same file.
 
 <div class="grid grid-cols-2 gap-4">
 <div>
 
-**SonarQube detects:**
-- God Class (java:S1200) — 12+ fields, 9+ methods
-- Large Class (java:S110) — 280 lines
-- Long Method (java:S138) — `generateCustomerReport()`
-- Print Statements (java:S106) — in every method
-- *(Undetected: Data Clumps, Feature Envy)*
+**Smells in `HttpJobExecutor.process()`:**
+- **Long Method** (java:S138) — 40+ lines, HTTP setup + request + response parsing all inline
+- **Feature Envy** — `isWriteMethod(method)` takes a String param from `HttpParam` and checks it; belongs in `HttpParam` itself
 
-**Data Clumps pattern** — same 4 params everywhere:
-```java
-// This signature repeats in 8+ methods:
-generateSalesReport(Date startDate, Date endDate,
-                    String region, String category)
-generateCustomerReport(Date startDate, Date endDate,
-                       String region, String category)
-generateInventoryReport(Date startDate, Date endDate,
-                        String region, String category)
-formatReportHeader(Date startDate, Date endDate,
-                   String region, String category)
-calculateTotalSales(Date startDate, Date endDate,
-                    String region, String category)
-exportToCSV(filename, startDate, endDate, region, category)
-exportToPDF(filename, startDate, endDate, region, category)
-sendReportByEmail(recipient, startDate, endDate, region, category)
-```
+**Two refactorings applied in this commit:**
+1. Extract Method: `getConnectionInputStream()` from `process()`
+2. Move Method: `isWriteMethod()` from HttpJobExecutor to HttpParam
 
 </div>
 <div>
 
-**Feature Envy** — methods work with external data:
 ```java
-public String generateCustomerReport(
-    Date startDate, Date endDate,
-    String region, String category) {
-  // Feature Envy: works with dbConnection, not own data
-  customerData = dbConnection.fetchCustomerData(
-    startDate, endDate, region, category);
-
-  int totalCustomers = 0;
-  int newCustomers = 0;
-  BigDecimal totalRevenue = BigDecimal.ZERO;
-
-  // Feature Envy: iterating external collection
-  for (CustomerRecord customer : customerData) {
-    totalCustomers++;
-    if (customer.getFirstPurchaseDate()
-        .after(startDate)) {
-      newCustomers++;
+// BEFORE: process() — everything inline
+public void process(ElasticJob elasticJob,
+    JobConfiguration jobConfig, ...) {
+  HttpParam httpParam = getHttpParam(jobConfig.getProps());
+  HttpURLConnection connection = null;
+  try {
+    URL url = new URL(httpParam.getUrl());
+    connection = (HttpURLConnection) url.openConnection();
+    connection.setRequestMethod(httpParam.getMethod());
+    connection.setDoOutput(true);
+    connection.setConnectTimeout(httpParam.getConnectTimeout());
+    connection.setReadTimeout(httpParam.getReadTimeout());
+    // ... setup headers, connect
+    if (isWriteMethod(httpParam.getMethod())  // Feature Envy
+        && !Strings.isNullOrEmpty(data)) {
+      // write data ...
     }
-    totalRevenue = totalRevenue.add(
-      customer.getTotalSpent());
-  }
-  // ... 20 more lines of string building
+    int code = connection.getResponseCode();
+    InputStream resultInputStream;
+    if (isRequestSucceed(code)) {           // inline
+      resultInputStream = connection.getInputStream();
+    } else {
+      log.warn("HTTP job {} response {}", ...);
+      resultInputStream = connection.getErrorStream();
+    }
+    // ... read response, log result
+  } catch (IOException ex) { throw ...; }
+}
+private boolean isWriteMethod(String method) {
+  return Arrays.asList("POST","PUT","DELETE")
+    .contains(method.toUpperCase());
 }
 ```
-
-**Responsibilities mixed in one class:**
-Reporting + Formatting + Calculation + Data Access + Export (CSV/PDF/Email)
 
 </div>
 </div>
 
 ---
 
-# ReportGenerator: Best-First Search Plan
+# HttpJobExecutor: Best-First Search Plan
 
 
 ```mermaid
 graph LR
-  S0["S₀: ReportGenerator<br/>{GC, LC, LM x2, DC, FE, PS}<br/>h = 17"] -->|"① Move Method<br/>→ ReportExporter<br/>✅ SWE-Refactor"| S1["S₁: {GC↓, LC↓, LM x2, DC, PS}<br/>✅ FE resolved<br/>h = 12"]
+  S0["S₀: process()<br/>{Long Method, Feature Envy}<br/>h = 3+2 = 5"] -->|"① Extract Method<br/>getConnectionInputStream()"| S1["S₁: {Feature Envy}<br/>✅ Long Method resolved<br/>h = 2"]
 
-  S1 -->|"② Extract Method<br/>calcTotalSales()<br/>✅ SWE-Refactor"| S2["S₂: {GC↓, LC↓, DC, PS}<br/>✅ LMs resolved<br/>h = 8"]
-
-  S2 -->|"③ Extract Class<br/>DateRangeFilter<br/>✅ RMiner oracle"| S3["S₃: {PS only}<br/>✅ DC, GC, LC resolved<br/>h = 1"]
+  S1 -->|"② Move Method<br/>isWriteMethod() → HttpParam"| S2["S₂: {} ✅<br/>✅ Feature Envy resolved<br/>h = 0"]
 
   style S0 fill:#ff6b6b,color:#fff
   style S1 fill:#ffa94d,color:#fff
-  style S2 fill:#ffd43b,color:#333
-  style S3 fill:#a9e34b,color:#333
+  style S2 fill:#51cf66,color:#fff
 ```
 
-Steps ①② are **evaluable** (Move Method, Extract Method in SWE-Refactor).
-Step ③ (Extract Class for Data Clumps) has **no ground truth** — must rely on SonarQube rescan.
+Both steps use refactorings available in SWE-Refactor: **Extract Method** (441 records) and **Move Method** (410 records).
+
+**Why this order?** Extract Method first makes `process()` shorter, and the remaining `isWriteMethod()` becomes clearly misplaced — it only accesses `HttpParam` fields. The planner avoids the reverse (moving first would move the long method's complexity into HttpParam).
 
 ---
 
-# ReportGenerator: Step ① Move Method (Feature Envy)
+# HttpJobExecutor: Step 1 - Extract Method (real code)
 
 <style scoped>
-pre { font-size: 0.75em; line-height: 1.4; }
+pre { font-size: 0.68em; line-height: 1.35; }
 </style>
 
 <div class="grid grid-cols-2 gap-4">
 <div>
 
-**BEFORE** — export methods live in ReportGenerator:
+**BEFORE** — response handling inline in process():
 ```java
-public class ReportGenerator {
-  // ... 12 fields, 9 methods
-
-  public void exportToCSV(String filename,
-      Date startDate, Date endDate,
-      String region, String category) {
-    System.out.println("Exporting to CSV: " + filename);
-    FileWriter writer = new FileWriter(filename);
-    writer.write(generateSalesReport(
-      startDate, endDate, region, category));
-    writer.close();
-  }
-
-  public void exportToPDF(String filename,
-      Date startDate, Date endDate,
-      String region, String category) {
-    System.out.println("Exporting to PDF: " + filename);
-    PDFGenerator pdf = new PDFGenerator();
-    pdf.addContent(generateSalesReport(
-      startDate, endDate, region, category));
-    pdf.save(filename);
-  }
-
-  public void sendReportByEmail(String recipient, ...) {
-    EmailService email = new EmailService();
-    email.send(recipient, "Sales Report", ...);
+int code = connection.getResponseCode();
+InputStream resultInputStream;
+if (isRequestSucceed(code)) {
+  resultInputStream = connection.getInputStream();
+} else {
+  log.warn("HTTP job {} executed with response code {}",
+    jobConfig.getJobName(), code);
+  resultInputStream = connection.getErrorStream();
+}
+StringBuilder result = new StringBuilder();
+try (BufferedReader bufferedReader = new BufferedReader(
+    new InputStreamReader(resultInputStream,
+      StandardCharsets.UTF_8))) {
+  String line;
+  while (null != (line = bufferedReader.readLine())) {
+    result.append(line);
   }
 }
 ```
@@ -757,39 +432,316 @@ public class ReportGenerator {
 </div>
 <div>
 
-**AFTER** — Move Method to new ReportExporter:
+**AFTER** — extracted getConnectionInputStream():
 ```java
-public class ReportExporter {
-  private final ReportGenerator generator;
-
-  public ReportExporter(ReportGenerator generator) {
-    this.generator = generator;
+int responseCode = connection.getResponseCode();
+StringBuilder result = new StringBuilder();
+try (
+    InputStream inputStream = getConnectionInputStream(
+      jobConfig.getJobName(), connection, responseCode);
+    BufferedReader bufferedReader = new BufferedReader(
+      new InputStreamReader(inputStream,
+        StandardCharsets.UTF_8))) {
+  String line;
+  while (null != (line = bufferedReader.readLine())) {
+    result.append(line);
   }
+}
 
-  public void exportToCSV(String filename,
-      Date startDate, Date endDate,
-      String region, String category) {
-    FileWriter writer = new FileWriter(filename);
-    writer.write(generator.generateSalesReport(
-      startDate, endDate, region, category));
-    writer.close();
+private InputStream getConnectionInputStream(
+    String jobName, HttpURLConnection connection,
+    int code) throws IOException {
+  if (isRequestSucceed(code)) {
+    return connection.getInputStream();
   }
+  log.warn("HTTP job {} executed with response code {}",
+    jobName, code);
+  return connection.getErrorStream();
+}
+```
 
-  public void exportToPDF(String filename, ...) {
-    PDFGenerator pdf = new PDFGenerator();
-    pdf.addContent(generator.generateSalesReport(...));
-    pdf.save(filename);
-  }
+**Resolves:** Long Method -- `process()` is now shorter and delegates I/O handling.
 
-  public void sendReportByEmail(String recipient, ...) {
-    EmailService email = new EmailService();
-    email.send(recipient, "Sales Report",
-      generator.generateSalesReport(...));
+</div>
+</div>
+
+---
+
+# HttpJobExecutor: Step 2 - Move Method (real code)
+
+<style scoped>
+pre { font-size: 0.72em; line-height: 1.4; }
+</style>
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+**BEFORE** — `isWriteMethod()` lives in HttpJobExecutor:
+```java
+// In HttpJobExecutor:
+private boolean isWriteMethod(final String method) {
+  return Arrays.asList("POST", "PUT", "DELETE")
+    .contains(method.toUpperCase());
+}
+
+// Called as:
+if (isWriteMethod(httpParam.getMethod())
+    && !Strings.isNullOrEmpty(data)) {
+  try (OutputStream outputStream =
+      connection.getOutputStream()) {
+    outputStream.write(
+      data.getBytes(StandardCharsets.UTF_8));
   }
 }
 ```
 
-**Resolves:** Feature Envy, reduces God Class coupling
+Feature Envy: the method only accesses `HttpParam`'s method field, not any `HttpJobExecutor` state.
+
+</div>
+<div>
+
+**AFTER** — moved to HttpParam where it belongs:
+```java
+// In HttpParam (new location):
+/**
+ * Is write method.
+ * @return write method or not
+ */
+public boolean isWriteMethod() {
+  return Arrays.asList("POST", "PUT", "DELETE")
+    .contains(method.toUpperCase());
+}
+
+// Called in HttpJobExecutor as:
+if (httpParam.isWriteMethod()
+    && !Strings.isNullOrEmpty(data)) {
+  try (OutputStream outputStream =
+      connection.getOutputStream()) {
+    outputStream.write(
+      data.getBytes(StandardCharsets.UTF_8));
+  }
+}
+```
+
+**Resolves:** Feature Envy -- method now lives with the data it operates on.
+
+Parameter `String method` removed; uses own field `this.method`.
+
+</div>
+</div>
+
+---
+
+# HttpJobExecutor: SWE-Refactor evaluation data
+
+<style scoped>
+pre { font-size: 0.72em; line-height: 1.4; }
+</style>
+
+This commit (`1bdc817c6a`) is a **real record** in SWE-Refactor with compile and test metadata.
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+**Dataset record fields (per refactoring):**
+- `sourceCodeBeforeRefactoring` / `After` -- exact method-level diff
+- `sourceCodeBeforeForWhole` / `After` -- full file context
+- `compileResultBefore` / `compileResultCurrent` -- compilation status
+- `compileJDK` -- required Java version
+- `hasTestC` -- whether tests cover this code
+- `coverageInfo` -- line-level test coverage
+- `callInfo` -- caller/callee graph for the refactored method
+- `invokedMethodSet` -- methods invoked by the refactored code
+- `diffSourceCode` -- unified diff format
+
+**Evaluation criteria (from the paper):**
+1. Code compiles after refactoring
+2. All existing tests pass
+3. RefactoringMiner detects the expected refactoring type in the LLM output
+
+</div>
+<div>
+
+**What the agent must produce for Step 1:**
+```java
+// Extract Method: getConnectionInputStream()
+// Input: the full HttpJobExecutor.java file
+// Expected output: new private method extracted
+//   from process() that handles InputStream selection
+
+// The SWE-Refactor record provides:
+// - Exact before/after code for comparison
+// - Compilation command: mvn clean compile
+// - Test command: mvn test
+// - JDK version: 8
+```
+
+**What the agent must produce for Step 2:**
+```java
+// Move Method: isWriteMethod() → HttpParam
+// Input: HttpJobExecutor.java + HttpParam.java
+// Expected output:
+//   1. Remove isWriteMethod(String) from Executor
+//   2. Add isWriteMethod() to HttpParam (no param)
+//   3. Update caller: httpParam.isWriteMethod()
+
+// Ground truth available in dataset for both steps
+```
+
+**DeepSeek-V3 success rate on similar Extract Method: 68%**
+**GPT-4o-mini success rate on similar Move Method: 42%**
+
+</div>
+</div>
+
+---
+
+# Real Example 2: checkstyle UnusedLocalVariableCheck (SWE-Refactor)
+
+<style scoped>
+pre { font-size: 0.68em; line-height: 1.35; }
+</style>
+
+From **checkstyle** project, commit `1ca66693`. **5 refactorings** across 2 files -- Duplicated Code + God Class.
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+**Smells detected:**
+- **Duplicated Code** — `extractQualifiedName()` is copy-pasted in both `UnusedLocalVariableCheck` and `FinalClassCheck` (source comments say "Duplicated, until issue #11201")
+- **God Class** — `UnusedLocalVariableCheck` contains utility methods (`getShortNameOfAnonInnerClass`, `getQualifiedTypeDeclarationName`) unrelated to its core responsibility
+- **Long Method** — `getTheNearestClass()` has inline lambda logic
+
+**5 refactorings applied in this commit:**
+1. Move Method: `extractQualifiedName()` from UnusedLocalVariableCheck
+2. Move Method: `extractQualifiedName()` from FinalClassCheck
+3. Move Method: `getQualifiedTypeDeclarationName()` from UnusedLocalVariableCheck
+4. Move Method: `getShortNameOfAnonInnerClass()` from UnusedLocalVariableCheck
+5. Extract Method: `getTypeDeclarationNameMatchingCountDiff()` from `getTheNearestClass()`
+
+</div>
+<div>
+
+**The duplicated method (real source code):**
+```java
+// In UnusedLocalVariableCheck.java:
+/**
+ * ...
+ * Duplicated, until
+ * <a>https://github.com/checkstyle/checkstyle/issues/11201</a>
+ */
+private static String extractQualifiedName(DetailAST ast) {
+  return FullIdent.createFullIdent(ast).getText();
+}
+
+// In FinalClassCheck.java — IDENTICAL:
+private static String extractQualifiedName(DetailAST ast) {
+  return FullIdent.createFullIdent(ast).getText();
+}
+```
+
+**Also duplicated:**
+```java
+// In UnusedLocalVariableCheck.java:
+/**
+ * Duplicated, until issue #11201
+ */
+private static String getQualifiedTypeDeclarationName(
+    String packageName,
+    String outerClassQualifiedName,
+    String className) {
+  // ... 15 lines of qualified name construction
+}
+```
+
+</div>
+</div>
+
+---
+
+# checkstyle: Best-First Search Plan
+
+
+```mermaid
+graph LR
+  S0["S₀: UnusedLocalVarCheck<br/>{Dup Code x2, God Class, Long Method}<br/>h = 2+2+3+3 = 10"] -->|"① Move Methods<br/>extractQualifiedName() x2<br/>getQualifiedTypeDecl()"| S1["S₁: {God Class↓, Long Method}<br/>✅ Dup Code resolved<br/>h = 4"]
+
+  S1 -->|"② Move Method<br/>getShortNameOfAnonInner()"| S2["S₂: {Long Method}<br/>✅ God Class resolved<br/>h = 3"]
+
+  S2 -->|"③ Extract Method<br/>getTypeDeclNameMatchingDiff()"| S3["S₃: {} ✅<br/>✅ Long Method resolved<br/>h = 0"]
+
+  style S0 fill:#ff6b6b,color:#fff
+  style S1 fill:#ffa94d,color:#fff
+  style S2 fill:#ffd43b,color:#333
+  style S3 fill:#51cf66,color:#fff
+```
+
+All steps use **Move Method** and **Extract Method** -- fully evaluable with SWE-Refactor ground truth.
+
+**Why this order?** Fixing duplicated code first (Move Methods to shared utility) is the highest priority because it affects multiple files. The planner's heuristic scores Dup Code resolution highest due to cross-file positive dependencies.
+
+---
+
+# checkstyle: Step 1 - Move Duplicated Methods (real code)
+
+<style scoped>
+pre { font-size: 0.68em; line-height: 1.35; }
+</style>
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+**BEFORE** — same method in 2 different check classes:
+```java
+// UnusedLocalVariableCheck.java:
+/**
+ * Duplicated, until
+ * <a>github.com/checkstyle/checkstyle/issues/11201</a>
+ */
+private static String extractQualifiedName(
+    DetailAST ast) {
+  return FullIdent.createFullIdent(ast).getText();
+}
+
+// FinalClassCheck.java — identical copy:
+/**
+ * Get name of class in ast.
+ */
+private static String extractQualifiedName(
+    DetailAST ast) {
+  return FullIdent.createFullIdent(ast).getText();
+}
+```
+
+Both `private` — each class has its own copy.
+
+</div>
+<div>
+
+**AFTER** — moved to shared utility (CheckUtil):
+```java
+// CheckUtil.java (shared location):
+/**
+ * Get name of package and super class of anon inner class
+ * by concatenating identifier values under DOT.
+ */
+public static String extractQualifiedName(
+    DetailAST ast) {
+  return FullIdent.createFullIdent(ast).getText();
+}
+
+// UnusedLocalVariableCheck now calls:
+CheckUtil.extractQualifiedName(firstChild);
+
+// FinalClassCheck now calls:
+CheckUtil.extractQualifiedName(ast);
+```
+
+**Resolves:** Duplicated Code -- single source of truth.
+
+`private` → `public` access modifier change enables sharing.
+
+Same pattern for `getQualifiedTypeDeclarationName()` (15 lines, also marked "Duplicated" in source).
 
 </div>
 </div>
@@ -991,40 +943,35 @@ After refactoring, **same tests must still pass** with the new pagination-enable
 </div>
 <div>
 
-**For ReportGenerator (Move Method):**
+**For HttpJobExecutor (Move Method):**
 ```java
 @Test
-void exportToCSVProducesSameOutput() {
-  ReportGenerator gen = createTestGenerator();
-  Date start = parseDate("2024-01-01");
-  Date end = parseDate("2024-12-31");
-
-  // Capture original output
-  String report = gen.generateSalesReport(
-    start, end, "US", "electronics");
-
-  // After Move Method: use ReportExporter
-  ReportExporter exporter =
-    new ReportExporter(gen);
-  exporter.exportToCSV("/tmp/test.csv",
-    start, end, "US", "electronics");
-
-  String exported = readFile("/tmp/test.csv");
-  assertEquals(report, exported);
+void processExecutesGetRequest() {
+  // Verify GET request works before refactoring
+  HttpJobExecutor executor = new HttpJobExecutor();
+  JobConfiguration config = createConfig(
+    "http://example.com/api", "GET", null);
+  // After Move Method: isWriteMethod() is on HttpParam
+  // but process() behavior must remain identical
+  executor.process(null, config, null, shardingCtx);
+  // Verify no output stream opened for GET
 }
 
 @Test
-void emailContainsSameReportContent() {
-  // Verify sendReportByEmail produces
-  // identical content after Move Method
-  ReportExporter exporter =
-    new ReportExporter(gen);
-  // Mock EmailService, verify body matches
-  exporter.sendReportByEmail("test@test.com",
-    start, end, "US", "electronics");
-  verify(emailService).send(
-    eq("test@test.com"), anyString(),
-    eq(expectedReport));
+void processExecutesPostWithBody() {
+  JobConfiguration config = createConfig(
+    "http://example.com/api", "POST",
+    "{\"key\": \"value\"}");
+  // After refactoring, POST must still send body
+  executor.process(null, config, null, shardingCtx);
+  // Verify output stream received data
+}
+
+@Test
+void processHandlesErrorResponse() {
+  // After Extract Method: getConnectionInputStream()
+  // must handle error codes the same way
+  // Verify warn log + error stream on 500
 }
 ```
 
@@ -1033,82 +980,122 @@ void emailContainsSameReportContent() {
 
 ---
 
-# PaymentValidator: Duplicated Conditions Example
+# Real Example 3: languagetool UkrainianTagger (RMiner oracle)
 
 <style scoped>
 pre { font-size: 0.72em; line-height: 1.4; }
 </style>
 
-206-line class with **near-identical validation** repeated 4 times — a dataset gap scenario.
+From **languagetool** project, commit `bec15926de`. **9 TP refactorings** -- God Class decomposition.
 
 <div class="grid grid-cols-2 gap-4">
 <div>
 
-**The problem** — same null checks in every method:
-```java
-// validateCreditCardPayment():
-if (cardNumber == null || cardNumber.trim().isEmpty())
-  return false;
-if (amount == null ||
-    amount.compareTo(MIN_AMOUNT) < 0) return false;
-if (amount.compareTo(MAX_AMOUNT) > 0) return false;
+**Smells in `UkrainianTagger`:**
+- **God Class** (java:S1200) — tagger does compound tagging, pos-tag helpers, attribute storage, regex patterns
+- **Long Method** (java:S138) — `guessCompoundTag()` has complex word analysis logic
+- **Duplicated Code** — regex patterns and maps shared across concerns
 
-// validateDebitCardPayment() — IDENTICAL:
-if (cardNumber == null || cardNumber.trim().isEmpty())
-  return false;
-if (amount == null ||
-    amount.compareTo(MIN_AMOUNT) < 0) return false;
-if (amount.compareTo(MAX_AMOUNT) > 0) return false;
-
-// validatePayPalPayment() — SAME pattern:
-if (email == null || email.trim().isEmpty())
-  return false;
-if (amount == null ||
-    amount.compareTo(MIN_AMOUNT) < 0) return false;
-if (amount.compareTo(MAX_AMOUNT) > 0) return false;
-
-// validateBankTransfer() — AGAIN:
-if (accountNumber == null || ...) return false;
-if (amount == null || ...) return false;
-```
-
-Also: `determinePaymentRisk()` and `requiresAdditionalVerification()` have **nearly identical** nested conditional logic.
+**9 refactorings applied (all TP in oracle):**
+1. **Extract Class**: `CompoundTagger` from `UkrainianTagger`
+2. **Extract Method**: `doGuessCompoundTag()` from `guessCompoundTag()` in CompoundTagger
+3. **Move Attribute**: `VIDMINKY_MAP` → `PosTagHelper`
+4. **Extract Attribute**: `NUM_REGEX` in `PosTagHelper`
+5. **Extract Attribute**: `CONJ_REGEX` in `PosTagHelper`
+6. **Extract Variable**: `leftConj` in CompoundTagger
+7. Change Method Access Modifier
+8. Change Attribute Access Modifier
+9. Rename Method
 
 </div>
 <div>
 
-**Ideal refactoring** (no dataset ground truth):
+**Search plan for this scenario:**
+
+```mermaid
+graph LR
+  S0["S₀: UkrainianTagger<br/>{God Class, LM, Dup}<br/>h = 8"] -->|"① Extract Class<br/>CompoundTagger"| S1["S₁: {LM in new class,<br/>scattered attrs}<br/>h = 5"]
+  S1 -->|"② Extract Method<br/>doGuessCompound()"| S2["S₂: {scattered attrs}<br/>h = 2"]
+  S2 -->|"③ Move/Extract Attrs<br/>→ PosTagHelper"| S3["S₃: {} ✅<br/>h = 0"]
+
+  style S0 fill:#ff6b6b,color:#fff
+  style S1 fill:#ffa94d,color:#fff
+  style S2 fill:#ffd43b,color:#333
+  style S3 fill:#51cf66,color:#fff
+```
+
+**Extract Class (108 TP in RMiner oracle)** is the key refactoring here. Without the full oracle data, this example would have no ground truth.
+
+Step 1 resolves God Class. Step 2 resolves Long Method in the extracted class. Step 3 groups related attributes.
+
+</div>
+</div>
+
+---
+
+# Real Example 4: ParameterAssignmentCheck (SWE-Refactor)
+
+<style scoped>
+pre { font-size: 0.68em; line-height: 1.35; }
+</style>
+
+From **checkstyle**, commit `ebfc50d227`. **3 refactorings** on the **same file** -- Extract Method + 2 Inline Methods.
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+**Extract Method -- reusable parameter visitor:**
 ```java
-// Extract common validation
-private boolean validateAmount(BigDecimal amount) {
-  return amount != null
-    && amount.compareTo(MIN_AMOUNT) >= 0
-    && amount.compareTo(MAX_AMOUNT) <= 0;
+// BEFORE: visitMethodParameters() has inline logic
+private void visitMethodParameters(DetailAST ast) {
+  DetailAST parameterDefAST =
+    ast.findFirstToken(TokenTypes.PARAMETER_DEF);
+  while (parameterDefAST != null) {
+    if (parameterDefAST.getType() == TokenTypes.PARAMETER_DEF
+        && !CheckUtil.isReceiverParameter(parameterDefAST)) {
+      final DetailAST param =
+        parameterDefAST.findFirstToken(TokenTypes.IDENT);
+      parameterNames.add(param.getText());
+    }
+    parameterDefAST = parameterDefAST.getNextSibling();
+  }
 }
 
-private boolean validateRequired(String... fields) {
-  return Arrays.stream(fields)
-    .allMatch(f -> f != null && !f.trim().isEmpty());
+// AFTER: extracted visitParameters() for reuse
+private void visitMethodParameters(DetailAST ast) {
+  visitParameters(ast);  // delegation
 }
-
-// Simplified methods:
-public boolean validateCreditCardPayment(
-    String cardNumber, String cvv,
-    Date expiryDate, BigDecimal amount,
-    String cardHolder) {
-  if (!validateRequired(cardNumber, cvv, cardHolder))
-    return false;
-  if (!validateAmount(amount)) return false;
-  if (expiryDate == null
-      || expiryDate.before(new Date()))
-    return false;
-  return cardNumber.length() >= 13
-    && cardNumber.length() <= 19
-    && (cvv.length() == 3 || cvv.length() == 4);
+private void visitParameters(DetailAST parametersAst) {
+  // ... same loop logic, now reusable for lambdas
 }
 ```
 
-**This refactoring (Consolidate Conditional) is NOT in either dataset.** Evaluation must rely on SonarQube rescan + test pass rate.
+</div>
+<div>
+
+**Inline Method -- remove unnecessary delegation:**
+```java
+// BEFORE: trivial wrapper method
+private void leaveMethodDef() {
+  parameterNames = parameterNamesStack.pop();
+}
+// Called from leaveToken() via switch
+
+// AFTER: inlined into leaveToken()
+@Override
+public void leaveToken(DetailAST ast) {
+  final int type = ast.getType();
+  if (TokenUtil.isOfType(type,
+      TokenTypes.CTOR_DEF, TokenTypes.METHOD_DEF)
+      || type == TokenTypes.LAMBDA
+      && ast.getParent().getType()
+        != TokenTypes.SWITCH_RULE) {
+    parameterNames = parameterNamesStack.pop();
+  }
+}
+```
+
+**Same-file, opposite directions:** Extract to create reusable method, Inline to remove trivial wrapper. The planner must recognize that these don't conflict.
 
 </div>
 </div>
@@ -1272,7 +1259,7 @@ These cover **6 of 8** detected smell types with ground truth.
 
 ---
 
-# End-to-end walkthrough: OrderProcessor
+# End-to-end walkthrough: HttpJobExecutor
 
 
 ```mermaid
@@ -1283,19 +1270,16 @@ sequenceDiagram
   participant TEST as A6: Test Runner
   participant TG as A7: Test Generator
 
-  SQ->>PL: {Long Method, Complex Method, Cond. Complexity, Print Stmts, Dup Code}
-  TG->>TEST: Generate tests for processOrder() before any changes
-  PL->>LLM: Plan step ①: Extract validateOrderInputs()
-  LLM->>TEST: Run tests after extraction
+  SQ->>PL: {Long Method in process(), Feature Envy in isWriteMethod()}
+  TG->>TEST: Generate tests for process() before any changes
+  PL->>LLM: Plan step 1: Extract getConnectionInputStream() from process()
+  LLM->>TEST: mvn test (shardingsphere-elasticjob)
   TEST-->>PL: All tests pass
-  PL->>LLM: Plan step 2: Extract calculateDiscount()
-  LLM->>TEST: Run tests after extraction
+  PL->>LLM: Plan step 2: Move isWriteMethod() to HttpParam
+  LLM->>TEST: mvn test
   TEST-->>PL: All tests pass
-  PL->>LLM: Plan step 3: Extract processPayment()
-  LLM->>TEST: Run tests after extraction
-  TEST-->>PL: All tests pass
-  PL->>SQ: Rescan → smells remaining: {Print Stmts only}
-  Note over PL: Plan complete. 5 smells resolved in 3 steps.
+  PL->>SQ: Rescan → no smells remaining
+  Note over PL: Plan complete. 2 smells resolved in 2 steps.
 ```
 
 ---
