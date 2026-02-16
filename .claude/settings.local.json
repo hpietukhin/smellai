@@ -1,13 +1,4 @@
 {
-  "mcpServers": {
-    "mlflow-mcp": {
-      "command": "uv",
-      "args": ["run", "--with", "mlflow[mcp]>=3.5.1", "mlflow", "mcp", "run"],
-      "env": {
-        "MLFLOW_TRACKING_URI": "sqlite:////Users/havriil.pietukhin/PycharmProjects/smellai3/smellai/mlflow.db"
-      }
-    }
-  },
   "permissions": {
     "allow": [
       "WebFetch(domain:context7.com)",
@@ -65,7 +56,8 @@
       "Bash(ls:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(npx agent-browser:*)"
+      "Bash(npx agent-browser:*)",
+      "mcp__context7__query-docs"
     ],
     "deny": []
   },
@@ -81,6 +73,22 @@
         ]
       }
     ]
+  },
+  "mcpServers": {
+    "mlflow-mcp": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "mlflow[mcp]>=3.5.1",
+        "mlflow",
+        "mcp",
+        "run"
+      ],
+      "env": {
+        "MLFLOW_TRACKING_URI": "sqlite:////Users/havriil.pietukhin/uni/masterThesis/code/smellai/mlflow.db"
+      }
+    }
   },
   "prompt": "Before starting any work, run 'bd onboard' to understand the current project state and available issues."
 }
