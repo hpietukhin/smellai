@@ -17,13 +17,12 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import requests
 from dotenv import load_dotenv
-
-from repo_utils import checkout_repo, clone_repository as clone_repo
 
 # Load environment variables
 load_dotenv()
@@ -94,74 +93,96 @@ def derive_project_key(repo_url: str, commit_sha: str) -> str:
     return f"{m.group('org')}_{repo}_{short_sha}".lower()
 
 
+def _compile_java_project(project_path: Path) -> Path | None:
+    """Attempt to compile the Java project. Returns the classes directory or None."""
+    if (project_path / "pom.xml").exists():
+        run_command(
+            ["mvn", "compile", "-q", "-B", "--fail-at-end"],
+            cwd=project_path,
+            check=False,
+        )
+        classes_dir = project_path / "target" / "classes"
+    elif (project_path / "build.gradle").exists() or (
+        project_path / "build.gradle.kts"
+    ).exists():
+        gradle = "./gradlew" if (project_path / "gradlew").exists() else "gradle"
+        run_command(
+            [gradle, "compileJava", "-x", "test", "-q"],
+            cwd=project_path,
+            check=False,
+        )
+        classes_dir = project_path / "build" / "classes" / "java" / "main"
+    else:
+        return None
+    return classes_dir if classes_dir.exists() else None
+
+
 def run_sonar_scanner_local(
     clone_dir: Path, project_key: str, sonar_url: str, sonar_token: str
-) -> None:
-    """Run sonar-scanner locally via CLI."""
-    # Write sonar-project.properties
+) -> str:
+    """Run sonar-scanner locally via CLI. Returns the CE task ID."""
+    classes_dir = _compile_java_project(clone_dir)
+    if classes_dir:
+        binaries = str(classes_dir)
+    else:
+        logging.warning(
+            "Could not find compiled classes for %s; Java bytecode analysis will be degraded",
+            project_key,
+        )
+        binaries = "."
+
     props_content = (
         f"sonar.projectKey={project_key}\n"
         f"sonar.projectName={project_key}\n"
         "sonar.sources=.\n"
         f"sonar.host.url={sonar_url}\n"
         f"sonar.token={sonar_token}\n"
-        "sonar.java.binaries=.\n"
+        f"sonar.java.binaries={binaries}\n"
     )
     (clone_dir / "sonar-project.properties").write_text(props_content)
     logging.info("Starting sonar-scanner (this may take several minutes)...")
     run_command(["sonar-scanner"], cwd=clone_dir, verbose=True)
 
+    report_file = clone_dir / ".scannerwork" / "report-task.txt"
+    if not report_file.exists():
+        raise RuntimeError("sonar-scanner did not produce .scannerwork/report-task.txt")
+    for line in report_file.read_text().splitlines():
+        if line.startswith("ceTaskId="):
+            return line.split("=", 1)[1].strip()
+    raise RuntimeError("ceTaskId not found in .scannerwork/report-task.txt")
+
+
+POLL_INTERVAL_SEC = 5
+
 
 def poll_analysis_completion(
-    project_key: str, sonar_url: str, sonar_token: str, timeout_sec: int = 600
+    task_id: str, sonar_url: str, sonar_token: str, timeout_sec: int = 600
 ) -> None:
-    """Poll SonarQube CE until the current analysis succeeds or timeout."""
-    import time
-
-    logging.info(f"Polling analysis completion for project: {project_key}")
+    """Poll SonarQube CE task by ID until it succeeds or times out."""
+    logging.info("Polling CE task %s for completion", task_id)
     session = requests.Session()
     session.auth = (sonar_token, "")
 
-    try:
-        resp = session.get(
-            f"{sonar_url}/api/ce/component",
-            params={"component": project_key},
-            timeout=30,
-        )
-        resp.raise_for_status()
-        analysis_id = resp.json().get("current", {}).get("analysisId")
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 403:
-            logging.warning("Got 403 from SonarQube, waiting 30 seconds...")
-            time.sleep(30)
-            return
-        raise
-
-    if not analysis_id:
-        logging.info("No analysis ID found, analysis may be complete")
-        return
-
-    logging.info(f"Waiting for analysis {analysis_id} to complete...")
-    start = time.time()
+    start = time.monotonic()
     poll_count = 0
     while True:
-        task_resp = session.get(
-            f"{sonar_url}/api/ce/task", params={"id": analysis_id}, timeout=30
-        )
-        task_resp.raise_for_status()
-        status = task_resp.json().get("task", {}).get("status")
-        elapsed = int(time.time() - start)
         poll_count += 1
-        logging.info(f"Poll #{poll_count} ({elapsed}s): Analysis status = {status}")
+        resp = session.get(
+            f"{sonar_url}/api/ce/task", params={"id": task_id}, timeout=30
+        )
+        resp.raise_for_status()
+        status = resp.json()["task"]["status"]
+        elapsed = int(time.monotonic() - start)
+        logging.info("Poll #%d (%ds): status=%s", poll_count, elapsed, status)
 
         if status == "SUCCESS":
-            logging.info(f"Analysis completed successfully in {elapsed} seconds")
+            logging.info("Analysis completed in %ds", elapsed)
             return
         if status in {"FAILED", "CANCELED"}:
             raise RuntimeError(f"Analysis ended with status {status}")
-        if time.time() - start > timeout_sec:
+        if elapsed >= timeout_sec:
             raise TimeoutError("Timeout waiting for analysis completion")
-        time.sleep(5)
+        time.sleep(POLL_INTERVAL_SEC)
 
 
 def fetch_issues_for_file(
@@ -240,7 +261,7 @@ def scan_commit_file(
     Returns:
         List of normalized issues for the file
     """
-    # Check cache first
+    cache_file: Path | None = None
     if cache_dir:
         cache_dir.mkdir(parents=True, exist_ok=True)
         cache_file = cache_dir / f"{commit_sha}_{file_path.replace('/', '_')}.json"
@@ -249,7 +270,8 @@ def scan_commit_file(
 
     project_key = derive_project_key(repo_url, commit_sha)
 
-    # Clone and checkout
+    from repo_utils import checkout_repo, clone_repository as clone_repo
+
     work_dir = Path(tempfile.mkdtemp(prefix="sonar_commit_scan_"))
     try:
         clone_dir = work_dir / "repo"
@@ -257,22 +279,16 @@ def scan_commit_file(
         repo_path = clone_dir / repo_name
         checkout_repo(repo_path, commit_sha)
 
-        # Verify file exists
         if not (repo_path / file_path).exists():
             return []
 
-        # Run sonar scanner
-        run_sonar_scanner_local(repo_path, project_key, sonar_url, sonar_token)
+        task_id = run_sonar_scanner_local(repo_path, project_key, sonar_url, sonar_token)
+        poll_analysis_completion(task_id, sonar_url, sonar_token)
 
-        # Wait for analysis
-        poll_analysis_completion(project_key, sonar_url, sonar_token)
-
-        # Fetch issues for this file
         issues = fetch_issues_for_file(project_key, file_path, sonar_url, sonar_token)
         normalized = [normalize_issue(i) for i in issues]
 
-        # Cache results
-        if cache_dir:
+        if cache_file is not None:
             cache_file.write_text(json.dumps(normalized, indent=2))
 
         return normalized
@@ -303,6 +319,8 @@ def scan_commit(
 
     project_key = derive_project_key(repo_url, commit_sha)
 
+    from repo_utils import checkout_repo, clone_repository as clone_repo
+
     # Clone and checkout
     work_dir = Path(tempfile.mkdtemp(prefix="sonar_commit_scan_"))
     try:
@@ -311,11 +329,10 @@ def scan_commit(
         repo_path = clone_dir / repo_name
         checkout_repo(repo_path, commit_sha)
 
-        # Run sonar scanner
-        run_sonar_scanner_local(repo_path, project_key, sonar_url, sonar_token)
-
-        # Wait for analysis
-        poll_analysis_completion(project_key, sonar_url, sonar_token)
+        task_id = run_sonar_scanner_local(
+            repo_path, project_key, sonar_url, sonar_token
+        )
+        poll_analysis_completion(task_id, sonar_url, sonar_token)
 
         # Fetch all issues
         session = requests.Session()

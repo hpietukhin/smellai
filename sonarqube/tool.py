@@ -54,7 +54,7 @@ def _ensure_sonarqube_running(sonar_url: str) -> bool:
 
 def _start_sonarqube() -> None:
     """Start SonarQube via docker compose."""
-    project_root = Path(__file__).resolve().parents[3]
+    project_root = Path(__file__).resolve().parents[1]
     compose_file = project_root / "sonarqube/docker-compose.yml"
 
     subprocess.run(
