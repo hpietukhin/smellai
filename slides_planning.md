@@ -35,7 +35,7 @@ Havriil Pietukhin
 
 The system currently uses a **greedy algorithm** to select the next smell to refactor.
 
-$$PZ_i = Severity_i + \sum_{j \in \text{PositiveDeps}(i)} w_{\text{impact}}$$
+$$PZ_i = \text{severity}(s_i) + |\text{positive\_out\_edges}(s_i)| \times 2$$
 
 **Algorithm:**
 1. Compute PZ for all detected smells
@@ -105,12 +105,16 @@ Model the refactoring process as a **search problem** over the space of smell co
 # Best-first search: how it works
 
 
+**S₀:** God Class (H=3), Long Method (H=3), Complex Method (H=3), Dup Conditions (M=2) -> h = 3+3+3+2 = **11**
+
+**PZ scores** (greedy picks max): God Class=3+0x2=3, Long Method=3+1x2=5 (pos->Complex Method), Complex Method=3+1x2=5, Dup Cond=2+0x2=2
+
 ```mermaid
 graph TD
-  S0["S₀: {God Class, Long Method,<br/>Complex Method, Dup Conditions}<br/>h=17"] -->|"Refactor God Class"| S1a["S₁a: {Long Method, Complex Method,<br/>Dup Conditions, <b>NEW: Inapp. Intimacy</b>}<br/>h=14"]
-  S0 -->|"Refactor Long Method"| S1b["S₁b: {God Class, Complex Method,<br/>Dup Conditions}<br/><i>+resolved: Dup Code, Comments</i><br/>h=11"]
-  S0 -->|"Refactor Complex Method"| S1c["S₁c: {God Class, Long Method,<br/>Dup Conditions}<br/>h=13"]
-  S1b -->|"Refactor God Class"| S2["S₂: {Dup Conditions}<br/>h=4"]
+  S0["S₀: {GC, LM, CM, DC}<br/>h=11"] -->|"Refactor God Class (PZ=3)<br/>neg: may create LM, Inapp.Intim."| S1a["S₁a: {LM, CM, DC, NEW: Inapp.Intim.}<br/>h = 3+3+2+2 = 10"]
+  S0 -->|"Refactor Long Method (PZ=5)<br/>pos: resolves Dup Code cascade"| S1b["S₁b: {GC, CM, DC}<br/>h = 3+3+2 = 8"]
+  S0 -->|"Refactor Complex Method (PZ=5)<br/>neg: may create LM"| S1c["S₁c: {GC, LM, DC}<br/>h = 3+3+2 = 8"]
+  S1b -->|"Refactor God Class"| S2["S₂: {DC}<br/>h = 2"]
   S2 -->|"Refactor Dup Conditions"| S3["S₃: {} <br/>h=0 ✅"]
   style S0 fill:#4c6ef5,color:#fff
   style S1b fill:#51cf66,color:#fff
@@ -120,80 +124,83 @@ graph TD
   style S1c fill:#ffa94d,color:#fff
 ```
 
-Priority queue expands the node with **lowest h(S)** first.
+Priority queue expands **lowest h(S)**: S₁b or S₁c (h=8) before S₁a (h=10).
 
-Path: Long Method → God Class → Dup Conditions (h: 17→11→4→0)
+Path: Long Method -> God Class -> Dup Conditions (h: 11->8->2->0)
 
 ---
 
 # Greedy vs best-first: side by side
 
+Using S₀ = {God Class (H=3), Long Method (H=3), Complex Method (H=3), Dup Conditions (M=2)}
+
 <div class="grid grid-cols-2 gap-4">
 <div>
 
-### Greedy path
+### Greedy path (always picks max PZ)
 ```
-Step 1: God Class (PZ=7)
-  → creates Inapp. Intimacy
-  → creates Long Method
+PZ: GC=3, LM=3+1x2=5, CM=3+1x2=5, DC=2
+Tie -> picks LM or CM arbitrarily, say GC=3
 
-Step 2: Long Method (PZ=6)
-  → creates Long Param List
+Step 1: God Class (PZ=3)
+  -> neg deps: creates Inapp. Intimacy, Long Method
+  h = 3+3+2+2+3 = 13 (WORSE than start!)
 
-Step 3: Complex Method (PZ=6)
-  → creates Long Param List
+Step 2: Long Method (PZ=5, recalculated)
+  -> neg deps: creates Long Param List
 
-Step 4: Dup Conditions (PZ=4)
+Step 3: Complex Method (PZ=5)
+Step 4: Dup Conditions (PZ=2)
 Step 5: Inapp. Intimacy (PZ=2)
-Step 6: Long Param List x2 (PZ=2)
+Step 6: Long Param List (PZ=2)
 ─────────────────────
-Total steps: 7
-New smells created: 3
+Total steps: 6, New smells: 3
 ```
 
 </div>
 <div>
 
-### Best-first path
+### Best-first path (expands lowest h)
 ```
-Step 1: Long Method (PZ=6)
-  → resolves Dup Code, Comments
-  → positive cascade!
+PZ: LM=5, CM=5, GC=3, DC=2
+Expand LM first (PZ=5, positive cascade):
 
-Step 2: God Class (PZ=7)
-  → fewer methods to extract
-  → reduced negative impact
+Step 1: Long Method -> h = 3+3+2 = 8
+  (pos dep resolved Complex Method partially)
 
-Step 3: Complex Method (PZ=6)
-Step 4: Dup Conditions (PZ=4)
+Step 2: God Class -> h = 3+2 = 5
+  (fewer methods -> reduced neg impact)
+
+Step 3: Complex Method -> h = 2
+Step 4: Dup Conditions -> h = 0 ✅
 ─────────────────────
-Total steps: 4
-New smells created: 0
+Total steps: 4, New smells: 0
 ```
 
 </div>
 </div>
 
-Best-first search finds a shorter path by **avoiding paths that create new smells**.
+Best-first avoids the God Class path early (h=10) and picks Long Method path (h=8) — **fewer total steps, no new smells**.
 
 ---
 
 # The heuristic function
 
-The quality of best-first search depends on the **heuristic function** h(S).
+The search uses the **PZ formula** from the codebase (`prioritize_smells.py`) to evaluate each candidate:
 
-$$h(S) = \sum_{s \in S} \text{severity}(s) - \alpha \cdot \text{positive\_deps}(s) + \beta \cdot \text{negative\_deps}(s)$$
+$$PZ_i = \text{severity}(s_i) + |\text{positive\_out\_edges}(s_i)| \times w_{\text{impact}}$$
 
-Where:
+Where (from code):
 - $\text{severity}(s)$: HIGH=3, MEDIUM=2, LOW=1
-- $\text{positive\_deps}(s)$: count of smells that refactoring s would also resolve
-- $\text{negative\_deps}(s)$: count of smells that refactoring s might create
-- $\alpha, \beta$: tunable weights (default: $\alpha=2, \beta=1.5$)
+- $\text{positive\_out\_edges}(s)$: outgoing positive edges **in the current working graph** (recalculated after each removal)
+- $w_{\text{impact}} = 2$ (each positive dependency adds 2 points)
+
+**State heuristic** for search: $h(S) = \sum_{s \in S} \text{severity}(s)$ — total remaining smell severity.
 
 **Properties:**
-- **Admissible** if $\alpha$ is not too aggressive (never overestimates benefit)
-- **Consistent** since positive/negative dependency counts are monotonic
-- Reduces to greedy PZ when search depth = 1
+- Greedy selects $\arg\max PZ_i$ at each step (depth-1 search)
+- Best-first search expands the state with **lowest h(S)**, exploring multiple orderings
+- Negative dependencies are **tracked** in the graph but not part of PZ — search avoids them by comparing resulting states
 
 ---
 
@@ -291,11 +298,11 @@ graph LR
 <div>
 
 ### Covered (green path)
-- **Long Method** → Extract Method (SWE-Refactor: 441, RMiner: 1,033 TP)
-- **Complex Method** → Extract Method (same datasets)
-- **God Class** → Move Method (SWE-Refactor: 410) + Extract Class (RMiner: 108 TP)
-- **Large Class** → Extract Class (RMiner: 108 TP) + Extract Superclass (72 TP)
-- **Conditional Complexity** → Extract Method (workaround)
+- **Long Method** -> Extract Method (SWE-Refactor: 441, RMiner: 1,033 TP)
+- **Complex Method** -> Extract Method (same datasets)
+- **God Class** -> Move Method (SWE-Refactor: 410) + Extract Class (RMiner: 108 TP)
+- **Large Class** -> Extract Class (RMiner: 108 TP) + Extract Superclass (72 TP)
+- **Conditional Complexity** -> Extract Method (workaround)
 
 Both datasets together cover most method-level and some class-level refactorings.
 
@@ -303,9 +310,9 @@ Both datasets together cover most method-level and some class-level refactorings
 <div>
 
 ### NOT covered (red path)
-- **Long Parameter List** → Introduce Parameter Object (missing from both datasets)
-- **Duplicated Conditions** → Consolidate Conditional (missing)
-- **Print Statements** → Replace with Logger (missing, low priority)
+- **Long Parameter List** -> Introduce Parameter Object (missing from both datasets)
+- **Duplicated Conditions** -> Consolidate Conditional (missing)
+- **Print Statements** -> Replace with Logger (missing, low priority)
 
 Note: Extract Class is now covered by the full RMiner oracle (108 TP instances), significantly closing the gap for God Class / Large Class.
 
@@ -380,216 +387,135 @@ private boolean isWriteMethod(String method) {
 
 # HttpJobExecutor: Best-First Search Plan
 
+**PZ calculation** (`PZ = severity + pos_out_edges x 2`):
+- Long Method (H=3): positive dep -> Feature Envy (co-located) -> PZ = 3 + 1x2 = **5**
+- Feature Envy (M=2): no positive deps -> PZ = 2 + 0x2 = **2**
 
 ```mermaid
 graph LR
-  S0["S₀: process()<br/>{Long Method, Feature Envy}<br/>h = 3+2 = 5"] -->|"① Extract Method<br/>getConnectionInputStream()"| S1["S₁: {Feature Envy}<br/>✅ Long Method resolved<br/>h = 2"]
+  S0["S₀: {Long Method, Feature Envy}<br/>h = 3+2 = 5"] -->|"Path A: Extract Method (PZ=5)<br/>resolve Long Method first"| S1a["S₁a: {Feature Envy}<br/>h = 2"]
+  S0 -->|"Path B: Move Method (PZ=2)<br/>resolve Feature Envy first"| S1b["S₁b: {Long Method}<br/>neg: may create LM, LPL<br/>h = 3 (+risk)"]
 
-  S1 -->|"② Move Method<br/>isWriteMethod() → HttpParam"| S2["S₂: {} ✅<br/>✅ Feature Envy resolved<br/>h = 0"]
+  S1a -->|"Move Method"| S2["S₂: {} ✅ h=0"]
 
   style S0 fill:#ff6b6b,color:#fff
-  style S1 fill:#ffa94d,color:#fff
+  style S1a fill:#51cf66,color:#fff
+  style S1b fill:#ffa94d,color:#fff
   style S2 fill:#51cf66,color:#fff
 ```
 
-Both steps use refactorings available in SWE-Refactor: **Extract Method** (441 records) and **Move Method** (410 records).
-
-**Why this order?** Extract Method first makes `process()` shorter, and the remaining `isWriteMethod()` becomes clearly misplaced — it only accesses `HttpParam` fields. The planner avoids the reverse (moving first would move the long method's complexity into HttpParam).
+**Greedy and search agree:** Long Method (PZ=5) first. Moving `isWriteMethod()` first (Path B) would bring the long method's complexity into HttpParam, and `Long Method -> {Long Method, Long Param List}` negative deps apply.
 
 ---
 
-# HttpJobExecutor: Step 1 - Extract Method (real code)
+# HttpJobExecutor: Code Evolution
 
 <style scoped>
-pre { font-size: 0.68em; line-height: 1.35; }
+pre { font-size: 0.62em; line-height: 1.3; }
+h3 { margin-bottom: 0.2em; }
 </style>
 
-<div class="grid grid-cols-2 gap-4">
+<div class="grid grid-cols-3 gap-3">
 <div>
 
-**BEFORE** — response handling inline in process():
+### Original (2 smells)
 ```java
-int code = connection.getResponseCode();
-InputStream resultInputStream;
-if (isRequestSucceed(code)) {
-  resultInputStream = connection.getInputStream();
-} else {
-  log.warn("HTTP job {} executed with response code {}",
-    jobConfig.getJobName(), code);
-  resultInputStream = connection.getErrorStream();
-}
-StringBuilder result = new StringBuilder();
-try (BufferedReader bufferedReader = new BufferedReader(
-    new InputStreamReader(resultInputStream,
-      StandardCharsets.UTF_8))) {
-  String line;
-  while (null != (line = bufferedReader.readLine())) {
-    result.append(line);
+public void process(...) {
+  HttpParam hp = getHttpParam(...);
+  connection = (HttpURLConnection)
+    new URL(hp.getUrl()).openConnection();
+  connection.setRequestMethod(hp.getMethod());
+  connection.setDoOutput(true);
+  // ... setup headers, connect
+  if (isWriteMethod(hp.getMethod()) // [FE]
+      && !Strings.isNullOrEmpty(data)) {
+    // write data ...
   }
+  int code = connection.getResponseCode();
+  InputStream is;
+  if (isRequestSucceed(code)) {     // [LM]
+    is = connection.getInputStream();
+  } else {
+    log.warn("HTTP {} resp {}", ...);
+    is = connection.getErrorStream();
+  }
+  // ... read response, log result
+}
+private boolean isWriteMethod(String m) {
+  return Arrays.asList("POST","PUT","DELETE")
+    .contains(m.toUpperCase());
 }
 ```
 
 </div>
 <div>
 
-**AFTER** — extracted getConnectionInputStream():
+### Step 1: Extract Method
 ```java
-int responseCode = connection.getResponseCode();
-StringBuilder result = new StringBuilder();
-try (
-    InputStream inputStream = getConnectionInputStream(
-      jobConfig.getJobName(), connection, responseCode);
-    BufferedReader bufferedReader = new BufferedReader(
-      new InputStreamReader(inputStream,
-        StandardCharsets.UTF_8))) {
-  String line;
-  while (null != (line = bufferedReader.readLine())) {
-    result.append(line);
+public void process(...) {
+  HttpParam hp = getHttpParam(...);
+  connection = (HttpURLConnection)
+    new URL(hp.getUrl()).openConnection();
+  connection.setRequestMethod(hp.getMethod());
+  connection.setDoOutput(true);
+  // ... setup headers, connect
+  if (isWriteMethod(hp.getMethod()) // [FE]
+      && !Strings.isNullOrEmpty(data)) {
+    // write data ...
   }
+  int code = connection.getResponseCode();
+  InputStream is =
+    getConnectionInputStream(        // NEW
+      jobConfig.getJobName(),
+      connection, code);
+  // ... read response, log result
 }
-
-private InputStream getConnectionInputStream(
-    String jobName, HttpURLConnection connection,
+// EXTRACTED:
+private InputStream
+    getConnectionInputStream(
+    String name, HttpURLConnection c,
     int code) throws IOException {
-  if (isRequestSucceed(code)) {
-    return connection.getInputStream();
-  }
-  log.warn("HTTP job {} executed with response code {}",
-    jobName, code);
-  return connection.getErrorStream();
+  if (isRequestSucceed(code))
+    return c.getInputStream();
+  log.warn("HTTP {} resp {}", name, code);
+  return c.getErrorStream();
 }
 ```
-
-**Resolves:** Long Method -- `process()` is now shorter and delegates I/O handling.
-
-</div>
-</div>
-
----
-
-# HttpJobExecutor: Step 2 - Move Method (real code)
-
-<style scoped>
-pre { font-size: 0.72em; line-height: 1.4; }
-</style>
-
-<div class="grid grid-cols-2 gap-4">
-<div>
-
-**BEFORE** — `isWriteMethod()` lives in HttpJobExecutor:
-```java
-// In HttpJobExecutor:
-private boolean isWriteMethod(final String method) {
-  return Arrays.asList("POST", "PUT", "DELETE")
-    .contains(method.toUpperCase());
-}
-
-// Called as:
-if (isWriteMethod(httpParam.getMethod())
-    && !Strings.isNullOrEmpty(data)) {
-  try (OutputStream outputStream =
-      connection.getOutputStream()) {
-    outputStream.write(
-      data.getBytes(StandardCharsets.UTF_8));
-  }
-}
-```
-
-Feature Envy: the method only accesses `HttpParam`'s method field, not any `HttpJobExecutor` state.
+LM resolved. FE remains.
 
 </div>
 <div>
 
-**AFTER** — moved to HttpParam where it belongs:
+### Step 2: Move Method
 ```java
-// In HttpParam (new location):
-/**
- * Is write method.
- * @return write method or not
- */
+// HttpJobExecutor:
+public void process(...) {
+  HttpParam hp = getHttpParam(...);
+  connection = (HttpURLConnection)
+    new URL(hp.getUrl()).openConnection();
+  connection.setRequestMethod(hp.getMethod());
+  connection.setDoOutput(true);
+  // ... setup headers, connect
+  if (hp.isWriteMethod()            // MOVED
+      && !Strings.isNullOrEmpty(data)) {
+    // write data ...
+  }
+  int code = connection.getResponseCode();
+  InputStream is =
+    getConnectionInputStream(
+      jobConfig.getJobName(),
+      connection, code);
+  // ... read response, log result
+}
+
+// HttpParam (target class):
 public boolean isWriteMethod() {
-  return Arrays.asList("POST", "PUT", "DELETE")
+  return Arrays.asList("POST","PUT","DELETE")
     .contains(method.toUpperCase());
-}
-
-// Called in HttpJobExecutor as:
-if (httpParam.isWriteMethod()
-    && !Strings.isNullOrEmpty(data)) {
-  try (OutputStream outputStream =
-      connection.getOutputStream()) {
-    outputStream.write(
-      data.getBytes(StandardCharsets.UTF_8));
-  }
+  // uses own field, no param needed
 }
 ```
-
-**Resolves:** Feature Envy -- method now lives with the data it operates on.
-
-Parameter `String method` removed; uses own field `this.method`.
-
-</div>
-</div>
-
----
-
-# HttpJobExecutor: SWE-Refactor evaluation data
-
-<style scoped>
-pre { font-size: 0.72em; line-height: 1.4; }
-</style>
-
-This commit (`1bdc817c6a`) is a **real record** in SWE-Refactor with compile and test metadata.
-
-<div class="grid grid-cols-2 gap-4">
-<div>
-
-**Dataset record fields (per refactoring):**
-- `sourceCodeBeforeRefactoring` / `After` -- exact method-level diff
-- `sourceCodeBeforeForWhole` / `After` -- full file context
-- `compileResultBefore` / `compileResultCurrent` -- compilation status
-- `compileJDK` -- required Java version
-- `hasTestC` -- whether tests cover this code
-- `coverageInfo` -- line-level test coverage
-- `callInfo` -- caller/callee graph for the refactored method
-- `invokedMethodSet` -- methods invoked by the refactored code
-- `diffSourceCode` -- unified diff format
-
-**Evaluation criteria (from the paper):**
-1. Code compiles after refactoring
-2. All existing tests pass
-3. RefactoringMiner detects the expected refactoring type in the LLM output
-
-</div>
-<div>
-
-**What the agent must produce for Step 1:**
-```java
-// Extract Method: getConnectionInputStream()
-// Input: the full HttpJobExecutor.java file
-// Expected output: new private method extracted
-//   from process() that handles InputStream selection
-
-// The SWE-Refactor record provides:
-// - Exact before/after code for comparison
-// - Compilation command: mvn clean compile
-// - Test command: mvn test
-// - JDK version: 8
-```
-
-**What the agent must produce for Step 2:**
-```java
-// Move Method: isWriteMethod() → HttpParam
-// Input: HttpJobExecutor.java + HttpParam.java
-// Expected output:
-//   1. Remove isWriteMethod(String) from Executor
-//   2. Add isWriteMethod() to HttpParam (no param)
-//   3. Update caller: httpParam.isWriteMethod()
-
-// Ground truth available in dataset for both steps
-```
-
-**DeepSeek-V3 success rate on similar Extract Method: 68%**
-**GPT-4o-mini success rate on similar Move Method: 42%**
+FE resolved. **0 smells remain.**
 
 </div>
 </div>
@@ -659,324 +585,36 @@ private static String getQualifiedTypeDeclarationName(
 
 ---
 
-# checkstyle: Best-First Search Plan
+# checkstyle: Best-First Search Plan with PZ
 
+**Initial state S0:** {Dup Codex2 (M=2 each), God Class (H=3), Long Method (H=3)}
+
+**PZ calculation** (`PZ = severity + pos_out_edges x 2`):
+
+| Candidate smell | Severity | Pos. out-edges (co-located) | PZ |
+|--------|----------|---------|------|
+| **Dup Code** (x2) | 2 | Dup Code -> {Divergent Change, Shotgun Surgery} — not co-located -> 0 | 2 + 0x2 = **2** |
+| **God Class** | 3 | God Class -> {Feature Envy} — co-located with Dup Code -> 1 edge | 3 + 1x2 = **5** |
+| **Long Method** | 3 | Long Method -> {Feature Envy, Dup Code} — Dup Code co-located -> 1 edge | 3 + 1x2 = **5** |
+
+**Greedy picks** God Class or Long Method (PZ=5, tied). But search explores both orderings:
 
 ```mermaid
 graph LR
-  S0["S₀: UnusedLocalVarCheck<br/>{Dup Code x2, God Class, Long Method}<br/>h = 2+2+3+3 = 10"] -->|"① Move Methods<br/>extractQualifiedName() x2<br/>getQualifiedTypeDecl()"| S1["S₁: {God Class↓, Long Method}<br/>✅ Dup Code resolved<br/>h = 4"]
+  S0["S₀: {Dupx2, God Class, LM}<br/>h = 2+2+3+3 = 10"] -->|"Path A: Move Dup Methods<br/>(resolve Dup Code first)"| S1a["S₁a: {God Class↓, LM}<br/>h = 3+3 = 6"]
+  S0 -->|"Path B: God Class first<br/>(Move unrelated methods)"| S1b["S₁b: {Dupx2, LM}<br/>h = 2+2+3 = 7"]
 
-  S1 -->|"② Move Method<br/>getShortNameOfAnonInner()"| S2["S₂: {Long Method}<br/>✅ God Class resolved<br/>h = 3"]
-
-  S2 -->|"③ Extract Method<br/>getTypeDeclNameMatchingDiff()"| S3["S₃: {} ✅<br/>✅ Long Method resolved<br/>h = 0"]
+  S1a -->|"Move Method<br/>(God Class)"| S2["S₂: {LM}<br/>h = 3"]
+  S2 -->|"Extract Method"| S3["S₃: {} ✅<br/>h = 0"]
 
   style S0 fill:#ff6b6b,color:#fff
-  style S1 fill:#ffa94d,color:#fff
+  style S1a fill:#51cf66,color:#fff
+  style S1b fill:#ffa94d,color:#fff
   style S2 fill:#ffd43b,color:#333
   style S3 fill:#51cf66,color:#fff
 ```
 
-All steps use **Move Method** and **Extract Method** -- fully evaluable with SWE-Refactor ground truth.
-
-**Why this order?** Fixing duplicated code first (Move Methods to shared utility) is the highest priority because it affects multiple files. The planner's heuristic scores Dup Code resolution highest due to cross-file positive dependencies.
-
----
-
-# checkstyle: Step 1 - Move Duplicated Methods (real code)
-
-<style scoped>
-pre { font-size: 0.68em; line-height: 1.35; }
-</style>
-
-<div class="grid grid-cols-2 gap-4">
-<div>
-
-**BEFORE** — same method in 2 different check classes:
-```java
-// UnusedLocalVariableCheck.java:
-/**
- * Duplicated, until
- * <a>github.com/checkstyle/checkstyle/issues/11201</a>
- */
-private static String extractQualifiedName(
-    DetailAST ast) {
-  return FullIdent.createFullIdent(ast).getText();
-}
-
-// FinalClassCheck.java — identical copy:
-/**
- * Get name of class in ast.
- */
-private static String extractQualifiedName(
-    DetailAST ast) {
-  return FullIdent.createFullIdent(ast).getText();
-}
-```
-
-Both `private` — each class has its own copy.
-
-</div>
-<div>
-
-**AFTER** — moved to shared utility (CheckUtil):
-```java
-// CheckUtil.java (shared location):
-/**
- * Get name of package and super class of anon inner class
- * by concatenating identifier values under DOT.
- */
-public static String extractQualifiedName(
-    DetailAST ast) {
-  return FullIdent.createFullIdent(ast).getText();
-}
-
-// UnusedLocalVariableCheck now calls:
-CheckUtil.extractQualifiedName(firstChild);
-
-// FinalClassCheck now calls:
-CheckUtil.extractQualifiedName(ast);
-```
-
-**Resolves:** Duplicated Code -- single source of truth.
-
-`private` → `public` access modifier change enables sharing.
-
-Same pattern for `getQualifiedTypeDeclarationName()` (15 lines, also marked "Duplicated" in source).
-
-</div>
-</div>
-
----
-
-# Real Dataset: EduStepicConnector (RMiner)
-
-<style scoped>
-pre { font-size: 0.72em; line-height: 1.4; }
-</style>
-
-From **RMiner dataset** — real Extract Method from JetBrains IntelliJ (commit `7ed3f27`).
-
-<div class="grid grid-cols-2 gap-4">
-<div>
-
-**BEFORE** — getCourses() has inline logic:
-```java
-@NotNull
-public static List<CourseInfo> getCourses() {
-  try {
-    List<CourseInfo> result = new ArrayList<>();
-    final List<CourseInfo> courseInfos =
-      getFromStepic("courses", CoursesContainer.class)
-        .courses;
-    for (CourseInfo info : courseInfos) {
-      final String courseType = info.getType();
-      if (StringUtil.isEmptyOrSpaces(courseType))
-        continue;
-      final List<String> typeLanguage =
-        StringUtil.split(courseType, " ");
-      if (typeLanguage.size() == 2
-          && PYCHARM_PREFIX.equals(typeLanguage.get(0))) {
-        result.add(info);
-      }
-    }
-    return result;
-  } catch (IOException e) {
-    LOG.error("Cannot load course list "
-      + e.getMessage());
-  }
-  return Collections.emptyList();
-}
-```
-
-Single-page fetch only. No pagination support.
-
-</div>
-<div>
-
-**AFTER** — Extract Method + pagination:
-```java
-@NotNull
-public static List<CourseInfo> getCourses() {
-  try {
-    List<CourseInfo> result = new ArrayList<>();
-    int pageNumber = 0;
-    boolean hasNext =
-      addCoursesFromStepic(result, pageNumber);
-    while (hasNext) {
-      pageNumber += 1;
-      hasNext =
-        addCoursesFromStepic(result, pageNumber);
-    }
-    return result;
-  } catch (IOException e) {
-    LOG.error("Cannot load course list "
-      + e.getMessage());
-  }
-  return Collections.emptyList();
-}
-
-private static boolean addCoursesFromStepic(
-    List<CourseInfo> result, int pageNumber)
-    throws IOException {
-  final String url = pageNumber == 0
-    ? "courses"
-    : "courses?page=" + String.valueOf(pageNumber);
-  final CoursesContainer coursesContainer =
-    getFromStepic(url, CoursesContainer.class);
-  final List<CourseInfo> courseInfos =
-    coursesContainer.courses;
-  for (CourseInfo info : courseInfos) { /* filter */ }
-  return coursesContainer.meta.containsKey("has_next")
-    && coursesContainer.meta.get("has_next") == TRUE;
-}
-```
-
-**Refactoring:** Extract Method + Extract Variable
-
-</div>
-</div>
-
----
-
-# Real Dataset: ScrollableToolbarPopupMenu (RMiner)
-
-<style scoped>
-pre { font-size: 0.78em; line-height: 1.4; }
-</style>
-
-From **RMiner dataset** — real Extract Method from RStudio (commit `cb49e43`).
-
-<div class="grid grid-cols-2 gap-4">
-<div>
-
-**BEFORE** — inline style manipulation:
-```java
-@Override
-protected Widget wrapMenuBar(ToolbarMenuBar menuBar) {
-  scrollPanel_ = new ScrollPanel(menuBar);
-  scrollPanel_.addStyleName(
-    ThemeStyles.INSTANCE.scrollableMenuBar());
-  scrollPanel_.getElement().getStyle()
-    .setOverflowY(Overflow.AUTO);
-  scrollPanel_.getElement().getStyle()
-    .setOverflowX(Overflow.HIDDEN);
-  scrollPanel_.getElement().getStyle()
-    .setProperty("maxHeight", getMaxHeight() + "px");
-  return scrollPanel_;
-}
-```
-
-Height setting is embedded in widget creation — can't be changed later.
-
-</div>
-<div>
-
-**AFTER** — extracted setMaxHeight():
-```java
-@Override
-protected Widget wrapMenuBar(ToolbarMenuBar menuBar) {
-  scrollPanel_ = new ScrollPanel(menuBar);
-  scrollPanel_.addStyleName(
-    ThemeStyles.INSTANCE.scrollableMenuBar());
-  scrollPanel_.getElement().getStyle()
-    .setOverflowY(Overflow.AUTO);
-  scrollPanel_.getElement().getStyle()
-    .setOverflowX(Overflow.HIDDEN);
-  setMaxHeight(getMaxHeight());
-  return scrollPanel_;
-}
-
-protected void setMaxHeight(int maxHeight) {
-  scrollPanel_.getElement().getStyle()
-    .setProperty("maxHeight", maxHeight + "px");
-}
-```
-
-Now subclasses can dynamically adjust height.
-
-</div>
-</div>
-
-**This is exactly what the LLM agent must produce** — matching this ground truth is how we evaluate.
-
----
-
-# Test Generation for Behavior Preservation
-
-<style scoped>
-pre { font-size: 0.72em; line-height: 1.4; }
-</style>
-
-Agent A7 generates tests **before** refactoring, Agent A6 runs them **after** each step.
-
-<div class="grid grid-cols-2 gap-4">
-<div>
-
-**For EduStepicConnector (Extract Method):**
-```java
-@Test
-void getCoursesReturnsFilteredPycharmCourses() {
-  // Setup: mock getFromStepic to return test data
-  CourseInfo pycharm = new CourseInfo();
-  pycharm.setType("pycharm python");
-  CourseInfo other = new CourseInfo();
-  other.setType("java basics");
-
-  // Before refactoring: single page
-  List<CourseInfo> courses = getCourses();
-  assertFalse(courses.isEmpty());
-  assertTrue(courses.stream()
-    .allMatch(c -> c.getType()
-      .startsWith("pycharm")));
-}
-
-@Test
-void getCoursesReturnsEmptyOnIOException() {
-  // Mock: getFromStepic throws IOException
-  List<CourseInfo> courses = getCourses();
-  assertTrue(courses.isEmpty());
-}
-```
-
-After refactoring, **same tests must still pass** with the new pagination-enabled `addCoursesFromStepic()`.
-
-</div>
-<div>
-
-**For HttpJobExecutor (Move Method):**
-```java
-@Test
-void processExecutesGetRequest() {
-  // Verify GET request works before refactoring
-  HttpJobExecutor executor = new HttpJobExecutor();
-  JobConfiguration config = createConfig(
-    "http://example.com/api", "GET", null);
-  // After Move Method: isWriteMethod() is on HttpParam
-  // but process() behavior must remain identical
-  executor.process(null, config, null, shardingCtx);
-  // Verify no output stream opened for GET
-}
-
-@Test
-void processExecutesPostWithBody() {
-  JobConfiguration config = createConfig(
-    "http://example.com/api", "POST",
-    "{\"key\": \"value\"}");
-  // After refactoring, POST must still send body
-  executor.process(null, config, null, shardingCtx);
-  // Verify output stream received data
-}
-
-@Test
-void processHandlesErrorResponse() {
-  // After Extract Method: getConnectionInputStream()
-  // must handle error codes the same way
-  // Verify warn log + error stream on 500
-}
-```
-
-</div>
-</div>
+**Search picks Path A** (h=6 < h=7) — resolving Dup Code first lowers total severity faster despite lower PZ.
 
 ---
 
@@ -999,7 +637,7 @@ From **languagetool** project, commit `bec15926de`. **9 TP refactorings** -- God
 **9 refactorings applied (all TP in oracle):**
 1. **Extract Class**: `CompoundTagger` from `UkrainianTagger`
 2. **Extract Method**: `doGuessCompoundTag()` from `guessCompoundTag()` in CompoundTagger
-3. **Move Attribute**: `VIDMINKY_MAP` → `PosTagHelper`
+3. **Move Attribute**: `VIDMINKY_MAP` -> `PosTagHelper`
 4. **Extract Attribute**: `NUM_REGEX` in `PosTagHelper`
 5. **Extract Attribute**: `CONJ_REGEX` in `PosTagHelper`
 6. **Extract Variable**: `leftConj` in CompoundTagger
@@ -1010,92 +648,32 @@ From **languagetool** project, commit `bec15926de`. **9 TP refactorings** -- God
 </div>
 <div>
 
-**Search plan for this scenario:**
+**PZ calculation** (`PZ = severity + pos_out_edges x 2`):
+
+| Candidate | Severity | Pos. out-edges (co-located) | PZ |
+|--------|----------|---------|------|
+| **God Class** | 3 | God Class -> {Feature Envy, Data Clumps} — Dup Code co-located -> 1 | 3 + 1x2 = **5** |
+| **Long Method** | 3 | LM -> {Feature Envy, Dup Code} — Dup Code co-located -> 1 | 3 + 1x2 = **5** |
+| **Dup Code** | 2 | no co-located targets -> 0 | 2 + 0x2 = **2** |
+
+**Tied at PZ=5.** Search explores both first steps:
 
 ```mermaid
 graph LR
-  S0["S₀: UkrainianTagger<br/>{God Class, LM, Dup}<br/>h = 8"] -->|"① Extract Class<br/>CompoundTagger"| S1["S₁: {LM in new class,<br/>scattered attrs}<br/>h = 5"]
-  S1 -->|"② Extract Method<br/>doGuessCompound()"| S2["S₂: {scattered attrs}<br/>h = 2"]
-  S2 -->|"③ Move/Extract Attrs<br/>→ PosTagHelper"| S3["S₃: {} ✅<br/>h = 0"]
+  S0["S₀: {God Class, LM, Dup}<br/>h = 3+3+2 = 8"] -->|"Path A: Extract Class<br/>(God Class first)"| S1a["S₁a: {LM in new class, Dup}<br/>h = 3+2 = 5"]
+  S0 -->|"Path B: Extract Method<br/>(Long Method first)"| S1b["S₁b: {God Class, Dup}<br/>neg: may create LM, LPL<br/>h = 3+2 (+3 risk) = 5-8"]
+
+  S1a -->|"Extract Method"| S2["S₂: {Dup}<br/>h = 2"]
+  S2 -->|"Move Attrs"| S3["S₃: {} ✅<br/>h = 0"]
 
   style S0 fill:#ff6b6b,color:#fff
-  style S1 fill:#ffa94d,color:#fff
+  style S1a fill:#51cf66,color:#fff
+  style S1b fill:#ffa94d,color:#fff
   style S2 fill:#ffd43b,color:#333
   style S3 fill:#51cf66,color:#fff
 ```
 
-**Extract Class (108 TP in RMiner oracle)** is the key refactoring here. Without the full oracle data, this example would have no ground truth.
-
-Step 1 resolves God Class. Step 2 resolves Long Method in the extracted class. Step 3 groups related attributes.
-
-</div>
-</div>
-
----
-
-# Real Example 4: ParameterAssignmentCheck (SWE-Refactor)
-
-<style scoped>
-pre { font-size: 0.68em; line-height: 1.35; }
-</style>
-
-From **checkstyle**, commit `ebfc50d227`. **3 refactorings** on the **same file** -- Extract Method + 2 Inline Methods.
-
-<div class="grid grid-cols-2 gap-4">
-<div>
-
-**Extract Method -- reusable parameter visitor:**
-```java
-// BEFORE: visitMethodParameters() has inline logic
-private void visitMethodParameters(DetailAST ast) {
-  DetailAST parameterDefAST =
-    ast.findFirstToken(TokenTypes.PARAMETER_DEF);
-  while (parameterDefAST != null) {
-    if (parameterDefAST.getType() == TokenTypes.PARAMETER_DEF
-        && !CheckUtil.isReceiverParameter(parameterDefAST)) {
-      final DetailAST param =
-        parameterDefAST.findFirstToken(TokenTypes.IDENT);
-      parameterNames.add(param.getText());
-    }
-    parameterDefAST = parameterDefAST.getNextSibling();
-  }
-}
-
-// AFTER: extracted visitParameters() for reuse
-private void visitMethodParameters(DetailAST ast) {
-  visitParameters(ast);  // delegation
-}
-private void visitParameters(DetailAST parametersAst) {
-  // ... same loop logic, now reusable for lambdas
-}
-```
-
-</div>
-<div>
-
-**Inline Method -- remove unnecessary delegation:**
-```java
-// BEFORE: trivial wrapper method
-private void leaveMethodDef() {
-  parameterNames = parameterNamesStack.pop();
-}
-// Called from leaveToken() via switch
-
-// AFTER: inlined into leaveToken()
-@Override
-public void leaveToken(DetailAST ast) {
-  final int type = ast.getType();
-  if (TokenUtil.isOfType(type,
-      TokenTypes.CTOR_DEF, TokenTypes.METHOD_DEF)
-      || type == TokenTypes.LAMBDA
-      && ast.getParent().getType()
-        != TokenTypes.SWITCH_RULE) {
-    parameterNames = parameterNamesStack.pop();
-  }
-}
-```
-
-**Same-file, opposite directions:** Extract to create reusable method, Inline to remove trivial wrapper. The planner must recognize that these don't conflict.
+**Search picks Path A** — Extract Class has no negative deps, while Extract Method risks creating new Long Method/Long Param List (per `DEPENDENCY_RULES`).
 
 </div>
 </div>
@@ -1278,7 +856,7 @@ sequenceDiagram
   PL->>LLM: Plan step 2: Move isWriteMethod() to HttpParam
   LLM->>TEST: mvn test
   TEST-->>PL: All tests pass
-  PL->>SQ: Rescan → no smells remaining
+  PL->>SQ: Rescan -> no smells remaining
   Note over PL: Plan complete. 2 smells resolved in 2 steps.
 ```
 
@@ -1367,43 +945,32 @@ Commit `76552001` refactors **9 files** in the debugger subsystem. Agent faces a
 | Primitive Obsession | same 3 files — `(Document, int)` instead of `XSourcePosition` | MEDIUM |
 | Extract Method needed | `RemappedSourcePosition.getLine()`, `.getOffset()` | MEDIUM |
 
-**The choice:** fix parameters first, or extract methods first?
+**PZ calculation** (`PZ = severity + pos_out_edges x 2`):
 
-- **Path A:** Merge Parameter `(Document, int)` → `XSourcePosition` across all callers first, then extract methods
-- **Path B:** Extract Method `checkRemap()` in `RemappedSourcePosition` first, then fix parameter lists
+| Candidate | Severity | Pos. out-edges (co-located) | PZ |
+|--------|----------|---------|------|
+| **Long Param List** (x3 files) | 2 | LPL -> {LPL, Data Clumps} -- LPL co-located across files -> 2 | 2 + 2x2 = **6** |
+| **Primitive Obsession** | 2 | no matching rule -> 0 | 2 + 0x2 = **2** |
+| **Extract Method needed** | 2 | no co-located targets -> 0 | 2 + 0x2 = **2** |
 
 </div>
 <div>
 
-**BEFORE — Long Parameter List:**
-```java
-// DebuggerSession.java
-public void runToCursor(
-    Document document,    // primitive pair
-    int line,             // instead of position object
-    final boolean ignoreBreakpoints) { ... }
+**Two valid paths:**
 
-// BreakpointManager.java
-public RunToCursorBreakpoint addRunToCursorBreakpoint(
-    Document document,    // same primitive pair
-    int lineIndex,        // duplicated across files
-    final boolean ignoreBreakpoints) { ... }
+- **Path A:** Merge Parameter `(Document, int)` -> `XSourcePosition` across all callers first (PZ=6), then extract methods
+- **Path B:** Extract Method `checkRemap()` first (PZ=2), then fix parameter lists
+
+```
+Path A first step -> S₁: {Prim. Obs., EM needed}
+  h = 2 + 2 = 4
+Path B first step -> S₁: {LPLx3, Prim. Obs.}
+  h = 2+2+2+2 = 8
 ```
 
-**AFTER — Merge Parameter (Introduce Parameter Object):**
-```java
-// DebuggerSession.java
-public void runToCursor(
-    @NotNull XSourcePosition position,
-    final boolean ignoreBreakpoints) { ... }
+**Search picks Path A** (h=4 < h=8). Long Param List's high PZ=6 from cross-file positive deps makes it the clear first choice.
 
-// BreakpointManager.java
-public RunToCursorBreakpoint addRunToCursorBreakpoint(
-    @NotNull XSourcePosition position,
-    final boolean ignoreBreakpoints) { ... }
-```
-
-Developers chose **Path A** — parameter cleanup first, because it touched the public API and cascaded to all callers.
+Developers agreed — parameter cleanup touched the public API and cascaded to all callers.
 
 </div>
 </div>
@@ -1413,23 +980,25 @@ Developers chose **Path A** — parameter cleanup first, because it touched the 
 # How the planner calculates the best first step
 
 
-Concrete calculation for the **IntelliJ AbstractExternalFilter** scenario.
+Concrete PZ calculation for the **IntelliJ AbstractExternalFilter** scenario.
 
 **Initial state S0:** {Long Method (H=3), Complex Method (H=3), Data Clumps (M=2)}
 
-$$h(S) = \sum \text{severity}(s) - \alpha \cdot |\text{positive\_deps}| + \beta \cdot |\text{negative\_deps}|$$
+$$PZ_i = \text{severity}_i + |\text{positive\_out\_edges}_i| \times 2$$
 
-| Action | Resolves | Creates | h(S') calculation | h(S') |
-|--------|----------|---------|-------------------|-------|
-| **Extract Method on doBuildFromStream()** | Long Method, Complex Method (+resolves: Dup Code, Comments via positive deps) | may create Long Param List | (2) - 2(2) + 1.5(1) | **-0.5** |
-| **Extract Class ParseSettings** | Data Clumps (+resolves: Feature Envy via God Class positive deps) | may create Data Class | (3+3) - 2(1) + 1.5(1) | **5.5** |
-| **Change Return Type only** | none directly | none | (3+3+2) - 0 + 0 | **8.0** |
+Positive deps from `DEPENDENCY_RULES`: Long Method -> {Feature Envy, Dup Code, Comments, ...}, God Class -> {Data Clumps, Feature Envy, ...}
 
-**Planner picks:** Extract Method (h = -0.5, lowest), because it resolves the most smells with fewest negative effects.
+| Smell candidate | Severity | Pos. out-edges (co-located) | PZ | Resolves | Neg. deps (tracked) |
+|--------|----------|---------|------|------|------|
+| **Long Method** | 3 | Complex Method shares positive deps -> 1 edge | 3 + 1x2 = **5** | Long Method + cascade | Long Method, Long Param List |
+| **Complex Method** | 3 | Same positive deps -> 1 edge | 3 + 1x2 = **5** | Complex Method + cascade | Long Method, Long Param List |
+| **Data Clumps** | 2 | No co-located targets | 2 + 0x2 = **2** | Data Clumps only | — |
 
-But developers chose Extract Class first. Why? Because **cross-file impact** matters — the `Trinity` type appeared in the entire class hierarchy. The heuristic can be improved by adding a **scope multiplier** for changes that cascade across files:
+**Greedy picks:** Long Method or Complex Method (PZ=5, tied). Both resolve method-level smells.
 
-$$h'(S) = h(S) - \gamma \cdot \text{files\_affected}(s)$$
+But developers chose Extract Class (Data Clumps) first. Why? The `Trinity` type appeared across the **entire class hierarchy** (4 files). The greedy PZ doesn't account for cross-file scope — a potential heuristic improvement:
+
+$$PZ'_i = PZ_i + \delta \cdot \text{files\_affected}(s_i)$$
 
 ---
 
@@ -1453,34 +1022,33 @@ The agent detects Long Method + Feature Envy in the same method. Two valid order
 | A | Extract Method (reduce length) | Move Method (fix envy) |
 | B | Move Method (fix envy first) | Extract in target class |
 
-The planner evaluates both:
-- Order A: after extraction, the shorter method may no longer exhibit Feature Envy (positive cascade), making Move unnecessary
-- Order B: moving the long method brings the smell into a new class, still needs extraction
+**PZ calculation (initial state):**
+- Long Method (H=3): positive deps to Feature Envy -> PZ = 3 + 1x2 = **5**
+- Feature Envy (M=2): no positive deps to co-located smells -> PZ = 2 + 0x2 = **2**
 
-**Planner chooses Order A** — Extract first has higher chance of resolving both smells in fewer steps.
+Greedy picks Long Method (PZ=5) -> **Order A**. After extraction, the shorter method may no longer exhibit Feature Envy (positive cascade).
 
 </div>
 <div>
 
 **Move And Inline Method** — opposing forces:
 
-The agent detects Feature Envy + unnecessary delegation. The method should be moved to where it belongs, then inlined into its only caller.
+The agent detects Feature Envy + Middle Man (unnecessary delegation). Two orderings:
 
 | Order | Step 1 | Step 2 | Risk |
 |-------|--------|--------|------|
 | A | Move Method | Inline Method | Safe: move first, then simplify |
-| B | Inline Method | Move (now larger) | Risky: inlining may create Long Method in wrong class |
+| B | Inline Method | Move (now larger) | Risky: inlining may create Long Method |
 
-The planner's heuristic penalizes Order B:
+**PZ calculation:**
+- Feature Envy (M=2): no positive deps -> PZ = 2 + 0x2 = **2**
+- Middle Man (M=2): no positive deps -> PZ = 2 + 0x2 = **2**
 
-```
-Order A: h = severity(FE) + severity(MM)
-         - alpha * 2 (both resolved) + 0
-Order B: h = severity(FE) + severity(MM)
-         - alpha * 1 + beta * 1 (Long Method risk)
-```
+Equal PZ — greedy doesn't differentiate. But search explores both:
+- Path A after Move: `{Middle Man}` -> severity sum = 2
+- Path B after Inline: `{Feature Envy}` + risk of new Long Method (H=3) -> severity sum up to 5
 
-Order A always wins because it avoids creating new smells.
+**Search picks Order A** — lower remaining severity.
 
 </div>
 </div>
