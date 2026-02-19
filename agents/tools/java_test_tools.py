@@ -31,16 +31,23 @@ class TestResult:
 
 
 @dataclass
-class TestRunSummary:
-    """Summary of test run."""
+class TestCounts:
+    """Aggregated counts from a test run."""
 
-    build_system: Literal["maven", "gradle"]
     total: int = 0
     passed: int = 0
     failed: int = 0
     errors: int = 0
     skipped: int = 0
     duration: float = 0.0
+
+
+@dataclass
+class TestRunSummary(TestCounts):
+    """Summary of test run."""
+
+    # kw_only because parent fields all have defaults
+    build_system: Literal["maven", "gradle"] = field(kw_only=True)
     exit_code: int = 0
     tests: list[TestResult] = field(default_factory=list)
     stdout: str = ""

@@ -3,6 +3,8 @@
 This module defines the database schema using SQLModel (Pydantic + SQLAlchemy ORM).
 Tables store structured events for MLFlow export, visualization, and analysis.
 """
+# pylint: disable=duplicate-code  # _TestCountsBase mirrors TestCounts (agents/tools/java_test_tools.py).
+# They serve different framework requirements (SQLModel vs dataclass) and cannot share a base.
 
 from datetime import datetime
 from enum import Enum
@@ -118,7 +120,19 @@ class TokenUsage(SQLModel, table=True):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
-class TestRun(SQLModel, table=True):
+# These fields mirror TestCounts in agents/tools/java_test_tools.py.
+# Defined separately here because SQLModel (Pydantic) and dataclass
+# cannot share a base without cross-layer coupling.
+class _TestCountsBase(SQLModel):  # pylint: disable=duplicate-code
+    total: int = 0
+    passed: int = 0
+    failed: int = 0
+    errors: int = 0
+    skipped: int = 0
+    duration: float = 0.0
+
+
+class TestRun(_TestCountsBase, table=True):
     """Records test execution results per refactoring iteration.
 
     Stores test run summary and individual test results for visualization
@@ -130,12 +144,6 @@ class TestRun(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     session_id: str = Field(index=True)
     iteration: int = Field(index=True)
-    total: int = 0
-    passed: int = 0
-    failed: int = 0
-    errors: int = 0
-    skipped: int = 0
-    duration: float = 0.0
     success: bool = True
     failed_tests: Optional[str] = None  # JSON list of failed test info
     test_names: Optional[str] = None  # JSON list of all test names

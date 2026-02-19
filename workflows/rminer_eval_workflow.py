@@ -42,7 +42,7 @@ from agents.rminer_eval import (
     prediction_completeness,
 )
 from rminer.create_rminer_dataset import build_genai_records
-from mlflow_utils import setup_mlflow_tracking
+from workflows.common import setup_workflow_mlflow, save_agent_graph, print_eval_results
 
 load_dotenv()
 
@@ -77,17 +77,7 @@ def main() -> int:
     if args.draw_graph:
         print("Generating agent graph...")
         agent = create_rminer_eval_agent(model_name=args.model)
-        try:
-            png_bytes = agent.get_graph().draw_mermaid_png()
-            output_path = "rminer_agent_graph.png"
-            with open(output_path, "wb") as f:
-                f.write(png_bytes)
-            print(f"Graph saved to {output_path}")
-        except Exception as e:
-            print(f"Failed to draw graph: {e}")
-            print(
-                "Ensure you have `langgraph` installed. `pip install grandalf` might be required for some visualization features."
-            )
+        save_agent_graph(agent, "rminer_agent_graph.png")
         return 0
 
     if not args.manifest and not args.dataset_name and not args.dataset_id:
@@ -97,12 +87,7 @@ def main() -> int:
         )
         return 1
 
-    setup_mlflow_tracking(
-        tracking_uri=args.tracking_uri,
-        backend_uri="sqlite:///mlflow.db",
-        experiment_name=args.experiment,
-        auto_start_server=True,
-    )
+    setup_workflow_mlflow(args.tracking_uri, args.experiment)
 
     print(f"Model: {args.model}")
 
@@ -157,24 +142,7 @@ def main() -> int:
         scorers=[mapping_accuracy, hunk_coverage, prediction_completeness],
     )
 
-    run_id = results.run_id
-
-    print("\n" + "=" * 60)
-    print("EVALUATION RESULTS")
-    print("=" * 60)
-
-    for metric_name, metric_value in results.metrics.items():
-        print(
-            f"{metric_name}: {metric_value:.4f}"
-            if isinstance(metric_value, float)
-            else f"{metric_name}: {metric_value}"
-        )
-
-    print("=" * 60)
-    print(f"MLflow run ID: {run_id}")
-
-    if run_id != "N/A" and args.tracking_uri.startswith("http://"):
-        print(f"View results: {args.tracking_uri}/#/experiments/{results.experiment_id if hasattr(results, 'experiment_id') else '?'}/runs/{run_id}")
+    print_eval_results(results, args.tracking_uri)
 
     return 0
 

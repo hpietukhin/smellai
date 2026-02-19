@@ -10,7 +10,6 @@ Usage:
 """
 
 import argparse
-import json
 import logging
 import sys
 from pathlib import Path
@@ -20,24 +19,10 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 from agents.dependency_analysis.agent import DEPENDENCY_RULES
+from workflows.utils import configure_logging, load_manifest, save_matplotlib_graph
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%H:%M:%S",
-)
+configure_logging()
 logger = logging.getLogger(__name__)
-
-
-def load_manifest(manifest_path: Path) -> Dict[str, Any]:
-    """Load the smells_manifest.json file."""
-    if not manifest_path.exists():
-        logger.error(f"Manifest file not found: {manifest_path}")
-        sys.exit(1)
-
-    with open(manifest_path, "r", encoding="utf-8") as f:
-        return json.load(f)
 
 
 def visualize_file_dependencies(
@@ -99,12 +84,7 @@ def visualize_file_dependencies(
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=8)
 
     plt.title(f"Smell Dependencies: {filename}")
-    plt.axis("off")
-    plt.tight_layout()
-
-    plt.savefig(output_file)
-    logger.info(f"Graph saved to {output_file}")
-    plt.close()
+    save_matplotlib_graph(output_file)
 
 
 def analyze_cooccurrences(manifest: Dict[str, Any]) -> None:

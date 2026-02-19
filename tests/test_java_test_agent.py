@@ -2,6 +2,7 @@
 
 from agents.tools.java_test_tools import (
     detect_build_system,
+    TestCounts,
     TestResult,
     TestRunSummary,
 )
@@ -47,6 +48,25 @@ def test_maven_priority_over_gradle(tmp_path):
 
     result = detect_build_system(str(tmp_path))
     assert result == "maven"
+
+
+def test_test_counts_defaults():
+    """TestCounts base class should have zero defaults."""
+    counts = TestCounts()
+    assert counts.total == 0
+    assert counts.passed == 0
+    assert counts.failed == 0
+    assert counts.errors == 0
+    assert counts.skipped == 0
+    assert counts.duration == 0.0
+
+
+def test_test_run_summary_inherits_counts():
+    """TestRunSummary should inherit TestCounts fields."""
+    summary = TestRunSummary(build_system="maven")
+    assert isinstance(summary, TestCounts)
+    assert summary.total == 0
+    assert summary.duration == 0.0
 
 
 def test_test_result_dataclass():

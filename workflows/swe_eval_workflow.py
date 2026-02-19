@@ -34,7 +34,7 @@ from mlflow.genai.scorers import scorer
 
 from agents.swe_eval import create_swe_eval_agent, invoke_agent
 from swe_refactor.dataset import load_swe_refactor_dataset, RefactoringRecord
-from mlflow_utils import setup_mlflow_tracking
+from workflows.common import setup_workflow_mlflow, save_agent_graph, print_eval_results
 
 load_dotenv()
 
@@ -148,14 +148,7 @@ def main() -> int:
         agent = create_swe_eval_agent(
             model_name=args.model, enable_composite=args.enable_composite
         )
-        try:
-            png_bytes = agent.get_graph().draw_mermaid_png()
-            output_path = "swe_eval_agent_graph.png"
-            with open(output_path, "wb") as f:
-                f.write(png_bytes)
-            print(f"Graph saved to {output_path}")
-        except Exception as e:
-            print(f"Failed to draw graph: {e}")
+        save_agent_graph(agent, "swe_eval_agent_graph.png")
         return 0
 
     dataset_path = Path(args.dataset)
@@ -183,12 +176,7 @@ def main() -> int:
         print("No records to evaluate", file=sys.stderr)
         return 1
 
-    setup_mlflow_tracking(
-        tracking_uri=args.tracking_uri,
-        backend_uri="sqlite:///mlflow.db",
-        experiment_name=args.experiment,
-        auto_start_server=True,
-    )
+    setup_workflow_mlflow(args.tracking_uri, args.experiment)
 
     # Initialize analytics DB for composite mode
     analytics_db = None
@@ -248,24 +236,7 @@ def main() -> int:
         ],
     )
 
-    run_id = results.run_id
-
-    print("\n" + "=" * 60)
-    print("EVALUATION RESULTS")
-    print("=" * 60)
-
-    for metric_name, metric_value in results.metrics.items():
-        if isinstance(metric_value, float):
-            print(f"{metric_name}: {metric_value:.4f}")
-        else:
-            print(f"{metric_name}: {metric_value}")
-
-    print("=" * 60)
-    print(f"MLflow run ID: {run_id}")
-
-    if run_id != "N/A" and args.tracking_uri.startswith("http://"):
-        exp_id = getattr(results, "experiment_id", "?")
-        print(f"View results: {args.tracking_uri}/#/experiments/{exp_id}/runs/{run_id}")
+    print_eval_results(results, args.tracking_uri)
 
     return 0
 

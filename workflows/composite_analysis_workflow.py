@@ -11,7 +11,6 @@ Usage:
 """
 
 import argparse
-import json
 import logging
 import sys
 from collections import defaultdict, Counter
@@ -22,13 +21,9 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 from agents.dependency_analysis.agent import DEPENDENCY_RULES
+from workflows.utils import configure_logging, load_manifest, save_matplotlib_graph
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%H:%M:%S",
-)
+configure_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -136,30 +131,8 @@ def visualize_dependencies(
     # nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=8)
 
     plt.title("Refactoring Dependencies Graph")
-    plt.axis("off")
-    plt.tight_layout()
-    plt.savefig(output_file)
-    logger.info(f"Graph saved to {output_file}")
-    plt.close()
+    save_matplotlib_graph(output_file)
 
-
-def load_manifest(manifest_path: Path) -> List[Dict[str, Any]]:
-    """Load the manifest.json file."""
-    if not manifest_path.exists():
-        logger.error(f"Manifest file not found: {manifest_path}")
-        sys.exit(1)
-
-    with open(manifest_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    # Handle both list of pairs or object with 'pairs' key
-    if isinstance(data, dict) and "pairs" in data:
-        return data["pairs"]
-    elif isinstance(data, list):
-        return data
-    else:
-        logger.error("Invalid manifest format. Expected list or dict with 'pairs' key.")
-        sys.exit(1)
 
 
 def analyze_composites(pairs: List[Dict[str, Any]], draw_graph: bool = False) -> None:
