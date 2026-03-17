@@ -1,16 +1,2 @@
-"""Configuration for Java Test Agent."""
-
-from dataclasses import dataclass
-
-
-@dataclass
-class JavaTestAgentConfig:
-    """Configuration keys for Java Test Agent."""
-
-    MODEL_NAME = "model_name"
-
-
-# Default configuration values
-DEFAULT_CONFIG = {
-    JavaTestAgentConfig.MODEL_NAME: "gpt-4o-mini",
-}
+# No configuration needed: java test analysis is deterministic shell execution.
+# See agents/java_test/agent.py for run_java_test_analysis() parameters.

@@ -1,8 +1,5 @@
-"""Initialize agents package."""
+"""Agents package."""
 
-from agents.java_test.agent import create_java_test_agent, analyze_java_tests
+from agents.java_test.agent import run_java_test_analysis
 
-__all__ = [
-    "create_java_test_agent",
-    "analyze_java_tests",
-]
+__all__ = ["run_java_test_analysis"]

@@ -57,7 +57,10 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(npx agent-browser:*)",
-      "mcp__context7__query-docs"
+      "mcp__context7__query-docs",
+      "Bash(bun run:*)",
+      "Bash(npx slidev:*)",
+      "Bash(open:*)"
     ],
     "deny": []
   },

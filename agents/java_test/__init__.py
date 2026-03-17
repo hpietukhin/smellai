@@ -1,11 +1,5 @@
-"""Initialize Java Test Agent package."""
+"""Java test analysis package (pipeline stages A, D, J)."""
 
-from agents.java_test.agent import create_java_test_agent, analyze_java_tests
-from agents.java_test.config import JavaTestAgentConfig, DEFAULT_CONFIG
+from agents.java_test.agent import run_java_test_analysis
 
-__all__ = [
-    "create_java_test_agent",
-    "analyze_java_tests",
-    "JavaTestAgentConfig",
-    "DEFAULT_CONFIG",
-]
+__all__ = ["run_java_test_analysis"]

@@ -1,17 +1,9 @@
 #!/usr/bin/env python3
-"""Workflow for analyzing Java tests with LangGraph agent.
-
-This script runs the Java test analysis agent on a project directory,
-detecting the build system, running tests, and reporting results.
+"""Workflow for running Java test analysis (pipeline stages A + D).
 
 Usage:
-    # Basic usage with defaults
     uv run workflows/java_test_workflow.py --project /path/to/java/project
-
-    # Use specific model
-    uv run workflows/java_test_workflow.py --project /path/to/java/project --model gpt-4
-
-    # Verbose output
+    uv run workflows/java_test_workflow.py --project /path/to/java/project --json
     uv run workflows/java_test_workflow.py --project /path/to/java/project --verbose
 """
 
@@ -23,9 +15,8 @@ import logging
 import sys
 from pathlib import Path
 
-from agents.java_test.agent import analyze_java_tests
+from agents.java_test.agent import run_java_test_analysis
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -34,88 +25,85 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    """Main workflow entry point."""
     parser = argparse.ArgumentParser(
-        description="Analyze Java tests using LangGraph agent",
+        description="Run Java test analysis (detect build system + execute tests)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
-
-    parser.add_argument(
-        "--project",
-        type=str,
-        required=True,
-        help="Path to Java project directory",
-    )
-
-    parser.add_argument(
-        "--model",
-        type=str,
-        default="gpt-4o-mini",
-        help="LLM model to use (default: gpt-4o-mini)",
-    )
-
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Enable verbose output",
-    )
-
-    parser.add_argument(
-        "--json",
-        action="store_true",
-        help="Output results as JSON",
-    )
-
+    parser.add_argument("--project", type=str, required=True,
+                        help="Path to Java project directory")
+    parser.add_argument("--no-clean", action="store_true",
+                        help="Skip clean before tests")
+    parser.add_argument("--timeout", type=int, default=300,
+                        help="Test command timeout in seconds (default: 300)")
+    parser.add_argument("--verbose", action="store_true",
+                        help="Enable verbose output")
+    parser.add_argument("--json", action="store_true",
+                        help="Output results as JSON")
     args = parser.parse_args()
 
-    # Configure logging level
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    # Validate project path
     project_path = Path(args.project)
-    if not project_path.exists():
-        logger.error(f"Project path does not exist: {project_path}")
+    if not project_path.exists() or not project_path.is_dir():
+        logger.error("Project path is not a directory: %s", project_path)
         sys.exit(1)
 
-    if not project_path.is_dir():
-        logger.error(f"Project path is not a directory: {project_path}")
-        sys.exit(1)
-
-    # Run analysis
-    logger.info(f"Analyzing Java tests in: {project_path}")
-    logger.info(f"Using model: {args.model}")
+    logger.info("Analyzing Java tests in: %s", project_path)
 
     try:
-        result = analyze_java_tests(
+        result = run_java_test_analysis(
             str(project_path),
-            model_name=args.model,
+            clean=not args.no_clean,
+            timeout=args.timeout,
         )
 
+        if "error" in result:
+            logger.error(result["error"])
+            sys.exit(1)
+
+        summary = result["summary"]
+
         if args.json:
-            # Output as JSON
             output = {
-                "project_path": str(project_path),
-                "model": args.model,
-                "response": result["response"],
+                "project_path": result["project_path"],
+                "build_system": result["build_system"],
+                "success": summary.success,
+                "total": summary.total,
+                "passed": summary.passed,
+                "failed": summary.failed,
+                "errors": summary.errors,
+                "skipped": summary.skipped,
+                "duration": round(summary.duration, 2),
+                "exit_code": summary.exit_code,
             }
             print(json.dumps(output, indent=2))
         else:
-            # Human-readable output
             print(f"\n{'=' * 80}")
             print("Java Test Analysis Results")
             print(f"{'=' * 80}\n")
-            print(f"Project: {project_path}")
-            print(f"Model: {args.model}")
-            print(f"\n{'-' * 80}\n")
-            print(result["response"])
+            print(f"Project:      {result['project_path']}")
+            print(f"Build system: {result['build_system']}")
+            print(f"Result:       {'PASS' if summary.success else 'FAIL'}")
+            print(f"Tests:        {summary.passed}/{summary.total} passed"
+                  f"  ({summary.failed} failed, {summary.errors} errors,"
+                  f" {summary.skipped} skipped)")
+            print(f"Duration:     {summary.duration:.2f}s")
+            if summary.failed > 0 or summary.errors > 0:
+                print(f"\n{'-' * 40}")
+                print("Failed tests:")
+                for t in summary.tests:
+                    if t.status in ("FAIL", "ERROR"):
+                        print(f"  [{t.status}] {t.name}")
+                        if t.error_message:
+                            print(f"         {t.error_message}")
             print(f"\n{'=' * 80}\n")
 
         logger.info("Analysis completed successfully")
 
     except Exception as e:
-        logger.error(f"Error during analysis: {e}", exc_info=args.verbose)
+        logger.error("Error during analysis: %s", e, exc_info=args.verbose)
         sys.exit(1)
 
 

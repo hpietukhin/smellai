@@ -1,79 +1,42 @@
 #!/usr/bin/env python3
-"""Example: Using the Java Test Analysis Agent.
+"""Example: Using the Java test analysis functions (pipeline stages A, D, J)."""
 
-This script demonstrates how to use the Java test agent to analyze
-a Java project and report on test results.
-"""
-
-from agents.java_test.agent import analyze_java_tests, create_java_test_agent
-from agents.java_test.config import JavaTestAgentConfig
+from agents.java_test.agent import run_java_test_analysis
 
 
 def basic_example():
-    """Basic usage example."""
-    print("=== Basic Example ===\n")
+    """Basic usage: detect build system and run tests."""
+    result = run_java_test_analysis("/path/to/your/java/project")
 
-    # Analyze a project (replace with actual path)
+    if "error" in result:
+        print(f"Error: {result['error']}")
+        return
+
+    summary = result["summary"]
+    print(f"Build system: {result['build_system']}")
+    print(f"Result: {'PASS' if summary.success else 'FAIL'}")
+    print(f"Tests: {summary.passed}/{summary.total} passed")
+
+
+def baseline_vs_after_example():
+    """Pipeline stages D + J: capture baseline, then compare after refactoring."""
     project_path = "/path/to/your/java/project"
 
-        result = analyze_java_tests(
-        project_path,
-        model_name="gpt-4o-mini",
-    )
+    # Stage D: pre-refactoring baseline
+    before = run_java_test_analysis(project_path)
 
-    print(f"Project: {result['project_path']}")
-    print(f"\nAnalysis:\n{result['response']}")
+    # ... apply refactoring here ...
 
+    # Stage J: post-refactoring verification
+    after = run_java_test_analysis(project_path)
 
-def custom_agent_example():
-    """Example using custom agent."""
-    print("\n=== Custom Agent Example ===\n")
-
-    # Create agent (configuration is passed at runtime)
-    agent = create_java_test_agent()
-
-    # Use with custom prompt and configuration
-    result = agent.invoke(
-        {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": """Analyze the Java project at /path/to/project.
-            
-            Focus on:
-            1. Identifying all failed tests
-            2. Grouping failures by root cause
-            3. Suggesting specific fixes
-            """,
-                }
-            ],
-            "project_path": "/path/to/project",
-            "build_system": None,
-        },
-        config={"configurable": {JavaTestAgentConfig.MODEL_NAME: "gpt-4o-mini"}},
-    )
-
-    # Extract final response
-    final_message = result["messages"][-1]
-    print(f"Response: {final_message.content}")
+    if before["summary"] and after["summary"]:
+        delta = after["summary"].passed - before["summary"].passed
+        print(f"Tests passed delta: {delta:+d}")
+        print(f"Behavior preserved: {after['summary'].success}")
 
 
-def anthropic_example():
-    """Example using Anthropic Claude via LiteLLM."""
-    print("\n=== Anthropic Example ===\n")
-    
-    result = analyze_java_tests(
-        "/path/to/project",
-        model_name="claude-3-5-sonnet-20241022",
-    )
-    
-    print(result["response"])
 if __name__ == "__main__":
-    # Run examples (uncomment the ones you want to try)
-
     # basic_example()
-    # custom_agent_example()
-    # anthropic_example()
-
-    print("\nTo run examples, edit this file and uncomment the example you want.")
-    print("Make sure to replace '/path/to/project' with an actual Java project path.")
+    # baseline_vs_after_example()
+    print("Replace '/path/to/your/java/project' with an actual path and uncomment an example.")

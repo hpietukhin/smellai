@@ -1,141 +1,53 @@
-"""LangGraph agent for Java test analysis.
+"""Java test analysis functions for pipeline stages A, D, and J.
 
-This module provides a LangGraph agent that can analyze Java projects,
-run tests, and report on test failures. The agent uses tools to detect
-build systems, execute tests, and parse results.
+Stages (per conf.tex pipeline):
+  A - load source, detect build system (Maven or Gradle)
+  D - run full test suite, record pre-refactoring baseline
+  J - run test suite after refactoring, compare before/after metrics
 
-# TODO SPEC-001: Implement test generation capabilities for methods without test coverage.
-# Agent 3 (Test Generation Agent) is currently a placeholder.
-# Need to implement test generation for uncovered methods.
-# MEDIUM priority.
-# (See TECHNICAL_SPECIFICATION.md §3.2)
-
-# TODO SPEC-002: Implement behavior preservation checks beyond test execution.
-# Agent 6 (Verification Agent) currently reuses Agent 2's test execution.
-# Need to implement additional behavior preservation checks beyond running tests.
-# MEDIUM priority.
-# (See TECHNICAL_SPECIFICATION.md §3.2)
+No LLM is needed: all work is deterministic shell execution.
 """
 
 from __future__ import annotations
 
-from typing import Annotated, TypedDict
-
-from langchain_core.messages import BaseMessage
-from langchain_core.runnables import RunnableConfig
-from langgraph.graph import StateGraph, START
-from langgraph.graph.message import add_messages
-from langgraph.prebuilt import ToolNode, tools_condition
-from langchain_litellm import ChatLiteLLM
-
-from agents.tools.java_test_tools import get_java_test_tools
-from agents.java_test.config import DEFAULT_CONFIG, JavaTestAgentConfig
+from agents.tools.java_test_tools import (
+    TestRunSummary,
+    detect_build_system,
+    run_tests,
+)
 
 
-class JavaTestState(TypedDict):
-    """State for Java test analysis agent."""
-
-    messages: Annotated[list[BaseMessage], add_messages]
-    project_path: str
-    build_system: str | None
-
-
-def create_java_test_agent() -> StateGraph:
-    """Create a LangGraph agent for Java test analysis.
-
-    The agent is configurable at runtime via RunnableConfig.
-    Supported configuration keys:
-    - model_name: Name of the LLM model to use (default: gpt-4o-mini)
-
-    Returns:
-        Compiled LangGraph StateGraph
-    """
-    # Initialize tools
-    tools = get_java_test_tools()
-
-    # Define agent node
-    def agent(state: JavaTestState, config: RunnableConfig) -> dict:
-        """Agent node that calls LLM with tools."""
-        # Get configuration
-        configurable = config.get("configurable", {})
-        model_name = configurable.get(
-            JavaTestAgentConfig.MODEL_NAME,
-            DEFAULT_CONFIG[JavaTestAgentConfig.MODEL_NAME],
-        )
-
-        # Initialize LLM using LiteLLM
-        llm = ChatLiteLLM(model=model_name)
-        llm_with_tools = llm.bind_tools(tools)
-
-        messages = state["messages"]
-        response = llm_with_tools.invoke(messages)
-        return {"messages": [response]}
-
-    # Create graph
-    graph_builder = StateGraph(JavaTestState)
-
-    # Add nodes
-    graph_builder.add_node("agent", agent)
-    tool_node = ToolNode(tools)
-    graph_builder.add_node("tools", tool_node)
-
-    # Add edges
-    graph_builder.add_edge(START, "agent")
-    graph_builder.add_conditional_edges(
-        "agent",
-        tools_condition,
-    )
-    graph_builder.add_edge("tools", "agent")
-
-    # Compile
-    return graph_builder.compile()
-
-
-def analyze_java_tests(
+def run_java_test_analysis(
     project_path: str,
     *,
-    model_name: str = DEFAULT_CONFIG[JavaTestAgentConfig.MODEL_NAME],
+    clean: bool = True,
+    timeout: int = 300,
 ) -> dict:
-    """Analyze Java tests in a project using the agent.
+    """Detect build system and run Java tests (stages A + D/J).
 
     Args:
-        project_path: Path to the Java project
-        model_name: LLM model to use
+        project_path: Path to the Java project directory.
+        clean: Whether to run clean before tests.
+        timeout: Timeout in seconds for the test command.
 
     Returns:
-        Dictionary with analysis results
+        dict with keys: project_path, build_system, summary (TestRunSummary).
     """
-    agent = create_java_test_agent()
-
-    # Initial message to agent
-    initial_message = {
-        "role": "user",
-        "content": f"""Analyze the Java tests in the project at: {project_path}
-
-Please:
-1. Detect the build system (Maven or Gradle)
-2. Run the tests
-3. Report on which tests passed and which failed
-4. For any failed tests, provide details about the failures
-
-Be concise but thorough in your analysis.""",
-    }
-
-    # Run agent with configuration
-    result = agent.invoke(
-        {
-            "messages": [initial_message],
+    build_system = detect_build_system(project_path)
+    if build_system is None:
+        return {
             "project_path": project_path,
             "build_system": None,
-        },
-        config={"configurable": {JavaTestAgentConfig.MODEL_NAME: model_name}},
-    )
+            "summary": None,
+            "error": f"No Java build system detected in {project_path}",
+        }
 
-    # Extract final response
-    final_message = result["messages"][-1]
+    summary: TestRunSummary = run_tests(
+        project_path, build_system, clean=clean, timeout=timeout
+    )
 
     return {
         "project_path": project_path,
-        "response": final_message.content,
-        "messages": result["messages"],
+        "build_system": build_system,
+        "summary": summary,
     }
