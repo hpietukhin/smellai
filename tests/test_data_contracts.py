@@ -11,90 +11,12 @@ import pytest
 from pydantic import ValidationError
 
 
-class TestDatasetsModels:
-    """Tests for datasets/models.py Pydantic models."""
-
-    def test_record_inputs_required_fields(self):
-        """RecordInputs requires pair_id, code_before, refactoring_type."""
-        from smellai_datasets.models import RecordInputs
-
-        with pytest.raises(ValidationError) as exc_info:
-            RecordInputs()
-
-        errors = exc_info.value.errors()
-        missing_fields = {e["loc"][0] for e in errors}
-        assert "pair_id" in missing_fields
-        assert "code_before" in missing_fields
-        assert "refactoring_type" in missing_fields
-
-    def test_record_inputs_valid(self):
-        """RecordInputs accepts valid data."""
-        from smellai_datasets.models import RecordInputs
-
-        record = RecordInputs(
-            pair_id="test-001",
-            code_before="public class Foo {}",
-            refactoring_type="Extract Method",
-        )
-        assert record.pair_id == "test-001"
-        assert record.code_before == "public class Foo {}"
-        assert record.refactoring_type == "Extract Method"
-        assert record.context == {}
-
-    def test_record_inputs_with_context(self):
-        """RecordInputs accepts optional context dict."""
-        from smellai_datasets.models import RecordInputs
-
-        record = RecordInputs(
-            pair_id="test-001",
-            code_before="public class Foo {}",
-            refactoring_type="Extract Method",
-            context={"sonar_issues": [{"rule": "S1234"}]},
-        )
-        assert record.context == {"sonar_issues": [{"rule": "S1234"}]}
-
-    def test_record_expectations_required_fields(self):
-        """RecordExpectations requires code_after."""
-        from smellai_datasets.models import RecordExpectations
-
-        with pytest.raises(ValidationError) as exc_info:
-            RecordExpectations()
-
-        errors = exc_info.value.errors()
-        missing_fields = {e["loc"][0] for e in errors}
-        assert "code_after" in missing_fields
-
-    def test_record_expectations_defaults(self):
-        """RecordExpectations provides sensible defaults."""
-        from smellai_datasets.models import RecordExpectations
-
-        record = RecordExpectations(code_after="public class Foo { void bar() {} }")
-        assert record.diff_hunks == []
-        assert record.metadata == {}
-
-    def test_record_tags_required_fields(self):
-        """RecordTags requires dataset_source."""
-        from smellai_datasets.models import RecordTags
-
-        with pytest.raises(ValidationError) as exc_info:
-            RecordTags()
-
-        errors = exc_info.value.errors()
-        missing_fields = {e["loc"][0] for e in errors}
-        assert "dataset_source" in missing_fields
-
-    def test_record_tags_defaults(self):
-        """RecordTags provides defaults for optional fields."""
-        from smellai_datasets.models import RecordTags
-
-        record = RecordTags(dataset_source="rminer")
-        assert record.repository == ""
-        assert record.commit_sha == ""
-        assert record.dataset_source == "rminer"
+class TestDiffHunkModel:
+    """Tests for hf_datasets.models.DiffHunk."""
 
     def test_diff_hunk_required_fields(self):
         """DiffHunk requires position fields."""
-        from smellai_datasets.models import DiffHunk
+        from hf_datasets.models import DiffHunk
 
         with pytest.raises(ValidationError) as exc_info:
             DiffHunk()
@@ -108,7 +30,7 @@ class TestDatasetsModels:
 
     def test_diff_hunk_valid(self):
         """DiffHunk accepts valid data."""
-        from smellai_datasets.models import DiffHunk
+        from hf_datasets.models import DiffHunk
 
         hunk = DiffHunk(
             old_start=10,
@@ -126,7 +48,7 @@ class TestDatasetsModels:
 
     def test_diff_hunk_with_lines(self):
         """DiffHunk stores line content."""
-        from smellai_datasets.models import DiffHunk
+        from hf_datasets.models import DiffHunk
 
         hunk = DiffHunk(
             old_start=10,
@@ -143,7 +65,7 @@ class TestDatasetsModels:
 
     def test_diff_hunk_serialization(self):
         """DiffHunk serializes and deserializes correctly."""
-        from smellai_datasets.models import DiffHunk
+        from hf_datasets.models import DiffHunk
 
         hunk = DiffHunk(
             old_start=10,
@@ -161,65 +83,27 @@ class TestDatasetsModels:
         restored = DiffHunk.model_validate(data)
         assert restored == hunk
 
-    def test_rminer_expectations_required_fields(self):
-        """RMinerExpectations requires all refactoring metadata."""
-        from smellai_datasets.models import RMinerExpectations
+    def test_json_compatibility(self):
+        """Models produce JSON-compatible output."""
+        import json
 
-        with pytest.raises(ValidationError) as exc_info:
-            RMinerExpectations()
+        from hf_datasets.models import DiffHunk
 
-        errors = exc_info.value.errors()
-        missing_fields = {e["loc"][0] for e in errors}
-        assert "num_refactorings" in missing_fields
-        assert "num_hunks" in missing_fields
-        assert "diff_hunks" in missing_fields
-        assert "refactoring_types" in missing_fields
-        assert "refactoring_descriptions" in missing_fields
-        assert "file_path" in missing_fields
-
-    def test_rminer_expectations_valid(self):
-        """RMinerExpectations accepts valid data with nested DiffHunk."""
-        from smellai_datasets.models import DiffHunk, RMinerExpectations
-
-        hunk = DiffHunk(old_start=10, old_count=5, new_start=10, new_count=8)
-        expectations = RMinerExpectations(
-            num_refactorings=1,
-            num_hunks=1,
-            diff_hunks=[hunk],
-            refactoring_types=["Extract Method"],
-            refactoring_descriptions=["Extract Method foo from bar"],
-            file_path="src/Main.java",
+        hunk = DiffHunk(
+            old_start=10,
+            old_count=5,
+            new_start=10,
+            new_count=8,
+            removed_lines=["old line"],
+            added_lines=["new line"],
         )
-        assert expectations.num_refactorings == 1
-        assert len(expectations.diff_hunks) == 1
-        assert isinstance(expectations.diff_hunks[0], DiffHunk)
 
-    def test_rminer_record_structure(self):
-        """RMinerRecord has correct nested structure."""
-        from smellai_datasets.models import DiffHunk, RMinerExpectations, RMinerRecord, RMinerTags
+        json_str = json.dumps(hunk.model_dump())
+        parsed = json.loads(json_str)
+        restored = DiffHunk.model_validate(parsed)
 
-        hunk = DiffHunk(old_start=10, old_count=5, new_start=10, new_count=8)
-        expectations = RMinerExpectations(
-            num_refactorings=1,
-            num_hunks=1,
-            diff_hunks=[hunk],
-            refactoring_types=["Extract Method"],
-            refactoring_descriptions=["Extract Method foo from bar"],
-            file_path="src/Main.java",
-        )
-        tags = RMinerTags(
-            repository="https://github.com/test/repo",
-            commit_sha="abc123",
-            status="modified",
-        )
-        record = RMinerRecord(
-            inputs={"pair_id": "test-001", "sonar_issues": []},
-            expectations=expectations,
-            tags=tags,
-        )
-        assert record.inputs["pair_id"] == "test-001"
-        assert record.expectations.file_path == "src/Main.java"
-        assert record.tags.repository == "https://github.com/test/repo"
+        assert restored.old_start == hunk.old_start
+        assert restored.removed_lines == hunk.removed_lines
 
 
 class TestRefactoringModels:
@@ -468,141 +352,8 @@ class TestAgentModels:
         assert "Long Parameter List" in analysis.negative_dependencies
 
 
-class TestSWERefactorModels:
-    """Tests for SWE-Refactor specific models."""
-
-    def test_class_hierarchy_defaults(self):
-        """ClassHierarchy provides sensible defaults."""
-        from smellai_datasets.models import ClassHierarchy
-
-        hierarchy = ClassHierarchy()
-        assert hierarchy.superclass is None
-        assert hierarchy.subclasses == []
-        assert hierarchy.interfaces == []
-
-    def test_class_hierarchy_with_data(self):
-        """ClassHierarchy stores inheritance information."""
-        from smellai_datasets.models import ClassHierarchy
-
-        hierarchy = ClassHierarchy(
-            superclass="AbstractService",
-            subclasses=["UserService", "AdminService"],
-            interfaces=["Serializable", "Comparable"],
-        )
-        assert hierarchy.superclass == "AbstractService"
-        assert len(hierarchy.subclasses) == 2
-        assert "Serializable" in hierarchy.interfaces
-
-    def test_method_signature_required_fields(self):
-        """MethodSignature requires name."""
-        from smellai_datasets.models import MethodSignature
-
-        with pytest.raises(ValidationError) as exc_info:
-            MethodSignature()
-
-        errors = exc_info.value.errors()
-        missing_fields = {e["loc"][0] for e in errors}
-        assert "name" in missing_fields
-
-    def test_method_signature_valid(self):
-        """MethodSignature stores method information."""
-        from smellai_datasets.models import MethodSignature
-
-        signature = MethodSignature(
-            name="calculateTotal",
-            parameters=["int", "double"],
-            return_type="double",
-        )
-        assert signature.name == "calculateTotal"
-        assert len(signature.parameters) == 2
-        assert signature.return_type == "double"
-
-    def test_build_configuration_required_fields(self):
-        """BuildConfiguration requires all fields."""
-        from smellai_datasets.models import BuildConfiguration
-
-        with pytest.raises(ValidationError) as exc_info:
-            BuildConfiguration()
-
-        errors = exc_info.value.errors()
-        missing_fields = {e["loc"][0] for e in errors}
-        assert "commit_id" in missing_fields
-        assert "jdk_version" in missing_fields
-        assert "build_command" in missing_fields
-
-    def test_build_configuration_valid(self):
-        """BuildConfiguration accepts valid build data."""
-        from smellai_datasets.models import BuildConfiguration
-
-        config = BuildConfiguration(
-            commit_id="abc123",
-            jdk_version=17,
-            build_command="mvn clean package -DskipTests",
-        )
-        assert config.commit_id == "abc123"
-        assert config.jdk_version == 17
-        assert "mvn" in config.build_command
-
-    def test_test_coverage_defaults(self):
-        """TestCoverage provides zero defaults."""
-        from smellai_datasets.models import TestCoverage
-
-        coverage = TestCoverage()
-        assert coverage.branch_coverage == 0.0
-        assert coverage.instruction_coverage == 0.0
-        assert coverage.line_coverage == 0.0
-        assert coverage.complexity_coverage == 0.0
-        assert coverage.method_coverage == 0.0
-
-    def test_test_coverage_with_values(self):
-        """TestCoverage stores coverage metrics."""
-        from smellai_datasets.models import TestCoverage
-
-        coverage = TestCoverage(
-            branch_coverage=75.5,
-            instruction_coverage=80.2,
-            line_coverage=82.1,
-            complexity_coverage=70.0,
-            method_coverage=90.0,
-        )
-        assert coverage.branch_coverage == 75.5
-        assert coverage.line_coverage == 82.1
-
-
 class TestModelSerialization:
     """Tests for model serialization round-trips."""
-
-    def test_dataset_record_roundtrip(self):
-        """DatasetRecord serializes and deserializes correctly."""
-        from smellai_datasets.models import (
-            DatasetRecord,
-            RecordExpectations,
-            RecordInputs,
-            RecordTags,
-        )
-
-        record = DatasetRecord(
-            inputs=RecordInputs(
-                pair_id="test-001",
-                code_before="public class Foo {}",
-                refactoring_type="Extract Method",
-            ),
-            expectations=RecordExpectations(
-                code_after="public class Foo { void bar() {} }",
-            ),
-            tags=RecordTags(
-                dataset_source="rminer",
-                repository="https://github.com/test/repo",
-                commit_sha="abc123",
-            ),
-        )
-
-        data = record.model_dump()
-        restored = DatasetRecord.model_validate(data)
-
-        assert restored.inputs.pair_id == record.inputs.pair_id
-        assert restored.expectations.code_after == record.expectations.code_after
-        assert restored.tags.dataset_source == record.tags.dataset_source
 
     def test_rminer_commit_roundtrip(self):
         """RMinerCommit serializes and deserializes correctly."""
@@ -639,25 +390,3 @@ class TestModelSerialization:
         assert restored.refactorings[0].type == "Extract Method"
         assert len(restored.refactorings[0].left_side_locations) == 1
         assert restored.refactorings[0].left_side_locations[0].code_element == "calculateTotal()"
-
-    def test_json_compatibility(self):
-        """Models produce JSON-compatible output."""
-        import json
-
-        from smellai_datasets.models import DiffHunk
-
-        hunk = DiffHunk(
-            old_start=10,
-            old_count=5,
-            new_start=10,
-            new_count=8,
-            removed_lines=["old line"],
-            added_lines=["new line"],
-        )
-
-        json_str = json.dumps(hunk.model_dump())
-        parsed = json.loads(json_str)
-        restored = DiffHunk.model_validate(parsed)
-
-        assert restored.old_start == hunk.old_start
-        assert restored.removed_lines == hunk.removed_lines

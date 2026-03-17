@@ -2,7 +2,6 @@ import argparse
 import sys
 from .server import MLflowServer
 from .datasets.manager import DatasetManager
-from .datasets.rminer_factory import RMinerDatasetFactory
 from .runner import EvaluationRunner
 
 
@@ -78,8 +77,16 @@ def main():
                 sys.exit(1)
             print(manager.get_dataset(args.name))
         elif args.action == "create":
-            factory = RMinerDatasetFactory(args.manifest, args.limit)
-            manager.create_dataset(factory, args.experiment, args.tracking_uri)
+            from rminer.create_rminer_dataset import build_genai_records
+            from pathlib import Path
+
+            records = build_genai_records(Path(args.manifest), limit=args.limit)
+            manager.create_dataset_from_records(
+                records=records,
+                name=f"rminer-dataset-{args.limit or 'all'}",
+                experiment=args.experiment,
+                tags={"source": "RefactoringMiner", "total_pairs": str(len(records))},
+            )
         elif args.action == "delete":
             if not args.name:
                 print("Error: --name required for delete")

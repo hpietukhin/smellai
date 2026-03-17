@@ -1,0 +1,58 @@
+"""Bridge between HuggingFace Datasets and MLflow GenAI evaluation format.
+
+Converts HF Dataset rows into MLflow GenAI evaluate() records using
+column mappings defined in config.py.
+"""
+
+from __future__ import annotations
+
+from datasets import Dataset
+from datasets import load_from_disk
+
+from .config import MLFLOW_COLUMN_MAP
+
+
+def hf_to_genai_records(ds: Dataset, source: str) -> list[dict]:
+    """Convert HF Dataset rows to MLflow GenAI evaluate() format.
+
+    Args:
+        ds: HuggingFace Dataset (flat rows from converter)
+        source: Dataset source key ("swe" or "rminer")
+
+    Returns:
+        List of dicts with keys: inputs, expectations, tags
+    """
+    col_map = MLFLOW_COLUMN_MAP.get(source)
+    if col_map is None:
+        raise ValueError(
+            f"Unknown source {source!r}. Available: {list(MLFLOW_COLUMN_MAP)}"
+        )
+
+    input_cols = col_map["input_cols"]
+    expectation_cols = col_map["expectation_cols"]
+    tag_cols = col_map["tag_cols"]
+
+    records: list[dict] = []
+    for row in ds:
+        record = {
+            "inputs": {col: row.get(col) for col in input_cols if col in row},
+            "expectations": {col: row.get(col) for col in expectation_cols if col in row},
+            "tags": {col: str(row.get(col, "")) for col in tag_cols if col in row},
+        }
+        records.append(record)
+
+    return records
+
+
+def load_for_evaluation(path: str, source: str) -> list[dict]:
+    """Load a preprocessed HF dataset from disk and convert to MLflow format.
+
+    Args:
+        path: Directory written by preprocessor.save()
+        source: Dataset source key ("swe" or "rminer")
+
+    Returns:
+        List of MLflow GenAI records
+    """
+    ds = load_from_disk(path)
+    return hf_to_genai_records(ds, source)

@@ -257,12 +257,18 @@ def main() -> int:
         # Create MLflow dataset
         print(f"\nCreating MLflow dataset '{args.mlflow_dataset_name}'...")
         try:
-            from mlflow_utils.datasets.swe_factory import create_swe_refactor_dataset
+            from hf_datasets.converter import swe_refactor_to_hf
+            from hf_datasets.mlflow_bridge import hf_to_genai_records
+            from mlflow.genai.datasets import create_dataset
 
-            dataset_id = create_swe_refactor_dataset(
-                dataset_path=tmp_path,
+            ds = swe_refactor_to_hf(tmp_path)
+            genai_records = hf_to_genai_records(ds, "swe")
+            dataset = create_dataset(
                 name=args.mlflow_dataset_name,
+                description=f"SWE-Refactor compound: {len(genai_records)} records",
+                records=genai_records,
             )
+            dataset_id = dataset.dataset_id
             print(f"✅ MLflow dataset created: {args.mlflow_dataset_name}")
             print(f"   Dataset ID: {dataset_id}")
             print(f"   Records: {len(filtered_records)}")
