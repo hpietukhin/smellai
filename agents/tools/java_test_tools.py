@@ -79,37 +79,23 @@ def detect_build_system(project_path: str) -> Optional[Literal["maven", "gradle"
     return None
 
 
-def run_tests(
-    project_path: str,
+def run_cmd_and_parse(
+    cmd: list[str],
+    project: Path,
     build_system: Literal["maven", "gradle"],
-    *,
-    clean: bool = True,
     timeout: int = 300,
 ) -> TestRunSummary:
-    """Run tests using the detected build system.
+    """Execute a test command and parse results.
 
     Args:
-        project_path: Path to the project directory
-        build_system: Build system to use ("maven" or "gradle")
-        clean: Whether to run clean before tests
+        cmd: Command to execute
+        project: Path to the project directory
+        build_system: Build system type (for report parsing)
         timeout: Timeout in seconds
 
     Returns:
         TestRunSummary with results
     """
-    project = Path(project_path)
-
-    if build_system == "maven":
-        cmd = ["mvn"]
-        if clean:
-            cmd.append("clean")
-        cmd.append("test")
-    else:  # gradle
-        cmd = ["gradle"]
-        if clean:
-            cmd.append("clean")
-        cmd.append("test")
-
     try:
         result = subprocess.run(
             cmd,
@@ -161,17 +147,48 @@ def run_tests(
         )
 
 
-def _parse_maven_results(project_path: Path) -> list[TestResult]:
-    """Parse Maven Surefire XML test reports.
+def run_tests(
+    project_path: str,
+    build_system: Literal["maven", "gradle"],
+    *,
+    clean: bool = True,
+    timeout: int = 300,
+) -> TestRunSummary:
+    """Run tests using the detected build system.
 
     Args:
         project_path: Path to the project directory
+        build_system: Build system to use ("maven" or "gradle")
+        clean: Whether to run clean before tests
+        timeout: Timeout in seconds
+
+    Returns:
+        TestRunSummary with results
+    """
+    project = Path(project_path)
+
+    if build_system == "maven":
+        cmd = ["mvn"]
+    else:  # gradle
+        cmd = ["gradle"]
+
+    if clean:
+        cmd.append("clean")
+    cmd.append("test")
+
+    return run_cmd_and_parse(cmd, project, build_system, timeout)
+
+
+def _parse_test_xml_reports(report_dir: Path) -> list[TestResult]:
+    """Parse JUnit-style XML test reports (used by both Maven Surefire and Gradle).
+
+    Args:
+        report_dir: Path to the directory containing TEST-*.xml files
 
     Returns:
         List of TestResult objects
     """
     results = []
-    report_dir = project_path / "target" / "surefire-reports"
 
     if not report_dir.exists():
         return results
@@ -226,73 +243,16 @@ def _parse_maven_results(project_path: Path) -> list[TestResult]:
             continue
 
     return results
+
+
+def _parse_maven_results(project_path: Path) -> list[TestResult]:
+    """Parse Maven Surefire XML test reports."""
+    return _parse_test_xml_reports(project_path / "target" / "surefire-reports")
 
 
 def _parse_gradle_results(project_path: Path) -> list[TestResult]:
-    """Parse Gradle test XML reports.
-
-    Args:
-        project_path: Path to the project directory
-
-    Returns:
-        List of TestResult objects
-    """
-    results = []
-    report_dir = project_path / "build" / "test-results" / "test"
-
-    if not report_dir.exists():
-        return results
-
-    for xml_file in report_dir.glob("TEST-*.xml"):
-        try:
-            tree = ET.parse(xml_file)
-            root = tree.getroot()
-
-            for testcase in root.findall("testcase"):
-                name = f"{testcase.get('classname', '')}.{testcase.get('name', '')}"
-                duration = float(testcase.get("time", "0"))
-
-                # Check for failure
-                failure = testcase.find("failure")
-                error = testcase.find("error")
-                skipped = testcase.find("skipped")
-
-                if failure is not None:
-                    status = "FAIL"
-                    error_message = failure.get("message", "")
-                    error_type = failure.get("type", "")
-                    failure_trace = failure.text
-                elif error is not None:
-                    status = "ERROR"
-                    error_message = error.get("message", "")
-                    error_type = error.get("type", "")
-                    failure_trace = error.text
-                elif skipped is not None:
-                    status = "SKIPPED"
-                    error_message = None
-                    error_type = None
-                    failure_trace = None
-                else:
-                    status = "PASS"
-                    error_message = None
-                    error_type = None
-                    failure_trace = None
-
-                results.append(
-                    TestResult(
-                        name=name,
-                        status=status,
-                        duration=duration,
-                        error_message=error_message,
-                        error_type=error_type,
-                        failure_trace=failure_trace,
-                    )
-                )
-        except ET.ParseError as e:
-            LOGGER.warning("Skipping malformed XML file %s: %s", xml_file, e)
-            continue
-
-    return results
+    """Parse Gradle test XML reports."""
+    return _parse_test_xml_reports(project_path / "build" / "test-results" / "test")
 
 
 # LangChain tools for agent

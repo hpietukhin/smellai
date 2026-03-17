@@ -10,12 +10,11 @@ Designed for integration with SWE-Refactor and similar datasets.
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from shutil import which
 from typing import Literal
 
-from agents.tools.java_test_tools import TestRunSummary, detect_build_system, _parse_maven_results, _parse_gradle_results
+from agents.tools.java_test_tools import TestRunSummary, detect_build_system, run_cmd_and_parse
 
 
 def has_wrapper(project_path: Path, build_system: Literal["maven", "gradle"]) -> bool:
@@ -155,53 +154,4 @@ def run_tests_enhanced(
             stderr=error_msg,
         )
 
-    # Execute command
-    try:
-        result = subprocess.run(
-            cmd,
-            cwd=str(project),
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-
-        summary = TestRunSummary(
-            build_system=build_system,
-            exit_code=result.returncode,
-            stdout=result.stdout,
-            stderr=result.stderr,
-        )
-
-        # Parse test results
-        if build_system == "maven":
-            summary.tests = _parse_maven_results(project)
-        else:
-            summary.tests = _parse_gradle_results(project)
-
-        # Calculate summary statistics
-        summary.total = len(summary.tests)
-        for test in summary.tests:
-            if test.status == "PASS":
-                summary.passed += 1
-            elif test.status == "FAIL":
-                summary.failed += 1
-            elif test.status == "ERROR":
-                summary.errors += 1
-            elif test.status == "SKIPPED":
-                summary.skipped += 1
-            summary.duration += test.duration
-
-        return summary
-
-    except subprocess.TimeoutExpired:
-        return TestRunSummary(
-            build_system=build_system,
-            exit_code=-1,
-            stderr=f"Test execution timed out after {timeout} seconds",
-        )
-    except Exception as e:
-        return TestRunSummary(
-            build_system=build_system,
-            exit_code=-1,
-            stderr=f"Error running tests: {str(e)}",
-        )
+    return run_cmd_and_parse(cmd, project, build_system, timeout)

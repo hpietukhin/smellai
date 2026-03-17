@@ -8,11 +8,10 @@ import os
 from pathlib import Path
 from typing import Dict, List
 
-import requests
-
 from sonarqube.commit_scan import (
     RULE_NAME_MAP,
     SEVERITY_MAP,
+    fetch_all_project_issues,
     poll_analysis_completion,
     run_sonar_scanner_local,
 )
@@ -69,36 +68,8 @@ def scan_local_project(
 
     # Fetch all issues for project
     LOGGER.info("Fetching issues from SonarQube API...")
-    session = requests.Session()
-    session.auth = (sonar_token, "")
-
-    all_issues = []
-    page = 1
-    rule_list = ",".join(RULE_NAME_MAP.keys())
-
-    while True:
-        resp = session.get(
-            f"{sonar_url}/api/issues/search",
-            params={
-                "componentKeys": project_key,
-                "types": "CODE_SMELL",
-                "rules": rule_list,
-                "p": page,
-                "ps": 500,
-            },
-            timeout=30,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        batch = data.get("issues", [])
-        all_issues.extend(batch)
-        total = data.get("total", 0)
-
-        LOGGER.info("Fetched %d/%d issues (page %d)", len(all_issues), total, page)
-
-        if page * 500 >= total:
-            break
-        page += 1
+    all_issues = fetch_all_project_issues(project_key, sonar_url, sonar_token)
+    LOGGER.info("Fetched %d issues", len(all_issues))
 
     # Convert to SmellEvent
     events = []

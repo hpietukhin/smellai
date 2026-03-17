@@ -223,6 +223,50 @@ def fetch_issues_for_file(
     return all_issues
 
 
+def fetch_all_project_issues(
+    project_key: str, sonar_url: str, sonar_token: str
+) -> List[Dict[str, Any]]:
+    """Fetch all code smell issues for a project from SonarQube API (paginated).
+
+    Args:
+        project_key: SonarQube project key
+        sonar_url: SonarQube server URL
+        sonar_token: SonarQube authentication token
+
+    Returns:
+        List of raw issue dicts from the SonarQube API
+    """
+    session = requests.Session()
+    session.auth = (sonar_token, "")
+
+    all_issues: List[Dict[str, Any]] = []
+    page = 1
+    rule_list = ",".join(RULE_NAME_MAP.keys())
+
+    while True:
+        resp = session.get(
+            f"{sonar_url}/api/issues/search",
+            params={
+                "componentKeys": project_key,
+                "types": "CODE_SMELL",
+                "rules": rule_list,
+                "p": page,
+                "ps": 500,
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        batch = data.get("issues", [])
+        all_issues.extend(batch)
+        total = data.get("total", 0)
+        if page * 500 >= total:
+            break
+        page += 1
+
+    return all_issues
+
+
 def normalize_issue(issue: Dict[str, Any]) -> Dict[str, Any]:
     """Normalize SonarQube issue to simplified format."""
     rule = issue.get("rule")
@@ -334,34 +378,7 @@ def scan_commit(
         )
         poll_analysis_completion(task_id, sonar_url, sonar_token)
 
-        # Fetch all issues
-        session = requests.Session()
-        session.auth = (sonar_token, "")
-
-        all_issues: List[Dict[str, Any]] = []
-        page = 1
-        rule_list = ",".join(RULE_NAME_MAP.keys())
-
-        while True:
-            resp = session.get(
-                f"{sonar_url}/api/issues/search",
-                params={
-                    "componentKeys": project_key,
-                    "types": "CODE_SMELL",
-                    "rules": rule_list,
-                    "p": page,
-                    "ps": 500,
-                },
-                timeout=30,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            batch = data.get("issues", [])
-            all_issues.extend(batch)
-            total = data.get("total", 0)
-            if page * 500 >= total:
-                break
-            page += 1
+        all_issues = fetch_all_project_issues(project_key, sonar_url, sonar_token)
 
         # Group by file
         issues_by_file: Dict[str, List[Dict[str, Any]]] = {}
