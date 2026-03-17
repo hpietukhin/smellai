@@ -27,13 +27,14 @@ dependencies = [
     "requests>=2.31.0",
     "langchain-litellm>=0.3.5",
     "sqlmodel>=0.0.22",
+    "datasets>=4.2.0",
 ]
 
 [project.scripts]
 smellai-mlflow = "mlflow_utils.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["agents", "code_analysis", "models", "repo_utils", "rminer", "sonarqube", "mlflow_utils"]
+packages = ["agents", "code_analysis", "models", "repo_utils", "rminer", "sonarqube", "mlflow_utils", "smellai_datasets", "hf_datasets"]
 
 [tool.uv.sources]
 
@@ -41,7 +42,6 @@ packages = ["agents", "code_analysis", "models", "repo_utils", "rminer", "sonarq
 dev = [
     "autoflake>=2.3.1",
     "autopep8>=2.3.2",
-    "datasets>=4.2.0",
     "isort>=7.0.0",
     "ipython>=8.20.0",
     "jupyter>=1.0.0",

@@ -4376,6 +4376,7 @@ name = "smellai"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "datasets" },
     { name = "deeplake" },
     { name = "gitpython" },
     { name = "langchain" },
@@ -4400,7 +4401,6 @@ dependencies = [
 dev = [
     { name = "autoflake" },
     { name = "autopep8" },
-    { name = "datasets" },
     { name = "ipython" },
     { name = "isort" },
     { name = "jupyter" },
@@ -4417,6 +4417,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "datasets", specifier = ">=4.2.0" },
     { name = "deeplake", specifier = "<4.0.0" },
     { name = "gitpython", specifier = ">=3.1.0" },
     { name = "langchain", specifier = ">=0.3.0" },
@@ -4441,7 +4442,6 @@ requires-dist = [
 dev = [
     { name = "autoflake", specifier = ">=2.3.1" },
     { name = "autopep8", specifier = ">=2.3.2" },
-    { name = "datasets", specifier = ">=4.2.0" },
     { name = "ipython", specifier = ">=8.20.0" },
     { name = "isort", specifier = ">=7.0.0" },
     { name = "jupyter", specifier = ">=1.0.0" },

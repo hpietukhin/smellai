@@ -28,7 +28,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from datasets.models import DiffHunk
+from smellai_datasets.models import DiffHunk
 from models.refactoring import (
     CommitCluster,
     RefactoringStats,

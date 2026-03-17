@@ -60,7 +60,8 @@
       "mcp__context7__query-docs",
       "Bash(bun run:*)",
       "Bash(npx slidev:*)",
-      "Bash(open:*)"
+      "Bash(open:*)",
+      "Bash(uv sync:*)"
     ],
     "deny": []
   },
