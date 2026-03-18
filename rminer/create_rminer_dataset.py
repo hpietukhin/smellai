@@ -166,7 +166,7 @@ def main() -> int:
     sonar_cache_dir = (
         Path(args.sonar_cache_dir)
         if args.sonar_cache_dir
-        else Path("rminer_data/sonar_cache")
+        else Path(os.environ.get("RMINER_MANIFEST_PATH", "rminer_data/manifest.json")).parent / "sonar_cache"
     )
 
     # Build records

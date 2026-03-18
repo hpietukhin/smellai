@@ -12,6 +12,7 @@ Usage:
 
 import argparse
 import logging
+import os
 import sys
 from collections import defaultdict, Counter
 from pathlib import Path
@@ -263,7 +264,7 @@ def main() -> int:
         description="Analyze composite refactorings in manifest."
     )
     parser.add_argument(
-        "--manifest", default="rminer_data/manifest.json", help="Path to manifest.json"
+        "--manifest", default=os.environ.get("RMINER_MANIFEST_PATH", "rminer_data/manifest.json"), help="Path to manifest.json"
     )
     parser.add_argument(
         "--draw-graph", action="store_true", help="Draw dependency graph"

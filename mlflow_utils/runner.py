@@ -45,7 +45,7 @@ class EvaluationRunner:
         if not config.get("skip_dataset", False):
             manager = DatasetManager(tracking_uri=tracking_uri)
             manager.create_dataset(
-                manifest_path=config.get("manifest", "rminer_data/manifest.json"),
+                manifest_path=config.get("manifest", os.environ.get("RMINER_MANIFEST_PATH", "rminer_data/manifest.json")),
                 limit=config.get("dataset_limit", 20),
                 experiment=config.get("experiment", "rminer-evaluation"),
                 tracking_uri=tracking_uri,
@@ -60,7 +60,7 @@ class EvaluationRunner:
             "run",
             "smellai/pipelines/rminer_eval.py",
             "--manifest",
-            config.get("manifest", "rminer_data/manifest.json"),
+            config.get("manifest", os.environ.get("RMINER_MANIFEST_PATH", "rminer_data/manifest.json")),
             "--experiment",
             config.get("experiment", "rminer-evaluation"),
             "--tracking-uri",

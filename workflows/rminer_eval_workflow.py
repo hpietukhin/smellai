@@ -28,6 +28,7 @@ uv run workflows/rminer_eval_workflow.py --manifest rminer_data/manifest.json --
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -105,7 +106,7 @@ def main() -> int:
         dataset = get_dataset(dataset_id=args.dataset_id)
         records = dataset.records
         print(f"Loaded {len(records)} records from dataset ID: {args.dataset_id}")
-        manifest_path = Path("rminer_data/manifest.json")
+        manifest_path = Path(os.environ.get("RMINER_MANIFEST_PATH", "rminer_data/manifest.json"))
     else:
         from mlflow.genai.datasets import search_datasets
 
@@ -122,7 +123,7 @@ def main() -> int:
         print(
             f"Loaded {len(records)} records from dataset {args.dataset_name} (ID: {dataset.dataset_id})"
         )
-        manifest_path = Path("rminer_data/manifest.json")
+        manifest_path = Path(os.environ.get("RMINER_MANIFEST_PATH", "rminer_data/manifest.json"))
 
     if not records:
         print("No records to evaluate", file=sys.stderr)

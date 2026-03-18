@@ -59,6 +59,8 @@ test_visualizations/
 # Large data files
 *.zip
 swe_refactor/*.pdf
+rminer_data/
+data/
 
 # MLflow tracking
 mlruns/

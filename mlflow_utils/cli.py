@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 from .server import MLflowServer
 from .datasets.manager import DatasetManager
@@ -26,7 +27,7 @@ def main():
     )
     dataset_parser.add_argument("--name", help="Dataset name")
     dataset_parser.add_argument(
-        "--manifest", default="rminer_data/manifest.json", help="Manifest path"
+        "--manifest", default=os.environ.get("RMINER_MANIFEST_PATH", "rminer_data/manifest.json"), help="Manifest path"
     )
     dataset_parser.add_argument("--limit", type=int, default=20, help="Limit")
     dataset_parser.add_argument(
@@ -38,7 +39,7 @@ def main():
 
     # Evaluate commands
     eval_parser = subparsers.add_parser("evaluate", help="Run evaluation")
-    eval_parser.add_argument("--manifest", default="rminer_data/manifest.json")
+    eval_parser.add_argument("--manifest", default=os.environ.get("RMINER_MANIFEST_PATH", "rminer_data/manifest.json"))
     eval_parser.add_argument("--experiment", default="rminer-evaluation")
     eval_parser.add_argument("--tracking-uri", default="http://localhost:5000")
     eval_parser.add_argument("--model", default="gpt-4o-mini")
