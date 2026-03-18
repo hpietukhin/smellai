@@ -123,14 +123,26 @@ def _load_swe_raw_jsons(path: Path) -> list[dict]:
     if path.suffix == ".zip":
         results = []
         with zipfile.ZipFile(path, "r") as zf:
-            for name in zf.namelist():
-                if name.endswith(".json"):
+            namelist = zf.namelist()
+            # Prefer the canonical pure_refactoring_data.json if present
+            pure_json = next(
+                (n for n in namelist if n.endswith("pure_refactoring_data.json")),
+                None,
+            )
+            candidates = [pure_json] if pure_json else [
+                n for n in namelist
+                if n.endswith(".json") and not n.startswith("__MACOSX/")
+            ]
+            for name in candidates:
+                try:
                     with zf.open(name) as f:
                         data = json.load(f)
-                        if isinstance(data, list):
-                            results.extend(data)
-                        else:
-                            results.append(data)
+                    if isinstance(data, list):
+                        results.extend(data)
+                    else:
+                        results.append(data)
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    continue
         return results
 
     if path.suffix == ".json":
