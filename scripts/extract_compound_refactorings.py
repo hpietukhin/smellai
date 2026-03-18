@@ -257,11 +257,11 @@ def main() -> int:
         # Create MLflow dataset
         print(f"\nCreating MLflow dataset '{args.mlflow_dataset_name}'...")
         try:
-            from hf_datasets.converter import swe_refactor_to_hf
-            from hf_datasets.mlflow_bridge import hf_to_genai_records
+            from smellai_datasets.converter import swe_refactor_to_df
+            from smellai_datasets.mlflow_bridge import hf_to_genai_records
             from mlflow.genai.datasets import create_dataset
 
-            ds = swe_refactor_to_hf(tmp_path)
+            ds = swe_refactor_to_df(tmp_path)
             genai_records = hf_to_genai_records(ds, "swe")
             dataset = create_dataset(
                 name=args.mlflow_dataset_name,

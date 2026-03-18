@@ -1,9 +1,9 @@
-"""Convert raw dataset sources to HuggingFace Dataset objects.
+"""Convert raw dataset sources to pandas DataFrames.
 
 Three converters:
-- rminer_to_hf: RMiner 2.0 oracle data.json → flat HF Dataset (one row per refactoring)
-- swe_refactor_to_hf: SWE-Refactor ZIP/dir/JSON → flat HF Dataset (one row per record)
-- tdd_to_hf: Technical Debt Dataset SQLite → flat HF Dataset (one row per smell event)
+- rminer_to_df: RMiner 2.0 oracle data.json → flat DataFrame (one row per refactoring)
+- swe_refactor_to_df: SWE-Refactor ZIP/dir/JSON → flat DataFrame (one row per record)
+- tdd_to_df: Technical Debt Dataset SQLite → flat DataFrame (one row per smell event)
 """
 
 from __future__ import annotations
@@ -15,15 +15,15 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
-from datasets import Dataset
+import pandas as pd
 
 
-def rminer_to_hf(
+def rminer_to_df(
     oracle_path: str | Path,
     filter_tp: bool = True,
     limit: int | None = None,
-) -> Dataset:
-    """Convert RMiner 2.0 oracle data.json to a HF Dataset.
+) -> pd.DataFrame:
+    """Convert RMiner 2.0 oracle data.json to a DataFrame.
 
     One row per refactoring (flattened from commit objects).
 
@@ -33,7 +33,7 @@ def rminer_to_hf(
         limit: Optional row limit (applied after filtering)
 
     Returns:
-        Dataset with schema:
+        DataFrame with columns:
             commit_id, repository, commit_sha, author, time,
             refactoring_type, description, validation, detection_tools
     """
@@ -74,15 +74,15 @@ def rminer_to_hf(
     if limit is not None:
         rows = rows[:limit]
 
-    return Dataset.from_list(rows)
+    return pd.DataFrame(rows)
 
 
-def swe_refactor_to_hf(
+def swe_refactor_to_df(
     dataset_path: str,
     limit: int | None = None,
     **filters: Any,
-) -> Dataset:
-    """Convert SWE-Refactor dataset to a HF Dataset.
+) -> pd.DataFrame:
+    """Convert SWE-Refactor dataset to a DataFrame.
 
     Supports three input formats:
     - .zip: SWE-Refactor ZIP archive with JSON files inside
@@ -95,7 +95,7 @@ def swe_refactor_to_hf(
         **filters: Keyword filters applied to flat row fields (e.g. is_compound=False)
 
     Returns:
-        Dataset with schema:
+        DataFrame with columns:
             pair_id, project_name, commit_id, refactoring_type,
             is_compound, is_pure, source_before, source_after,
             class_before, class_after, jdk_version, compile_command,
@@ -115,7 +115,7 @@ def swe_refactor_to_hf(
     if limit is not None:
         rows = rows[:limit]
 
-    return Dataset.from_list(rows)
+    return pd.DataFrame(rows)
 
 
 def _load_swe_raw_jsons(path: Path) -> list[dict]:
@@ -179,12 +179,12 @@ def _flatten_swe_record(data: dict) -> dict[str, Any] | None:
         return None
 
 
-def tdd_to_hf(
+def tdd_to_df(
     db_path: str | None = None,
     project: str | None = None,
     limit: int | None = None,
-) -> Dataset:
-    """Convert Technical Debt Dataset SQLite to a HF Dataset.
+) -> pd.DataFrame:
+    """Convert Technical Debt Dataset SQLite to a DataFrame.
 
     One row per smell event (introduced / resolved / persistent).
 
@@ -194,7 +194,7 @@ def tdd_to_hf(
         limit: Optional row limit
 
     Returns:
-        Dataset with schema:
+        DataFrame with columns:
             project, commit_sha, parent_sha, smell_type, severity,
             file_path, rule_id, status
     """
@@ -216,7 +216,7 @@ def tdd_to_hf(
     rows: list[dict[str, Any]] = _query_tdd(cur, tables, project, limit)
     con.close()
 
-    return Dataset.from_list(rows)
+    return pd.DataFrame(rows)
 
 
 # ---------------------------------------------------------------------------

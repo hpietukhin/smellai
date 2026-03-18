@@ -1,22 +1,22 @@
-"""Bridge between HuggingFace Datasets and MLflow GenAI evaluation format.
+"""Bridge between pandas DataFrames and MLflow GenAI evaluation format.
 
-Converts HF Dataset rows into MLflow GenAI evaluate() records using
+Converts DataFrame rows into MLflow GenAI evaluate() records using
 column mappings defined in config.py.
 """
 
 from __future__ import annotations
 
-from datasets import Dataset
-from datasets import load_from_disk
+import pandas as pd
 
 from .config import MLFLOW_COLUMN_MAP
+from .preprocessor import load
 
 
-def hf_to_genai_records(ds: Dataset, source: str) -> list[dict]:
-    """Convert HF Dataset rows to MLflow GenAI evaluate() format.
+def hf_to_genai_records(df: pd.DataFrame, source: str) -> list[dict]:
+    """Convert DataFrame rows to MLflow GenAI evaluate() format.
 
     Args:
-        ds: HuggingFace Dataset (flat rows from converter)
+        df: pandas DataFrame (flat rows from converter)
         source: Dataset source key ("swe" or "rminer")
 
     Returns:
@@ -33,7 +33,7 @@ def hf_to_genai_records(ds: Dataset, source: str) -> list[dict]:
     tag_cols = col_map["tag_cols"]
 
     records: list[dict] = []
-    for row in ds:
+    for row in df.to_dict("records"):
         record = {
             "inputs": {col: row.get(col) for col in input_cols if col in row},
             "expectations": {col: row.get(col) for col in expectation_cols if col in row},
@@ -45,7 +45,7 @@ def hf_to_genai_records(ds: Dataset, source: str) -> list[dict]:
 
 
 def load_for_evaluation(path: str, source: str) -> list[dict]:
-    """Load a preprocessed HF dataset from disk and convert to MLflow format.
+    """Load a preprocessed dataset from disk and convert to MLflow format.
 
     Args:
         path: Directory written by preprocessor.save()
@@ -54,5 +54,9 @@ def load_for_evaluation(path: str, source: str) -> list[dict]:
     Returns:
         List of MLflow GenAI records
     """
-    ds = load_from_disk(path)
-    return hf_to_genai_records(ds, source)
+    result = load(path)
+    if isinstance(result, dict):
+        df = pd.concat(result.values(), ignore_index=True)
+    else:
+        df = result
+    return hf_to_genai_records(df, source)

@@ -1,4 +1,4 @@
-"""Reconstruct consecutive refactoring chains from HF Datasets.
+"""Reconstruct consecutive refactoring chains from DataFrames.
 
 Each source dataset has different chain semantics:
 - rminer: group by repository, order by time (no parent_sha in oracle)
@@ -11,17 +11,17 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Literal
 
-from datasets import Dataset
+import pandas as pd
 
 
 def build_commit_chains(
-    ds: Dataset,
+    df: pd.DataFrame,
     source: Literal["rminer", "swe", "tdd"],
 ) -> list[list[dict]]:
-    """Reconstruct consecutive commit chains from a HF Dataset.
+    """Reconstruct consecutive commit chains from a DataFrame.
 
     Args:
-        ds: HF Dataset produced by one of the converter functions
+        df: DataFrame produced by one of the converter functions
         source: Which dataset schema to use for chain reconstruction
 
     Returns:
@@ -29,7 +29,7 @@ def build_commit_chains(
         - rminer/swe: each chain = consecutive commits in one repo/project
         - tdd: each chain = smell lifecycle (introduced→persistent→resolved)
     """
-    rows = ds.to_list()
+    rows = df.to_dict("records")
 
     if source == "rminer":
         return _rminer_chains(rows)

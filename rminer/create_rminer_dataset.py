@@ -27,7 +27,7 @@ from typing import List
 
 from dotenv import load_dotenv
 
-from hf_datasets.models import DiffHunk
+from smellai_datasets.models import DiffHunk
 from rminer.rminer_utils import (
     compute_diff_hunks_from_files,
     parse_refactoring_info,

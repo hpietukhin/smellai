@@ -34,7 +34,7 @@ Pydantic v2 рекомендует `Annotated` pattern для reusable constrain
 from typing import Annotated, Literal
 from pydantic import Field
 
-# Shared type aliases — hf_datasets/contracts.py
+# Shared type aliases — smellai_datasets/contracts.py
 NonEmptyStr   = Annotated[str, Field(min_length=1)]
 CommitSha     = Annotated[str, Field(min_length=6, max_length=40)]
 JDKVersion    = Annotated[int, Field(gt=0, le=25)]
@@ -167,12 +167,12 @@ TruncatedFloat = Annotated[
 
 ## 4. Где ставить в коде
 
-**Файл:** `hf_datasets/contracts.py` (новый)
+**Файл:** `smellai_datasets/contracts.py` (новый)
 
 **Использование в converter:**
 ```python
-# hf_datasets/converter.py
-from hf_datasets.contracts import SWERow
+# smellai_datasets/converter.py
+from smellai_datasets.contracts import SWERow
 
 def swe_refactor_to_hf(...) -> Dataset:
     ...
@@ -184,8 +184,8 @@ def swe_refactor_to_hf(...) -> Dataset:
 
 **Использование в bridge:**
 ```python
-# hf_datasets/mlflow_bridge.py
-from hf_datasets.contracts import GenAIRecord
+# smellai_datasets/mlflow_bridge.py
+from smellai_datasets.contracts import GenAIRecord
 
 def hf_to_genai_records(ds, source) -> list[dict]:
     ...

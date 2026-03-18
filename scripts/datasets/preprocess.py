@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Pre-processing pipeline CLI: dedup, filter, split, save to Arrow format.
+"""Pre-processing pipeline CLI: dedup, filter, split, save to Parquet format.
 
 Usage:
     uv run scripts/datasets/preprocess.py \\
@@ -33,9 +33,9 @@ from pathlib import Path
 # Ensure project root on path when run as script
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from hf_datasets.config import DATASET_CONFIGS
-from hf_datasets.converter import rminer_to_hf, swe_refactor_to_hf, tdd_to_hf
-from hf_datasets.preprocessor import deduplicate, filter_by, save, split
+from smellai_datasets.config import DATASET_CONFIGS
+from smellai_datasets.converter import rminer_to_df, swe_refactor_to_df, tdd_to_df
+from smellai_datasets.preprocessor import deduplicate, filter_by, save, split
 
 
 def _parse_split(split_str: str) -> tuple[float, float, float]:
@@ -111,15 +111,15 @@ def _load(source: str, args: argparse.Namespace):
     if source == "rminer":
         if not args.oracle_path:
             raise ValueError("--oracle-path required for rminer source")
-        return rminer_to_hf(args.oracle_path, filter_tp=True, limit=args.limit)
+        return rminer_to_df(args.oracle_path, filter_tp=True, limit=args.limit)
     if source == "swe":
         if not args.dataset_path:
             raise ValueError("--dataset-path required for swe source")
-        return swe_refactor_to_hf(args.dataset_path, limit=args.limit)
+        return swe_refactor_to_df(args.dataset_path, limit=args.limit)
     if source == "tdd":
         if not args.db_path:
             raise ValueError("--db-path required for tdd source")
-        return tdd_to_hf(db_path=args.db_path, limit=args.limit)
+        return tdd_to_df(db_path=args.db_path, limit=args.limit)
     raise ValueError(f"Unknown source: {source!r}")
 
 

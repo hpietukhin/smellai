@@ -12,11 +12,11 @@ from pydantic import ValidationError
 
 
 class TestDiffHunkModel:
-    """Tests for hf_datasets.models.DiffHunk."""
+    """Tests for smellai_datasets.models.DiffHunk."""
 
     def test_diff_hunk_required_fields(self):
         """DiffHunk requires position fields."""
-        from hf_datasets.models import DiffHunk
+        from smellai_datasets.models import DiffHunk
 
         with pytest.raises(ValidationError) as exc_info:
             DiffHunk()
@@ -30,7 +30,7 @@ class TestDiffHunkModel:
 
     def test_diff_hunk_valid(self):
         """DiffHunk accepts valid data."""
-        from hf_datasets.models import DiffHunk
+        from smellai_datasets.models import DiffHunk
 
         hunk = DiffHunk(
             old_start=10,
@@ -48,7 +48,7 @@ class TestDiffHunkModel:
 
     def test_diff_hunk_with_lines(self):
         """DiffHunk stores line content."""
-        from hf_datasets.models import DiffHunk
+        from smellai_datasets.models import DiffHunk
 
         hunk = DiffHunk(
             old_start=10,
@@ -65,7 +65,7 @@ class TestDiffHunkModel:
 
     def test_diff_hunk_serialization(self):
         """DiffHunk serializes and deserializes correctly."""
-        from hf_datasets.models import DiffHunk
+        from smellai_datasets.models import DiffHunk
 
         hunk = DiffHunk(
             old_start=10,
@@ -87,7 +87,7 @@ class TestDiffHunkModel:
         """Models produce JSON-compatible output."""
         import json
 
-        from hf_datasets.models import DiffHunk
+        from smellai_datasets.models import DiffHunk
 
         hunk = DiffHunk(
             old_start=10,

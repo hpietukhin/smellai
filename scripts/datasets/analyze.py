@@ -21,7 +21,7 @@ from typing import Any
 # Ensure project root on path when run as script
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from hf_datasets.converter import rminer_to_hf, swe_refactor_to_hf, tdd_to_hf
+from smellai_datasets.converter import rminer_to_df, swe_refactor_to_df, tdd_to_df
 
 
 def _loc(text: str) -> int:
@@ -31,8 +31,8 @@ def _loc(text: str) -> int:
 
 def analyze_rminer(oracle_path: str) -> dict[str, Any]:
     """Compute stats for the RMiner oracle dataset."""
-    ds = rminer_to_hf(oracle_path, filter_tp=False)
-    rows = ds.to_list()
+    ds = rminer_to_df(oracle_path, filter_tp=False)
+    rows = ds.to_dict("records")
 
     type_counts: dict[str, int] = {}
     repo_counts: dict[str, int] = {}
@@ -71,8 +71,8 @@ def analyze_rminer(oracle_path: str) -> dict[str, Any]:
 
 def analyze_swe(dataset_path: str) -> dict[str, Any]:
     """Compute stats for the SWE-Refactor dataset."""
-    ds = swe_refactor_to_hf(dataset_path)
-    rows = ds.to_list()
+    ds = swe_refactor_to_df(dataset_path)
+    rows = ds.to_dict("records")
 
     type_counts: dict[str, int] = {}
     project_counts: dict[str, int] = {}
@@ -118,8 +118,8 @@ def analyze_swe(dataset_path: str) -> dict[str, Any]:
 
 def analyze_tdd(db_path: str) -> dict[str, Any]:
     """Compute stats for the Technical Debt Dataset."""
-    ds = tdd_to_hf(db_path=db_path)
-    rows = ds.to_list()
+    ds = tdd_to_df(db_path=db_path)
+    rows = ds.to_dict("records")
 
     project_counts: dict[str, int] = {}
     smell_counts: dict[str, int] = {}

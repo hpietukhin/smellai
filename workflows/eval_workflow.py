@@ -27,7 +27,7 @@ import sys
 import mlflow
 from dotenv import load_dotenv
 
-from hf_datasets.mlflow_bridge import hf_to_genai_records, load_for_evaluation
+from smellai_datasets.mlflow_bridge import hf_to_genai_records, load_for_evaluation
 from swe_refactor.dataset import RefactoringRecord
 from workflows.common import setup_workflow_mlflow, save_agent_graph, print_eval_results
 
@@ -71,13 +71,13 @@ def _load_records(args) -> list[dict]:
         records = load_for_evaluation(args.hf_dataset_path, args.source)
         print(f"Loaded {len(records)} records from HF dataset: {args.hf_dataset_path}")
     elif args.source == "rminer" and args.raw_data_path:
-        from hf_datasets.converter import rminer_to_hf
-        ds = rminer_to_hf(args.raw_data_path, limit=args.limit)
+        from smellai_datasets.converter import rminer_to_df
+        ds = rminer_to_df(args.raw_data_path, limit=args.limit)
         records = hf_to_genai_records(ds, "rminer")
         print(f"Loaded {len(records)} records from raw RMiner data")
     elif args.source == "swe" and args.raw_data_path:
-        from hf_datasets.converter import swe_refactor_to_hf
-        ds = swe_refactor_to_hf(args.raw_data_path, limit=args.limit)
+        from smellai_datasets.converter import swe_refactor_to_df
+        ds = swe_refactor_to_df(args.raw_data_path, limit=args.limit)
         records = hf_to_genai_records(ds, "swe")
         print(f"Loaded {len(records)} records from raw SWE data")
     else:

@@ -50,7 +50,7 @@ def __getattr__(name):
 
         return locals()[name]
     elif name == "DiffHunk":
-        from hf_datasets.models import DiffHunk  # noqa: F401
+        from smellai_datasets.models import DiffHunk  # noqa: F401
 
         return DiffHunk
     elif name in [
