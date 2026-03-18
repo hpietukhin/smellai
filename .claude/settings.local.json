@@ -61,7 +61,9 @@
       "Bash(bun run:*)",
       "Bash(npx slidev:*)",
       "Bash(open:*)",
-      "Bash(uv sync:*)"
+      "Bash(uv sync:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)"
     ],
     "deny": []
   },
