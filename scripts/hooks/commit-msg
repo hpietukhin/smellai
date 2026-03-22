@@ -1,7 +1,10 @@
 #!/usr/bin/env sh
 # Git commit-msg hook: normalize commit message format.
 #
-# Install:
+# Install via the provided script (recommended):
+#   uv run python scripts/install_hooks.py
+#
+# Or manually:
 #   cp scripts/hooks/commit-msg .git/hooks/commit-msg
 #   chmod +x .git/hooks/commit-msg
 
@@ -10,6 +13,8 @@ SCRIPT="$(git rev-parse --show-toplevel)/scripts/normalize_commit_msg.py"
 
 if [ -f "$SCRIPT" ]; then
     uv run python "$SCRIPT" "$COMMIT_MSG_FILE"
+    exit $?
 else
     echo "Warning: normalize_commit_msg.py not found at $SCRIPT" >&2
+    exit 0
 fi
