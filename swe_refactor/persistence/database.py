@@ -1,6 +1,5 @@
 """Database manager for analytics persistence using SQLModel ORM."""
 
-from pathlib import Path
 from typing import Optional
 
 from sqlmodel import Session, SQLModel, create_engine, select, func

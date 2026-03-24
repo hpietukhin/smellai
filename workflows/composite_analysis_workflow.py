@@ -16,7 +16,7 @@ import os
 import sys
 from collections import defaultdict, Counter
 from pathlib import Path
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List
 
 import networkx as nx
 import matplotlib.pyplot as plt

@@ -125,7 +125,7 @@ def main():
     print("=" * 60)
     print("RUNNING EVALUATION")
     print("=" * 60)
-    print(f"This may take 5-15 minutes per record (model + compile time)")
+    print("This may take 5-15 minutes per record (model + compile time)")
     print(f"Estimated time: {args.records * 10}-{args.records * 15} minutes")
     print()
 
@@ -148,7 +148,7 @@ def main():
     ]
 
     try:
-        result = subprocess.run(cmd, cwd=project_root, check=True)
+        subprocess.run(cmd, cwd=project_root, check=True)
     except subprocess.CalledProcessError as e:
         print(f"\n❌ Evaluation failed with exit code {e.returncode}")
         return e.returncode
@@ -163,7 +163,7 @@ def main():
     print()
     print("Results saved to:")
     print(f"  📊 Analytics DB: {args.db}")
-    print(f"  📈 MLflow DB: sqlite:///mlflow.db")
+    print("  📈 MLflow DB: sqlite:///mlflow.db")
     print()
     print("Next steps:")
     print()

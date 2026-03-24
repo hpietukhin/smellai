@@ -1,7 +1,5 @@
-import os
 import shutil
 from pathlib import Path
-import pytest
 from repo_utils import (
     create_temp_repo_folder,
     remove_temp_repo_folder,
