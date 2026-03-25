@@ -1,3 +1,5 @@
+"""CLI for managing MLflow server, datasets, and evaluation runs."""
+
 import argparse
 import os
 import sys

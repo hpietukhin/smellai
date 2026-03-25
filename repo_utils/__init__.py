@@ -1,3 +1,5 @@
+"""Git repository utilities: clone, checkout, branch management, and temporary repo helpers."""
+
 import logging
 import os
 import shutil

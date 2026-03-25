@@ -1,3 +1,5 @@
+"""MLflow integration: server management, dataset CRUD, and evaluation orchestration."""
+
 from .server import MLflowServer
 from .datasets.manager import DatasetManager
 from .runner import EvaluationRunner

@@ -1,3 +1,5 @@
+"""Orchestrates end-to-end MLflow evaluation: server startup, dataset creation, and pipeline execution."""
+
 from .server import MLflowServer
 from .datasets.manager import DatasetManager
 import subprocess
