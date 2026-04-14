@@ -28,10 +28,8 @@ from typing import List
 from dotenv import load_dotenv
 
 from rminer.diff_hunk import DiffHunk
-from rminer.rminer_utils import (
-    compute_diff_hunks_from_files,
-    parse_refactoring_info,
-)
+from rminer.rminer_utils import parse_refactoring_info
+from smellai_datasets.loaders import _iter_valid_rminer_pairs
 
 try:
     from smellai.sonarqube.commit_scan import scan_commit
@@ -64,32 +62,12 @@ def build_genai_records(
     - expectations: ground truth data
     - tags: metadata
     """
-    base_dir = manifest_path.parent
-
-    with open(manifest_path) as f:
-        manifest = json.load(f)
-
-    pairs = manifest.get("pairs", [])
-    if limit:
-        pairs = pairs[:limit]
-
     records = []
-    skipped = 0
 
-    for pair in pairs:
-        before_path = base_dir / pair["before_file"]
-        after_path = base_dir / pair["after_file"]
-
-        if not before_path.exists() or not after_path.exists():
-            skipped += 1
-            continue
-
-        diff_hunks = parse_diff_hunks(before_path, after_path)
+    for pair, _before_path, _after_path, diff_hunks in _iter_valid_rminer_pairs(
+        manifest_path, limit
+    ):
         types, descriptions = parse_refactoring_info(pair)
-
-        if not diff_hunks:
-            skipped += 1
-            continue
 
         # SonarQube scan
         sonar_issues = []
@@ -135,7 +113,7 @@ def build_genai_records(
         }
         records.append(record)
 
-    print(f"Built {len(records)} records ({skipped} skipped)")
+    print(f"Built {len(records)} records")
     return records
 
 

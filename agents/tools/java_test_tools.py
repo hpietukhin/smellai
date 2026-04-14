@@ -298,17 +298,7 @@ def run_java_tests(project_path: str, clean: bool = True) -> dict:
     summary = run_tests(project_path, build_system, clean=clean)
 
     # Prepare response
-    result = {
-        "build_system": summary.build_system,
-        "success": summary.success,
-        "total": summary.total,
-        "passed": summary.passed,
-        "failed": summary.failed,
-        "errors": summary.errors,
-        "skipped": summary.skipped,
-        "duration": round(summary.duration, 2),
-        "exit_code": summary.exit_code,
-    }
+    result = test_summary_to_dict(summary)
 
     # Add failed test details
     if summary.failed > 0 or summary.errors > 0:
@@ -329,6 +319,35 @@ def run_java_tests(project_path: str, clean: bool = True) -> dict:
         ]
 
     return result
+
+
+def run_tests_if_present(project_path, has_tests: bool) -> bool:
+    """Run tests when ``has_tests`` is True and a build system is detected.
+
+    Returns True if tests passed (or no tests were run), False otherwise.
+    """
+    if not has_tests:
+        return True
+    build_system = detect_build_system(str(project_path))
+    if build_system:
+        test_result = run_tests(str(project_path), build_system)
+        return test_result.success
+    return True
+
+
+def test_summary_to_dict(summary: TestRunSummary) -> dict:
+    """Convert a TestRunSummary to the standard result dict (9 core fields)."""
+    return {
+        "build_system": summary.build_system,
+        "success": summary.success,
+        "total": summary.total,
+        "passed": summary.passed,
+        "failed": summary.failed,
+        "errors": summary.errors,
+        "skipped": summary.skipped,
+        "duration": round(summary.duration, 2),
+        "exit_code": summary.exit_code,
+    }
 
 
 @tool

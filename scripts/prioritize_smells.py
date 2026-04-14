@@ -55,6 +55,52 @@ class SmellInstance:
             return 1
 
 
+def smell_json_to_instances(data: Any) -> "List[SmellInstance]":
+    """Parse SmellInstance list from JSON data (smells_manifest or flat list format)."""
+    smells: List[SmellInstance] = []
+    if isinstance(data, dict) and "files" in data:
+        for file_entry in data["files"]:
+            filename = file_entry.get("filename", "UnknownFile")
+            for i, smell in enumerate(file_entry.get("smells", [])):
+                smell_id = f"{filename}_{i}_{smell.get('type').replace(' ', '')}"
+                loc = f"{filename}:{smell.get('location', '')}"
+                smells.append(
+                    SmellInstance(
+                        id=smell_id,
+                        smell_type=smell.get("type", "Unknown"),
+                        location=loc,
+                        severity=smell.get("severity", "LOW"),
+                        description=smell.get("description", ""),
+                    )
+                )
+    elif isinstance(data, list):
+        for item in data:
+            smells.append(
+                SmellInstance(
+                    id=str(item.get("id", len(smells) + 1)),
+                    smell_type=item.get("smell_type", "Unknown"),
+                    location=item.get("location", "Unknown"),
+                    severity=item.get("severity", "LOW"),
+                    description=item.get("description", ""),
+                )
+            )
+    return smells
+
+
+def smell_events_to_instances(detected_smells) -> "List[SmellInstance]":
+    """Convert a list of SmellEvent objects to SmellInstance objects."""
+    return [
+        SmellInstance(
+            id=f"{s.smell_type}:{s.file_path}:{s.line_number}",
+            smell_type=s.smell_type,
+            location=f"{s.file_path}:{s.line_number}",
+            severity=s.severity,
+            description=getattr(s, "description", ""),
+        )
+        for s in detected_smells
+    ]
+
+
 # -----------------------------------------------------------------------------
 # Knowledge Base: Impact Rules
 # -----------------------------------------------------------------------------
@@ -430,40 +476,7 @@ def main():
     if args.input and args.input.exists():
         with open(args.input, "r") as f:
             data = json.load(f)
-
-            # Handle smells_manifest.json format (dict with "files" list)
-            if isinstance(data, dict) and "files" in data:
-                for file_entry in data["files"]:
-                    filename = file_entry.get("filename", "UnknownFile")
-                    for i, smell in enumerate(file_entry.get("smells", [])):
-                        # Construct a unique ID
-                        smell_id = (
-                            f"{filename}_{i}_{smell.get('type').replace(' ', '')}"
-                        )
-                        # Construct location
-                        loc = f"{filename}:{smell.get('location', '')}"
-
-                        smells.append(
-                            SmellInstance(
-                                id=smell_id,
-                                smell_type=smell.get("type", "Unknown"),
-                                location=loc,
-                                severity=smell.get("severity", "LOW"),
-                                description=smell.get("description", ""),
-                            )
-                        )
-            # Handle flat list format (if used directly)
-            elif isinstance(data, list):
-                for item in data:
-                    smells.append(
-                        SmellInstance(
-                            id=str(item.get("id", len(smells) + 1)),
-                            smell_type=item.get("smell_type", "Unknown"),
-                            location=item.get("location", "Unknown"),
-                            severity=item.get("severity", "LOW"),
-                            description=item.get("description", ""),
-                        )
-                    )
+        smells = smell_json_to_instances(data)
     else:
         LOGGER.info("No input file provided or found. Using sample data.")
         smells = generate_sample_data()

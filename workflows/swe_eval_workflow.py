@@ -29,8 +29,14 @@ from mlflow.entities import Feedback
 from mlflow.genai.scorers import scorer
 
 from agents.swe_eval import create_swe_eval_agent, invoke_agent
-from smellai_datasets import load_eval_samples, samples_to_mlflow_records, EvalSample
-from workflows.common import setup_workflow_mlflow, save_agent_graph, print_eval_results
+from smellai_datasets import load_eval_samples, samples_to_mlflow_records
+from workflows.common import (
+    setup_workflow_mlflow,
+    save_agent_graph,
+    print_eval_results,
+    make_swe_eval_sample,
+    invoke_swe_agent,
+)
 
 load_dotenv()
 
@@ -189,32 +195,12 @@ def main() -> int:
         jdk_version: int,
         compile_command: str,
     ) -> dict:
-        sample = EvalSample(
-            source="swe",
-            sample_id=f"swe:{commit_id}",
-            inputs={
-                "project_name": project_name,
-                "commit_id": commit_id,
-                "refactoring_type": refactoring_type,
-                "file_path_before": file_path_before,
-                "file_path_after": file_path_after,
-                "class_before": class_before,
-                "source_before": source_before,
-                "jdk_version": jdk_version,
-                "compile_command": compile_command,
-            },
-            expectations={},
-            tags={},
+        sample = make_swe_eval_sample(
+            project_name, commit_id, refactoring_type,
+            file_path_before, file_path_after, class_before,
+            source_before, jdk_version, compile_command,
         )
-        return invoke_agent(
-            agent,
-            sample,
-            args.workspace,
-            analytics_db=analytics_db,
-            max_refactorings=args.max_refactorings,
-            sonar_url=args.sonar_url,
-            sonar_cache_dir=args.sonar_cache_dir,
-        )
+        return invoke_swe_agent(invoke_agent, agent, sample, args, analytics_db)
 
     print(f"Running evaluation on {len(records)} records...")
 

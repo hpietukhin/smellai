@@ -27,17 +27,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Reuse rule mapping from baseline_scan
-RULE_NAME_MAP = {
-    "java:S1541": "Complex Method",
-    "java:S138": "Long Method",
-    "java:S107": "Long Parameter List",
-    "java:S1067": "Conditional Complexity",
-    "java:S1200": "God Class",
-    "java:S110": "Large Class",
-    "java:S1871": "Duplicated Conditions",
-    "java:S106": "Print Statements",
-}
+from sonarqube.constants import RULE_NAME_MAP  # noqa: F401 (re-exported for callers)
 
 # TODO SPEC-012: Verify this severity mapping table exists in codebase and document exact location.
 # Mapping shown in specification but location needs verification.
@@ -287,9 +277,10 @@ def fetch_all_project_issues(
 
 def normalize_issue(issue: Dict[str, Any]) -> Dict[str, Any]:
     """Normalize SonarQube issue to simplified format."""
-    rule = issue.get("rule")
+    rule: str = issue.get("rule") or ""
     smell_type = RULE_NAME_MAP.get(rule, rule)
-    sev = SEVERITY_MAP.get(issue.get("severity"), "LOW")
+    severity_raw: str = issue.get("severity") or ""
+    sev = SEVERITY_MAP.get(severity_raw, "LOW")
 
     return {
         "smell_type": smell_type,
@@ -385,6 +376,7 @@ def scan_commit(
         Dictionary mapping file paths to lists of issues
     """
     # Check cache first
+    cache_file: Path | None = None
     if cache_dir:
         cache_dir.mkdir(parents=True, exist_ok=True)
         cache_file = cache_dir / f"{commit_sha}_full.json"
@@ -433,7 +425,7 @@ def scan_commit(
             issues_by_file[file_path].append(normalized)
 
         # Cache results
-        if cache_dir:
+        if cache_file is not None:
             cache_file.write_text(json.dumps(issues_by_file, indent=2))
 
         return issues_by_file

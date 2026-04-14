@@ -21,7 +21,7 @@ from typing import Any, Sequence
 import pandas as pd
 from pydantic import TypeAdapter
 
-from .schema import DatasetSource, EvalSample
+from .schema import DatasetSource, EvalSample, rminer_sample
 
 # ---------------------------------------------------------------------------
 # Default dataset path resolution
@@ -236,13 +236,12 @@ def _swe_samples(df: pd.DataFrame) -> list[EvalSample]:
     ]
 
 
-def _rminer_samples(manifest_path: Path, limit: int | None = None) -> list[EvalSample]:
-    """Build self-contained EvalSample objects from a RefactoringMiner manifest.
+def _iter_valid_rminer_pairs(manifest_path: Path, limit: int | None = None):
+    """Yield (pair, before_path, after_path) for pairs where both files exist and have diffs.
 
-    Each EvalSample embeds before_code, diff_hunks, and refactoring metadata in
-    inputs so that inference requires no external file access.
+    Also yields a mutable ``skipped`` list (single-element) so callers can track skip count.
     """
-    from rminer.rminer_utils import compute_diff_hunks_from_files, parse_refactoring_info
+    from rminer.rminer_utils import compute_diff_hunks_from_files
 
     base_dir = manifest_path.parent
     with manifest_path.open() as f:
@@ -252,40 +251,46 @@ def _rminer_samples(manifest_path: Path, limit: int | None = None) -> list[EvalS
     if limit is not None:
         pairs = pairs[:limit]
 
-    samples: list[EvalSample] = []
-    skipped = 0
-
     for pair in pairs:
         before_path = base_dir / pair["before_file"]
         after_path = base_dir / pair["after_file"]
 
         if not before_path.exists() or not after_path.exists():
-            skipped += 1
             continue
 
         diff_hunks = compute_diff_hunks_from_files(before_path, after_path)
         if not diff_hunks:
-            skipped += 1
             continue
 
+        yield pair, before_path, after_path, diff_hunks
+
+
+def _rminer_samples(manifest_path: Path, limit: int | None = None) -> list[EvalSample]:
+    """Build self-contained EvalSample objects from a RefactoringMiner manifest.
+
+    Each EvalSample embeds before_code, diff_hunks, and refactoring metadata in
+    inputs so that inference requires no external file access.
+    """
+    from rminer.rminer_utils import parse_refactoring_info
+
+    samples: list[EvalSample] = []
+
+    for pair, before_path, _after_path, diff_hunks in _iter_valid_rminer_pairs(
+        manifest_path, limit
+    ):
         types, descriptions = parse_refactoring_info(pair)
         pair_id: str = pair["id"]
         before_code = before_path.read_text(errors="replace")
         hunks_dicts = [h.model_dump() for h in diff_hunks]
 
         samples.append(
-            EvalSample(
-                source="rminer",
-                sample_id=f"rminer:{pair_id}",
-                inputs={
-                    "pair_id": pair_id,
-                    "before_code": before_code,
-                    "file_path": pair["file_path"],
-                    "refactoring_types": types,
-                    "refactoring_descriptions": descriptions,
-                    "diff_hunks": hunks_dicts,
-                    "sonar_issues": [],
-                },
+            rminer_sample(
+                pair_id=pair_id,
+                before_code=before_code,
+                file_path=pair["file_path"],
+                refactoring_types=types,
+                refactoring_descriptions=descriptions,
+                diff_hunks=hunks_dicts,
                 expectations={
                     "num_hunks": len(diff_hunks),
                     "num_refactorings": len(types),
@@ -300,12 +305,6 @@ def _rminer_samples(manifest_path: Path, limit: int | None = None) -> list[EvalS
                     "status": pair.get("status", "modified"),
                 },
             )
-        )
-
-    if skipped:
-        import logging
-        logging.getLogger(__name__).warning(
-            "Skipped %d manifest pairs (missing files or empty diff)", skipped
         )
 
     return samples

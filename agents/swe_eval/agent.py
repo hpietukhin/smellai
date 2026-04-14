@@ -29,7 +29,7 @@ from swe_refactor.utils import (
     replace_java_code,
     switch_java_version,
 )
-from agents.tools.java_test_tools import detect_build_system, run_tests
+from agents.tools.java_test_tools import run_tests_if_present
 from agents.swe_eval.config import DEFAULT_CONFIG, SWEEvalAgentConfig
 from agents.swe_eval.prompts import SYSTEM_PROMPT, get_refactoring_prompt
 
@@ -293,17 +293,12 @@ def create_swe_eval_agent(
 
         LOGGER.info("A6: Compilation succeeded")
 
-        test_success = True
+        test_success = run_tests_if_present(project_path, record.hasTestC)
         if record.hasTestC:
-            build_system = detect_build_system(str(project_path))
-            if build_system:
-                test_result = run_tests(str(project_path), build_system)
-                test_success = test_result.success
-
-                if not test_success:
-                    LOGGER.warning("A6: Tests failed (%d failures)", test_result.failed)
-                else:
-                    LOGGER.info("A6: Tests passed (%d tests)", test_result.total)
+            if not test_success:
+                LOGGER.warning("A6: Tests failed")
+            else:
+                LOGGER.info("A6: Tests passed")
 
         # Re-scan for smells after successful compilation (composite mode)
         after_smells = []
@@ -452,7 +447,7 @@ def create_swe_eval_agent(
 
     def a2_prioritize_smells(state: SWEEvalState) -> dict:
         """A2: Prioritize smells using dependency analysis."""
-        from scripts.prioritize_smells import SmellInstance, SmellPrioritizer
+        from scripts.prioritize_smells import SmellPrioritizer, smell_events_to_instances
 
         detected_smells = state.get("detected_smells", [])
 
@@ -463,16 +458,7 @@ def create_swe_eval_agent(
         LOGGER.info("A2: Prioritizing %d smells", len(detected_smells))
 
         # Convert SmellEvent to SmellInstance format
-        smell_instances = [
-            SmellInstance(
-                id=f"{s.smell_type}:{s.file_path}:{s.line_number}",
-                smell_type=s.smell_type,
-                location=f"{s.file_path}:{s.line_number}",
-                severity=s.severity,
-                description=getattr(s, "description", ""),
-            )
-            for s in detected_smells
-        ]
+        smell_instances = smell_events_to_instances(detected_smells)
 
         prioritizer = SmellPrioritizer(smell_instances)
 

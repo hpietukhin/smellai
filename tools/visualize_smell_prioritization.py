@@ -30,6 +30,7 @@ from scripts.prioritize_smells import (
     SmellPrioritizer,
     SmellInstance,
     generate_sample_data,
+    smell_json_to_instances,
 )
 
 from swe_refactor.persistence.database import AnalyticsDB
@@ -274,36 +275,7 @@ class PrioritizationVisualizer:
         else:
             if isinstance(data, str):
                 data = json.loads(data)
-
-            # Logic adapted from prioritize_smells.py main()
-            if isinstance(data, dict) and "files" in data:
-                for file_entry in data["files"]:
-                    filename = file_entry.get("filename", "UnknownFile")
-                    for i, smell in enumerate(file_entry.get("smells", [])):
-                        smell_id = (
-                            f"{filename}_{i}_{smell.get('type').replace(' ', '')}"
-                        )
-                        loc = f"{filename}:{smell.get('location', '')}"
-                        self.smells.append(
-                            SmellInstance(
-                                id=smell_id,
-                                smell_type=smell.get("type", "Unknown"),
-                                location=loc,
-                                severity=smell.get("severity", "LOW"),
-                                description=smell.get("description", ""),
-                            )
-                        )
-            elif isinstance(data, list):
-                for item in data:
-                    self.smells.append(
-                        SmellInstance(
-                            id=str(item.get("id", len(self.smells) + 1)),
-                            smell_type=item.get("smell_type", "Unknown"),
-                            location=item.get("location", "Unknown"),
-                            severity=item.get("severity", "LOW"),
-                            description=item.get("description", ""),
-                        )
-                    )
+            self.smells = smell_json_to_instances(data)
 
         self.prioritizer = SmellPrioritizer(self.smells)
         self.sequence = self.prioritizer.calculate_priorities()

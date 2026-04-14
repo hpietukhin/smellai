@@ -23,8 +23,15 @@ import sys
 import mlflow
 from dotenv import load_dotenv
 
-from smellai_datasets import load_eval_samples, samples_to_mlflow_records, EvalSample
-from workflows.common import setup_workflow_mlflow, save_agent_graph, print_eval_results
+from smellai_datasets import load_eval_samples, samples_to_mlflow_records
+from workflows.common import (
+    setup_workflow_mlflow,
+    save_agent_graph,
+    print_eval_results,
+    make_rminer_eval_sample,
+    make_swe_eval_sample,
+    invoke_swe_agent,
+)
 
 load_dotenv()
 
@@ -72,20 +79,9 @@ def _make_rminer_predict_fn(agent):
         diff_hunks: list,
         sonar_issues: list | None = None,
     ) -> dict:
-        sample = EvalSample(
-            source="rminer",
-            sample_id=f"rminer:{pair_id}",
-            inputs={
-                "pair_id": pair_id,
-                "before_code": before_code,
-                "file_path": file_path,
-                "refactoring_types": refactoring_types,
-                "refactoring_descriptions": refactoring_descriptions,
-                "diff_hunks": diff_hunks,
-                "sonar_issues": sonar_issues or [],
-            },
-            expectations={},
-            tags={},
+        sample = make_rminer_eval_sample(
+            pair_id, before_code, file_path,
+            refactoring_types, refactoring_descriptions, diff_hunks, sonar_issues,
         )
         return rminer_invoke(agent, sample)
 
@@ -111,32 +107,12 @@ def _make_swe_predict_fn(agent, args):
         jdk_version: int,
         compile_command: str,
     ) -> dict:
-        sample = EvalSample(
-            source="swe",
-            sample_id=f"swe:{commit_id}",
-            inputs={
-                "project_name": project_name,
-                "commit_id": commit_id,
-                "refactoring_type": refactoring_type,
-                "file_path_before": file_path_before,
-                "file_path_after": file_path_after,
-                "class_before": class_before,
-                "source_before": source_before,
-                "jdk_version": jdk_version,
-                "compile_command": compile_command,
-            },
-            expectations={},
-            tags={},
+        sample = make_swe_eval_sample(
+            project_name, commit_id, refactoring_type,
+            file_path_before, file_path_after, class_before,
+            source_before, jdk_version, compile_command,
         )
-        return swe_invoke(
-            agent,
-            sample,
-            args.workspace,
-            analytics_db=analytics_db,
-            max_refactorings=args.max_refactorings,
-            sonar_url=args.sonar_url,
-            sonar_cache_dir=args.sonar_cache_dir,
-        )
+        return invoke_swe_agent(swe_invoke, agent, sample, args, analytics_db)
 
     return predict_fn
 
@@ -155,22 +131,10 @@ def _make_mini_swe_predict_fn(handle, args):
         jdk_version: int,
         compile_command: str,
     ) -> dict:
-        sample = EvalSample(
-            source="swe",
-            sample_id=f"swe:{commit_id}",
-            inputs={
-                "project_name": project_name,
-                "commit_id": commit_id,
-                "refactoring_type": refactoring_type,
-                "file_path_before": file_path_before,
-                "file_path_after": file_path_after,
-                "class_before": class_before,
-                "source_before": source_before,
-                "jdk_version": jdk_version,
-                "compile_command": compile_command,
-            },
-            expectations={},
-            tags={},
+        sample = make_swe_eval_sample(
+            project_name, commit_id, refactoring_type,
+            file_path_before, file_path_after, class_before,
+            source_before, jdk_version, compile_command,
         )
         return mini_invoke(handle, sample, args.workspace)
 

@@ -26,7 +26,8 @@ from swe_refactor.utils import (
     get_repo_url,
     switch_java_version,
 )
-from agents.tools.java_test_tools import detect_build_system, run_tests
+from agents.tools.java_test_tools import run_tests_if_present
+from agents.swe_eval.agent import _sample_to_refactoring_record
 
 from evals.ablation.mini_swe_agent.config import DEFAULT_MINI_CONFIG
 from evals.ablation.mini_swe_agent.prompts import build_refactoring_task
@@ -140,25 +141,6 @@ def invoke_agent(
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-def _sample_to_refactoring_record(sample: EvalSample) -> RefactoringRecord:
-    """Build RefactoringRecord from an EvalSample (same logic as agents/swe_eval/agent.py)."""
-    i = sample.inputs
-    return RefactoringRecord(
-        projectName=i["project_name"],
-        commitId=i["commit_id"],
-        type=i["refactoring_type"],
-        filePathBefore=i["file_path_before"],
-        filePathAfter=i["file_path_after"],
-        sourceCodeBeforeForWhole=i["class_before"],
-        sourceCodeAfterForWhole="",
-        compileJDK=i["jdk_version"],
-        compileCommand=i["compile_command"],
-        compileResultBefore=True,
-        compileResultCurrent=True,
-        hasTestC=sample.tags.get("has_tests", False),
-        isPureRefactoring=sample.tags.get("is_pure", True),
-    )
-
 
 def _a0_setup(record: RefactoringRecord, project_path: Path) -> str | None:
     """Clone repo, checkout parent commit, switch JDK. Returns error string or None."""
@@ -239,16 +221,12 @@ def _a6_verify(record: RefactoringRecord, project_path: Path) -> dict:
 
     LOGGER.info("a6: compilation succeeded")
 
-    test_success = True
+    test_success = run_tests_if_present(project_path, record.hasTestC)
     if record.hasTestC:
-        build_system = detect_build_system(str(project_path))
-        if build_system:
-            test_result = run_tests(str(project_path), build_system)
-            test_success = test_result.success
-            if not test_success:
-                LOGGER.warning("a6: tests failed (%d failures)", test_result.failed)
-            else:
-                LOGGER.info("a6: tests passed (%d total)", test_result.total)
+        if not test_success:
+            LOGGER.warning("a6: tests failed")
+        else:
+            LOGGER.info("a6: tests passed")
 
     return {"compile_success": True, "test_success": test_success, "error": None}
 

@@ -1,0 +1,35 @@
+[MASTER]
+# Ignore paths matching these patterns (regex)
+ignore-paths=
+    .venv,
+    venv,
+    ENV,
+    env,
+    __pycache__,
+    \.eggs,
+    dist,
+    build,
+    mlruns,
+    mlartifacts,
+    rminer_data,
+    data,
+    eval_results,
+    temp,
+    \.pytest_cache,
+    htmlcov,
+    \.mypy_cache,
+    \.ruff_cache,
+    node_modules,
+    \.scannerwork,
+    sonar_cache,
+    \.claude
+
+[DESIGN]
+max-args=5
+max-attributes=7
+max-bool-expr=5
+max-branches=12
+max-locals=15
+max-returns=6
+max-statements=50
+max-public-methods=20

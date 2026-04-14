@@ -7,17 +7,7 @@ to determine the optimal sequence for applying refactoring rules.
 from typing import List, Dict, Any
 from pydantic import BaseModel, Field
 
-# Rule mapping from sonarqube/commit_scan.py
-RULE_NAME_MAP = {
-    "java:S1541": "Complex Method",
-    "java:S138": "Long Method",
-    "java:S107": "Long Parameter List",
-    "java:S1067": "Conditional Complexity",
-    "java:S1200": "God Class",
-    "java:S110": "Large Class",
-    "java:S1871": "Duplicated Conditions",
-    "java:S106": "Print Statements",
-}
+from sonarqube.constants import RULE_NAME_MAP  # noqa: F401 (re-exported for callers)
 
 
 class DependencyAnalysis(BaseModel):

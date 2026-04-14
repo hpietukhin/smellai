@@ -2,6 +2,122 @@
 
 from __future__ import annotations
 
+from smellai_datasets import EvalSample
+from smellai_datasets.schema import rminer_sample
+
+
+def make_rminer_eval_sample(
+    pair_id: str,
+    before_code: str,
+    file_path: str,
+    refactoring_types: list,
+    refactoring_descriptions: list,
+    diff_hunks: list,
+    sonar_issues: list | None = None,
+) -> EvalSample:
+    """Build an EvalSample for an RMiner predict_fn call."""
+    return rminer_sample(
+        pair_id=pair_id,
+        before_code=before_code,
+        file_path=file_path,
+        refactoring_types=refactoring_types,
+        refactoring_descriptions=refactoring_descriptions,
+        diff_hunks=diff_hunks,
+        sonar_issues=sonar_issues,
+    )
+
+
+def make_swe_eval_sample(
+    project_name: str,
+    commit_id: str,
+    refactoring_type: str,
+    file_path_before: str,
+    file_path_after: str,
+    class_before: str,
+    source_before: str,
+    jdk_version: int,
+    compile_command: str,
+) -> EvalSample:
+    """Build an EvalSample for a SWE predict_fn call."""
+    return EvalSample(
+        source="swe",
+        sample_id=f"swe:{commit_id}",
+        inputs={
+            "project_name": project_name,
+            "commit_id": commit_id,
+            "refactoring_type": refactoring_type,
+            "file_path_before": file_path_before,
+            "file_path_after": file_path_after,
+            "class_before": class_before,
+            "source_before": source_before,
+            "jdk_version": jdk_version,
+            "compile_command": compile_command,
+        },
+        expectations={},
+        tags={},
+    )
+
+
+def _get_rminer_scorers():
+    """Return the standard RMiner scorer triple."""
+    from agents.rminer_eval import mapping_accuracy, hunk_coverage, prediction_completeness
+    return [mapping_accuracy, hunk_coverage, prediction_completeness]
+
+
+def run_rminer_evaluation(records, predict_fn, scorers, tracking_uri: str) -> int:
+    """Run mlflow.genai.evaluate with rminer scorers, print results, and return 0."""
+    import mlflow
+
+    results = mlflow.genai.evaluate(
+        data=records,
+        predict_fn=predict_fn,
+        scorers=scorers,
+    )
+    print_eval_results(results, tracking_uri)
+    return 0
+
+
+def invoke_swe_agent(invoke_fn, agent, sample, args, analytics_db=None) -> dict:
+    """Call a SWE invoke function with the standard args from CLI namespace."""
+    return invoke_fn(
+        agent,
+        sample,
+        args.workspace,
+        analytics_db=analytics_db,
+        max_refactorings=args.max_refactorings,
+        sonar_url=args.sonar_url,
+        sonar_cache_dir=args.sonar_cache_dir,
+    )
+
+
+def load_rminer_records(args):
+    """Validate manifest, configure MLflow, load RMiner samples → MLflow records.
+
+    Returns (records, None) on success, or (None, error_code) on failure.
+    """
+    import sys
+    from pathlib import Path
+    from smellai_datasets import load_eval_samples, samples_to_mlflow_records
+
+    manifest_path = Path(args.manifest).expanduser()
+    if not manifest_path.exists():
+        print(f"Manifest not found: {manifest_path}", file=sys.stderr)
+        return None, 1
+
+    setup_workflow_mlflow(args.tracking_uri, args.experiment)
+
+    samples = load_eval_samples(
+        ["rminer"],
+        rminer_manifest_path=manifest_path,
+        limit=args.limit,
+    )
+    if not samples:
+        print("No records to evaluate", file=sys.stderr)
+        return None, 1
+
+    records = samples_to_mlflow_records(samples)
+    return records, 0
+
 
 def setup_workflow_mlflow(
     tracking_uri: str,

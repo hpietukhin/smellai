@@ -34,4 +34,33 @@ class EvalSample(BaseModel):
     tags: dict[str, Any] = Field(default_factory=dict)
 
 
-__all__ = ["DatasetSource", "EvalSample"]
+def rminer_sample(
+    pair_id: str,
+    before_code: str,
+    file_path: str,
+    refactoring_types: list,
+    refactoring_descriptions: list,
+    diff_hunks: list,
+    sonar_issues: list | None = None,
+    expectations: "dict[str, Any] | None" = None,
+    tags: "dict[str, Any] | None" = None,
+) -> EvalSample:
+    """Build a minimal EvalSample for an RMiner record."""
+    return EvalSample(
+        source="rminer",
+        sample_id=f"rminer:{pair_id}",
+        inputs={
+            "pair_id": pair_id,
+            "before_code": before_code,
+            "file_path": file_path,
+            "refactoring_types": refactoring_types,
+            "refactoring_descriptions": refactoring_descriptions,
+            "diff_hunks": diff_hunks,
+            "sonar_issues": sonar_issues or [],
+        },
+        expectations=expectations or {},
+        tags=tags or {},
+    )
+
+
+__all__ = ["DatasetSource", "EvalSample", "rminer_sample"]

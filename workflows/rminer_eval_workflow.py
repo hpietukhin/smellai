@@ -22,21 +22,17 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import sys
-from pathlib import Path
 
-import mlflow
 from dotenv import load_dotenv
 
-from agents.rminer_eval import (
-    create_rminer_eval_agent,
-    invoke_agent,
-    mapping_accuracy,
-    hunk_coverage,
-    prediction_completeness,
+from agents.rminer_eval import create_rminer_eval_agent, invoke_agent
+from workflows.common import (
+    save_agent_graph,
+    make_rminer_eval_sample,
+    load_rminer_records,
+    run_rminer_evaluation,
+    _get_rminer_scorers,
 )
-from smellai_datasets import load_eval_samples, samples_to_mlflow_records, EvalSample
-from workflows.common import setup_workflow_mlflow, save_agent_graph, print_eval_results
 
 load_dotenv()
 
@@ -66,23 +62,10 @@ def main() -> int:
         save_agent_graph(agent, "rminer_agent_graph.png")
         return 0
 
-    manifest_path = Path(args.manifest).expanduser()
-    if not manifest_path.exists():
-        print(f"Manifest not found: {manifest_path}", file=sys.stderr)
-        return 1
+    records, err = load_rminer_records(args)
+    if records is None:
+        return err
 
-    setup_workflow_mlflow(args.tracking_uri, args.experiment)
-
-    samples = load_eval_samples(
-        ["rminer"],
-        rminer_manifest_path=manifest_path,
-        limit=args.limit,
-    )
-    if not samples:
-        print("No records to evaluate", file=sys.stderr)
-        return 1
-
-    records = samples_to_mlflow_records(samples)
     print(f"Loaded {len(records)} RMiner EvalSamples from manifest")
     print(f"Model: {args.model}")
 
@@ -97,33 +80,14 @@ def main() -> int:
         diff_hunks: list,
         sonar_issues: list | None = None,
     ) -> dict:
-        sample = EvalSample(
-            source="rminer",
-            sample_id=f"rminer:{pair_id}",
-            inputs={
-                "pair_id": pair_id,
-                "before_code": before_code,
-                "file_path": file_path,
-                "refactoring_types": refactoring_types,
-                "refactoring_descriptions": refactoring_descriptions,
-                "diff_hunks": diff_hunks,
-                "sonar_issues": sonar_issues or [],
-            },
-            expectations={},
-            tags={},
+        sample = make_rminer_eval_sample(
+            pair_id, before_code, file_path,
+            refactoring_types, refactoring_descriptions, diff_hunks, sonar_issues,
         )
         return invoke_agent(agent, sample)
 
     print(f"Running evaluation on {len(records)} records...")
-
-    results = mlflow.genai.evaluate(
-        data=records,
-        predict_fn=predict_fn,
-        scorers=[mapping_accuracy, hunk_coverage, prediction_completeness],
-    )
-
-    print_eval_results(results, args.tracking_uri)
-    return 0
+    return run_rminer_evaluation(records, predict_fn, _get_rminer_scorers(), args.tracking_uri)
 
 
 if __name__ == "__main__":

@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 
 from agents.java_test.agent import run_java_test_analysis
+from agents.tools.java_test_tools import test_summary_to_dict
 
 logging.basicConfig(
     level=logging.INFO,
@@ -68,15 +69,7 @@ def main():
         if args.json:
             output = {
                 "project_path": result["project_path"],
-                "build_system": result["build_system"],
-                "success": summary.success,
-                "total": summary.total,
-                "passed": summary.passed,
-                "failed": summary.failed,
-                "errors": summary.errors,
-                "skipped": summary.skipped,
-                "duration": round(summary.duration, 2),
-                "exit_code": summary.exit_code,
+                **test_summary_to_dict(summary),
             }
             print(json.dumps(output, indent=2))
         else:

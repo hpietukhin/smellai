@@ -9,7 +9,7 @@ Tests that the SmellPrioritizer correctly:
 """
 
 import pytest
-from scripts.prioritize_smells import SmellInstance, SmellPrioritizer
+from scripts.prioritize_smells import SmellInstance, SmellPrioritizer, smell_events_to_instances
 
 
 def test_smell_instance_creation():
@@ -195,16 +195,7 @@ def test_agent_integration_format():
     ]
 
     # Convert to SmellInstance format (as done in agent.py)
-    smell_instances = [
-        SmellInstance(
-            id=f"{s.smell_type}:{s.file_path}:{s.line_number}",
-            smell_type=s.smell_type,
-            location=f"{s.file_path}:{s.line_number}",
-            severity=s.severity,
-            description=getattr(s, "description", ""),
-        )
-        for s in detected_smells
-    ]
+    smell_instances = smell_events_to_instances(detected_smells)
 
     # Calculate priorities
     prioritizer = SmellPrioritizer(smell_instances)
