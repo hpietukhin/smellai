@@ -75,7 +75,8 @@
       "Bash(PY=/opt/homebrew/bin/python3 __NEW_LINE_f947117539f2e904__ for url in \"https://raw.githubusercontent.com/python-attrs/cattrs/main/tests/conftest.py\" \"https://raw.githubusercontent.com/nccgroup/blackboxprotobuf/master/lib/tests/py_test/strategies.py\" \"https://raw.githubusercontent.com/nccgroup/blackboxprotobuf/master/lib/tests/py_test/test_typedef.py\" \"https://raw.githubusercontent.com/ics-py/ics-py/master/tests/contentline/__init__.py\" \"https://raw.githubusercontent.com/Aiven-Open/karapace/master/tests/unit/protobuf/test_protobuf_normalization.py\" \"https://raw.githubusercontent.com/mobilityhouse/ocpp/master/tests/test_messages.py\" \"https://raw.githubusercontent.com/schemathesis/schemathesis/master/src/schemathesis/generation/hypothesis/given.py\" do echo \"====== $url##*/github.com/ ======\" curl -s \"$url\")",
       "Bash($PY -c \"import sys; lines=sys.stdin.readlines\\(\\); [print\\(l,end=''''''''\\) for l in lines[:120]]\" echo done)",
       "Bash(presenterm -h)",
-      "Bash(presenterm /Users/havriil.pietukhin/uni/masterThesis/code/smellai/docs/development/onboarding.md --validate-overflows)"
+      "Bash(presenterm /Users/havriil.pietukhin/uni/masterThesis/code/smellai/docs/development/onboarding.md --validate-overflows)",
+      "Bash(git worktree:*)"
     ],
     "deny": []
   },

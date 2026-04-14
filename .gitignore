@@ -68,6 +68,10 @@ mlartifacts/
 
 # SonarQube
 .scannerwork/
+sonar_cache/
+
+# Claude Code worktrees
+.claude/worktrees/
 
 # mypy
 .mypy_cache/
