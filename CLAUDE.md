@@ -354,5 +354,4 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
-paper where the theory behind builded system is described in /Users/havriil.pietukhin/uni/masterThesis/conf_paper
-/conf.tex. Use it as a spec, READ WHEN NOT COMPLETELY CLEAR when we are talking about processing logic or discussing data models, adhere to it
+paper where the theory behind builded system is described in docs/conf_Pietukhin_10_3_rev2-2.pdf. Use it as a spec, READ WHEN NOT COMPLETELY CLEAR when we are talking about processing logic or discussing data models, adhere to it

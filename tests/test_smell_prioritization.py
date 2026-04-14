@@ -45,7 +45,7 @@ def test_severity_score_mapping():
 
 
 def test_prioritization_calculates_pz_correctly():
-    """Test that PZ = severity + (positive_impact_count * 2)."""
+    """Test priority score follows spec formula: P = freq * w_sev * sev + pos_out - w_neg * neg_out."""
     smells = [
         _smell("1", "Long Method",     "OrderProcessor.java", "HIGH"),
         _smell("2", "Duplicated Code", "OrderProcessor.java", "MEDIUM"),
@@ -55,10 +55,11 @@ def test_prioritization_calculates_pz_correctly():
     prioritizer = SmellPrioritizer(smells)
     sequence = prioritizer.calculate_priorities()
 
-    # Long Method (severity=3) + helps resolve Duplicated Code and Complex Method (+2*2=4) = 7
+    # Long Method: freq=1, w_sev=0.33, sev=3, pos_out=1 (Dup.Code), neg_out=0
+    # P = 1 * 0.33 * 3 + 1 - 0.5 * 0 = 1.99  (highest of the three)
     assert len(sequence) == 3
     assert sequence[0]["smell_type"] == "Long Method"
-    assert sequence[0]["pz_score"] >= 3
+    assert sequence[0]["pz_score"] > sequence[1]["pz_score"]
 
 
 def test_prioritization_returns_highest_pz_first():

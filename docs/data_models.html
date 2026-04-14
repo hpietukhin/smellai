@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmellAI — Data Models</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #7c8ef7;
+    --accent2: #56cfb2;
+    --accent3: #f7a76c;
+    --accent4: #e06c75;
+    --text: #ced4f0;
+    --muted: #6b7299;
+    --code-bg: #141620;
+    --tag-pydantic:  #7c8ef7;
+    --tag-sqlmodel:  #56cfb2;
+    --tag-dataclass: #f7a76c;
+    --tag-typealias: #e06c75;
+    --tag-dict:      #c678dd;
+    --tag-const:     #98c379;
+    --tag-enum:      #61afef;
+    --tag-typeddict: #d19a66;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .slide {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 80px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .slide--title {
+    background: radial-gradient(ellipse at 20% 50%, #1c2050 0%, var(--bg) 70%);
+    text-align: center;
+    align-items: center;
+  }
+
+  .slide--title .kicker {
+    font-size: 0.85rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  .slide--title h1 {
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.15;
+    margin-bottom: 16px;
+  }
+
+  .slide--title h1 span { color: var(--accent); }
+
+  .slide--title .subtitle {
+    font-size: 1.1rem;
+    color: var(--muted);
+    max-width: 680px;
+    margin: 0 auto 32px;
+  }
+
+  .badge-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    border: 1px solid;
+  }
+
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+    margin-top: 32px;
+  }
+
+  .overview-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    transition: border-color 0.2s;
+  }
+
+  .overview-card:hover { border-color: var(--accent); }
+
+  .overview-card .oc-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .overview-card .oc-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .overview-card .oc-file {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'Fira Code', monospace;
+    margin-bottom: 6px;
+  }
+
+  .overview-card .oc-desc {
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+
+  .slide--model { background: var(--bg); }
+
+  .slide-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 36px;
+    flex-wrap: wrap;
+  }
+
+  .slide-header .sh-left { flex: 1; min-width: 260px; }
+
+  h2 {
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .file-path {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    background: var(--code-bg);
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+
+  .model-desc {
+    font-size: 0.95rem;
+    color: var(--muted);
+    max-width: 680px;
+  }
+
+  .tag {
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    align-self: flex-start;
+  }
+
+  .tag--pydantic  { background: #7c8ef720; color: var(--tag-pydantic);  border: 1px solid #7c8ef740; }
+  .tag--sqlmodel  { background: #56cfb220; color: var(--tag-sqlmodel);  border: 1px solid #56cfb240; }
+  .tag--dataclass { background: #f7a76c20; color: var(--tag-dataclass); border: 1px solid #f7a76c40; }
+  .tag--typealias { background: #e06c7520; color: var(--tag-typealias); border: 1px solid #e06c7540; }
+  .tag--dict      { background: #c678dd20; color: var(--tag-dict);      border: 1px solid #c678dd40; }
+  .tag--const     { background: #98c37920; color: var(--tag-const);     border: 1px solid #98c37940; }
+  .tag--enum      { background: #61afef20; color: var(--tag-enum);      border: 1px solid #61afef40; }
+  .tag--typeddict { background: #d19a6620; color: var(--tag-typeddict); border: 1px solid #d19a6640; }
+
+  .fields {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+
+  .fields th {
+    text-align: left;
+    padding: 8px 14px;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .fields td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .fields tr:last-child td { border-bottom: none; }
+  .fields tr:hover td { background: var(--surface2); }
+
+  .field-name {
+    font-family: 'Fira Code', monospace;
+    font-weight: 600;
+    color: var(--accent2);
+  }
+
+  .field-type {
+    font-family: 'Fira Code', monospace;
+    color: var(--accent3);
+    font-size: 0.82rem;
+  }
+
+  .field-desc { color: var(--muted); }
+
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.82rem;
+    line-height: 1.7;
+  }
+
+  .kw  { color: #c678dd; }
+  .cls { color: #e5c07b; }
+  .fn  { color: #61afef; }
+  .str { color: #98c379; }
+  .cmt { color: #5c6370; font-style: italic; }
+  .lit { color: #d19a66; }
+  .ann { color: #56cfb2; }
+  .pn  { color: #abb2bf; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 22px;
+    align-items: start;
+  }
+
+  @media (max-width: 1100px) { .three-col { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 900px)  { .two-col, .three-col { grid-template-columns: 1fr; } .slide { padding: 40px 24px; } }
+
+  .section-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 22px;
+  }
+
+  .dict-section { margin-bottom: 28px; }
+  .dict-section:last-child { margin-bottom: 0; }
+
+  .dict-section h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dict-section h3 .ds-source {
+    font-size: 0.72rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 400;
+    color: var(--muted);
+    font-family: monospace;
+  }
+
+  .slide--divider {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    min-height: 28vh;
+    padding: 40px 80px;
+    justify-content: center;
+  }
+
+  .slide--divider .div-num {
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .slide--divider h2 { font-size: clamp(1.4rem, 3vw, 2rem); }
+
+  .kv-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 20px;
+    font-size: 0.85rem;
+    font-family: monospace;
+  }
+
+  .kv-key   { color: var(--accent2); }
+  .kv-val   { color: var(--accent3); }
+
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+
+  .flow-node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 0.8rem;
+    text-align: center;
+    min-width: 110px;
+  }
+
+  .flow-node .fn-name { font-weight: 700; color: #fff; font-size: 0.85rem; margin-bottom: 3px; }
+  .flow-node .fn-type { font-family: monospace; font-size: 0.7rem; color: var(--accent3); }
+  .flow-arrow { padding: 0 10px; color: var(--accent); font-size: 1.2rem; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════ TITLE ══════════════════════════════════════ -->
+<section class="slide slide--title">
+  <p class="kicker">Master's Thesis · SmellAI</p>
+  <h1>Data <span>Models</span></h1>
+  <p class="subtitle">
+    Every typed structure in the smellai codebase — Pydantic, SQLModel, TypedDict,
+    dataclasses, type aliases, dict schemas, and constant maps.
+  </p>
+  <div class="badge-row">
+    <span class="badge tag--pydantic">Pydantic BaseModel</span>
+    <span class="badge tag--sqlmodel">SQLModel</span>
+    <span class="badge tag--dataclass">Dataclass</span>
+    <span class="badge tag--typeddict">TypedDict</span>
+    <span class="badge tag--typealias">Type Alias</span>
+    <span class="badge tag--dict">Dict Schema</span>
+    <span class="badge tag--const">Constant Map</span>
+    <span class="badge tag--enum">Enum</span>
+  </div>
+</section>
+
+<!-- ════════════════════════ OVERVIEW ═══════════════════════════════════ -->
+<section class="slide">
+  <h2>All Models at a Glance</h2>
+  <div class="overview-grid">
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--typealias">Type Alias</span><span class="oc-name">DatasetSource</span></div>
+      <div class="oc-file">smellai_datasets/schema.py · line 22</div>
+      <div class="oc-desc">Discriminator literal for the three dataset origins.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--pydantic">Pydantic</span><span class="oc-name">EvalSample</span></div>
+      <div class="oc-file">smellai_datasets/schema.py · line 25</div>
+      <div class="oc-desc">Frozen, unified evaluation sample — the MLflow GenAI contract shape.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--pydantic">Pydantic</span><span class="oc-name">DiffHunk</span></div>
+      <div class="oc-file">rminer/diff_hunk.py · line 8</div>
+      <div class="oc-desc">One git diff hunk: line ranges + added/removed/context lines.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--pydantic">Pydantic</span><span class="oc-name">RefactoringRecord</span></div>
+      <div class="oc-file">swe_refactor/dataset.py · line 13</div>
+      <div class="oc-desc">Single refactoring record from SWE-Refactor dataset.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--dict">Dict Schema</span><span class="oc-name">RMiner Raw Row</span></div>
+      <div class="oc-file">smellai_datasets/loaders.py · load_rminer_raw_df</div>
+      <div class="oc-desc">Flat dict shape per refactoring from the oracle JSON.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--dict">Dict Schema</span><span class="oc-name">SWE Raw Row</span></div>
+      <div class="oc-file">smellai_datasets/loaders.py · load_swe_raw_df</div>
+      <div class="oc-desc">Normalised dict from SWE-Refactor JSON, including full source code.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--pydantic">Pydantic</span><span class="oc-name">RefactoringLocation</span></div>
+      <div class="oc-file">models/refactoring.py · line 21</div>
+      <div class="oc-desc">Precise file/line/column location of a code element before or after refactoring.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--pydantic">Pydantic</span><span class="oc-name">Refactoring</span></div>
+      <div class="oc-file">models/refactoring.py · line 57</div>
+      <div class="oc-desc">One refactoring operation: type, description, validation, locations.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--pydantic">Pydantic</span><span class="oc-name">RMinerCommit</span></div>
+      <div class="oc-file">models/refactoring.py · line 114</div>
+      <div class="oc-desc">Git commit analysed by RefactoringMiner with its refactorings list.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--pydantic">Pydantic</span><span class="oc-name">CommitCluster</span></div>
+      <div class="oc-file">models/refactoring.py · line 155</div>
+      <div class="oc-desc">Group of consecutive commits from one repo, scored by proximity.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--pydantic">Pydantic</span><span class="oc-name">RefactoringStats</span></div>
+      <div class="oc-file">models/refactoring.py · line 232</div>
+      <div class="oc-desc">Statistical summary: counts, type distribution, cluster details.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--const">Constant</span><span class="oc-name">RULE_NAME_MAP</span></div>
+      <div class="oc-file">sonarqube/constants.py · line 3</div>
+      <div class="oc-desc">8 SonarQube Java rule IDs → human-readable smell names.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--const">Constant</span><span class="oc-name">SEVERITY_MAP</span></div>
+      <div class="oc-file">sonarqube/commit_scan.py · line 36</div>
+      <div class="oc-desc">SonarQube 5-tier severity → 3-tier (HIGH/MEDIUM/LOW).</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--dict">Dict Schema</span><span class="oc-name">Normalized Issue</span></div>
+      <div class="oc-file">sonarqube/commit_scan.py · normalize_issue · line 278</div>
+      <div class="oc-desc">Simplified SonarQube issue dict returned by scan_commit.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--pydantic">Pydantic</span><span class="oc-name">SonarScanArgs</span></div>
+      <div class="oc-file">sonarqube/tool.py · line 19</div>
+      <div class="oc-desc">Input schema for the scan_commit_smells LangChain tool.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--enum">Enum</span><span class="oc-name">SmellAction</span></div>
+      <div class="oc-file">swe_refactor/persistence/models.py · line 16</div>
+      <div class="oc-desc">Lifecycle action performed on a smell: detected / resolved / created / persisted.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--sqlmodel">SQLModel</span><span class="oc-name">ToolCall</span></div>
+      <div class="oc-file">swe_refactor/persistence/models.py · line 25</div>
+      <div class="oc-desc">Records tool invocations with timing during agent execution.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--sqlmodel">SQLModel</span><span class="oc-name">SmellEvent</span></div>
+      <div class="oc-file">swe_refactor/persistence/models.py · line 44</div>
+      <div class="oc-desc">One smell lifecycle event (detect/resolve/create) per iteration.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--sqlmodel">SQLModel</span><span class="oc-name">SmellDependency</span></div>
+      <div class="oc-file">swe_refactor/persistence/models.py · line 64</div>
+      <div class="oc-desc">Positive/negative dependency relationship between two smell instances.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--sqlmodel">SQLModel</span><span class="oc-name">RefactoringAttempt</span></div>
+      <div class="oc-file">swe_refactor/persistence/models.py · line 82</div>
+      <div class="oc-desc">One complete refactoring cycle: select → generate → verify → outcome.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--sqlmodel">SQLModel</span><span class="oc-name">TokenUsage</span></div>
+      <div class="oc-file">swe_refactor/persistence/models.py · line 104</div>
+      <div class="oc-desc">LLM token consumption per node per iteration.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--sqlmodel">SQLModel</span><span class="oc-name">TestRun</span></div>
+      <div class="oc-file">swe_refactor/persistence/models.py · line 135</div>
+      <div class="oc-desc">Test execution result per refactoring iteration (counts + failed list).</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--dataclass">Dataclass</span><span class="oc-name">TestResult</span></div>
+      <div class="oc-file">agents/tools/java_test_tools.py · line 22</div>
+      <div class="oc-desc">Single JUnit test result: name, status, duration, error info.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--dataclass">Dataclass</span><span class="oc-name">TestCounts</span></div>
+      <div class="oc-file">agents/tools/java_test_tools.py · line 34</div>
+      <div class="oc-desc">Aggregated test run counters: total/passed/failed/errors/skipped.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--dataclass">Dataclass</span><span class="oc-name">TestRunSummary</span></div>
+      <div class="oc-file">agents/tools/java_test_tools.py · line 46</div>
+      <div class="oc-desc">Full test run result: build system, exit code, tests list, counts.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--pydantic">Pydantic</span><span class="oc-name">RefactoringMapping</span></div>
+      <div class="oc-file">agents/rminer_eval/agent.py · line 27</div>
+      <div class="oc-desc">One LLM-predicted mapping between a refactoring and a diff hunk.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--pydantic">Pydantic</span><span class="oc-name">RefactoringMappingOutput</span></div>
+      <div class="oc-file">agents/rminer_eval/agent.py · line 35</div>
+      <div class="oc-desc">Complete structured output from the refactoring mapping agent.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--pydantic">Pydantic</span><span class="oc-name">DependencyAnalysis</span></div>
+      <div class="oc-file">agents/dependency_analysis/agent.py · line 13</div>
+      <div class="oc-desc">Positive/negative smell dependencies for one smell type.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--typeddict">TypedDict</span><span class="oc-name">SWEEvalState</span></div>
+      <div class="oc-file">agents/swe_eval/agent.py · line 39</div>
+      <div class="oc-desc">Full LangGraph state for the SWE evaluation agent (basic + composite).</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--dataclass">Dataclass</span><span class="oc-name">CompileResult</span></div>
+      <div class="oc-file">swe_refactor/utils/build_util.py · line 13</div>
+      <div class="oc-desc">Result of a Java compilation attempt: success, command, logs, errors.</div>
+    </div>
+
+    <div class="overview-card">
+      <div class="oc-header"><span class="tag tag--dataclass">Dataclass</span><span class="oc-name">SmellInstance</span></div>
+      <div class="oc-file">scripts/prioritize_smells.py · line 38</div>
+      <div class="oc-desc">In-memory smell used by the prioritizer: id, type, location, severity.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════ DIVIDER 1: Core Schema ══════════════════════════ -->
+<section class="slide slide--divider">
+  <div class="div-num">Part 1 of 7</div>
+  <h2>Core Schema</h2>
+  <p style="color:var(--muted);margin-top:8px;font-size:0.95rem;">
+    The two types that every dataset pipeline converges on. <code style="font-family:monospace;">smellai_datasets/schema.py</code>
+  </p>
+</section>
+
+<!-- DatasetSource -->
+<section class="slide slide--model">
+  <div class="slide-header">
+    <div class="sh-left">
+      <h2>DatasetSource</h2>
+      <span class="file-path">smellai_datasets/schema.py · line 22</span>
+      <p class="model-desc">
+        A <strong>type alias</strong> that constrains the dataset discriminator to one of three
+        string literals. Used as the <code>source</code> field on <code>EvalSample</code>.
+      </p>
+    </div>
+    <span class="tag tag--typealias">Type Alias</span>
+  </div>
+  <div class="two-col">
+    <div>
+      <p class="section-label">Definition</p>
+      <pre><span class="kw">from</span> typing <span class="kw">import</span> <span class="cls">Literal</span>
+
+<span class="cls">DatasetSource</span> = <span class="cls">Literal</span>[<span class="str">"rminer"</span>, <span class="str">"swe"</span>, <span class="str">"tdd"</span>]</pre>
+    </div>
+    <div>
+      <p class="section-label">Values</p>
+      <div class="box">
+        <table class="fields">
+          <thead><tr><th>Value</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name">"rminer"</td><td class="field-desc">RefactoringMiner oracle — commit-level refactoring ground truth (manifest.json)</td></tr>
+            <tr><td class="field-name">"swe"</td><td class="field-desc">SWE-Refactor — before/after Java class pairs</td></tr>
+            <tr><td class="field-name">"tdd"</td><td class="field-desc">Technical Debt Dataset v2 — SonarQube issue lifecycle (planned, not yet implemented)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EvalSample -->
+<section class="slide slide--model">
+  <div class="slide-header">
+    <div class="sh-left">
+      <h2>EvalSample</h2>
+      <span class="file-path">smellai_datasets/schema.py · line 25</span>
+      <p class="model-desc">
+        The <strong>central model</strong>. One frozen Pydantic record that every dataset loader must produce.
+        Its shape mirrors the MLflow GenAI <code>evaluate()</code> contract.
+        A single agent can consume all three dataset sources without branching on raw formats.
+      </p>
+    </div>
+    <span class="tag tag--pydantic">Pydantic BaseModel</span>
+  </div>
+  <div class="two-col">
+    <div>
+      <p class="section-label">Fields</p>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">source</td><td class="field-type">DatasetSource</td><td class="field-desc">Dataset origin discriminator</td></tr>
+          <tr><td class="field-name">sample_id</td><td class="field-type">str</td><td class="field-desc">Stable unique ID; min 1 char. Format: <code>rminer:{pair_id}</code> or <code>swe:{pair_id}</code></td></tr>
+          <tr><td class="field-name">inputs</td><td class="field-type">dict[str, Any]</td><td class="field-desc">Context given to the LLM agent. Keys are source-specific (see right)</td></tr>
+          <tr><td class="field-name">expectations</td><td class="field-type">dict[str, Any]</td><td class="field-desc">Ground-truth for scoring</td></tr>
+          <tr><td class="field-name">tags</td><td class="field-type">dict[str, Any]</td><td class="field-desc">Metadata for MLflow filtering</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:12px;">
+        <pre><span class="cls">model_config</span> = <span class="fn">ConfigDict</span>(extra=<span class="str">"forbid"</span>, frozen=<span class="lit">True</span>)</pre>
+      </div>
+    </div>
+    <div>
+      <p class="section-label">Payload keys per source</p>
+      <div class="box">
+        <div style="margin-bottom:14px;">
+          <strong style="color:#fff;font-size:0.82rem;">inputs — rminer</strong>
+          <div style="font-family:monospace;font-size:0.78rem;color:var(--muted);margin-top:4px;">
+            pair_id · before_code · file_path · refactoring_types · refactoring_descriptions · diff_hunks · sonar_issues
+          </div>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#fff;font-size:0.82rem;">expectations — rminer</strong>
+          <div style="font-family:monospace;font-size:0.78rem;color:var(--muted);margin-top:4px;">
+            num_hunks · num_refactorings · diff_hunks · refactoring_types · refactoring_descriptions
+          </div>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#fff;font-size:0.82rem;">inputs — swe</strong>
+          <div style="font-family:monospace;font-size:0.78rem;color:var(--muted);margin-top:4px;">
+            project_name · commit_id · refactoring_type · file_path_before · file_path_after · class_before · source_before · jdk_version · compile_command
+          </div>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#fff;font-size:0.82rem;">expectations — swe</strong>
+          <div style="font-family:monospace;font-size:0.78rem;color:var(--muted);margin-top:4px;">class_after · source_after</div>
+        </div>
+        <div>
+          <strong style="color:#fff;font-size:0.82rem;">tags — swe</strong>
+          <div style="font-family:monospace;font-size:0.78rem;color:var(--muted);margin-top:4px;">is_pure · is_compound · has_tests</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════ DIVIDER 2: Dataset Layer ════════════════════════ -->
+<section class="slide slide--divider">
+  <div class="div-num">Part 2 of 7</div>
+  <h2>Dataset Layer</h2>
+  <p style="color:var(--muted);margin-top:8px;font-size:0.95rem;">
+    Raw source models that feed into <code>EvalSample</code>. Files: <code>rminer/diff_hunk.py</code>,
+    <code>swe_refactor/dataset.py</code>, <code>smellai_datasets/loaders.py</code>
+  </p>
+</section>
+
+<!-- DiffHunk -->
+<section class="slide slide--model">
+  <div class="slide-header">
+    <div class="sh-left">
+      <h2>DiffHunk</h2>
+      <span class="file-path">rminer/diff_hunk.py · line 8</span>
+      <p class="model-desc">
+        Canonical representation of one git diff hunk. Produced by <code>compute_diff_hunks_from_files()</code>
+        and embedded into <code>EvalSample.inputs["diff_hunks"]</code> as serialised dicts.
+        Re-exported from <code>smellai_datasets/models.py</code> for backward compatibility.
+      </p>
+    </div>
+    <span class="tag tag--pydantic">Pydantic BaseModel</span>
+  </div>
+  <div class="two-col">
+    <div>
+      <p class="section-label">Fields</p>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">old_start</td><td class="field-type">int</td><td class="field-desc">Starting line in old (before) file</td></tr>
+          <tr><td class="field-name">old_count</td><td class="field-type">int</td><td class="field-desc">Number of lines in old file</td></tr>
+          <tr><td class="field-name">new_start</td><td class="field-type">int</td><td class="field-desc">Starting line in new (after) file</td></tr>
+          <tr><td class="field-name">new_count</td><td class="field-type">int</td><td class="field-desc">Number of lines in new file</td></tr>
+          <tr><td class="field-name">removed_lines</td><td class="field-type">list[str]</td><td class="field-desc">Lines prefixed with <code>-</code></td></tr>
+          <tr><td class="field-name">added_lines</td><td class="field-type">list[str]</td><td class="field-desc">Lines prefixed with <code>+</code></td></tr>
+          <tr><td class="field-name">context_lines</td><td class="field-type">list[str]</td><td class="field-desc">Unchanged surrounding lines</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <p class="section-label">Definition</p>
+      <pre><span class="kw">class</span> <span class="cls">DiffHunk</span>(<span class="cls">BaseModel</span>):
+    old_start:     <span class="cls">int</span>
+    old_count:     <span class="cls">int</span>
+    new_start:     <span class="cls">int</span>
+    new_count:     <span class="cls">int</span>
+    removed_lines: <span class="cls">list</span>[<span class="cls">str</span>] = []
+    added_lines:   <span class="cls">list</span>[<span class="cls">str</span>] = []
+    context_lines: <span class="cls">list</span>[<span class="cls">str</span>] = []</pre>
+      <div style="margin-top:16px;">
+        <p class="section-label">Import</p>
+        <pre><span class="kw">from</span> rminer.diff_hunk <span class="kw">import</span> <span class="cls">DiffHunk</span>
+<span class="cmt"># or via backward-compat shim:</span>
+<span class="kw">from</span> smellai_datasets.models <span class="kw">import</span> <span class="cls">DiffHunk</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RefactoringRecord -->
+<section class="slide slide--model">
+  <div class="slide-header">
+    <div class="sh-left">
+      <h2>RefactoringRecord</h2>
+      <span class="file-path">swe_refactor/dataset.py · line 13</span>
+      <p class="model-desc">
+        One record from the SWE-Refactor <code>pure_refactoring_data.json</code>.
+        Used directly by the SWE evaluation agent. The <code>compileJDK</code> validator
+        normalises <code>1.8 → 8</code>.
+      </p>
+    </div>
+    <span class="tag tag--pydantic">Pydantic BaseModel</span>
+  </div>
+  <div class="two-col">
+    <div>
+      <p class="section-label">Core Fields</p>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">projectName</td><td class="field-type">str</td><td class="field-desc">e.g. "checkstyle"</td></tr>
+          <tr><td class="field-name">commitId</td><td class="field-type">str</td><td class="field-desc">Full commit hash</td></tr>
+          <tr><td class="field-name">type</td><td class="field-type">Literal[...]</td><td class="field-desc">One of 6 method-level refactoring types</td></tr>
+          <tr><td class="field-name">filePathBefore</td><td class="field-type">str</td><td class="field-desc">Source file path before</td></tr>
+          <tr><td class="field-name">filePathAfter</td><td class="field-type">str</td><td class="field-desc">Source file path after</td></tr>
+          <tr><td class="field-name">sourceCodeBeforeForWhole</td><td class="field-type">str</td><td class="field-desc">Full class source before</td></tr>
+          <tr><td class="field-name">sourceCodeAfterForWhole</td><td class="field-type">str</td><td class="field-desc">Full class source after</td></tr>
+          <tr><td class="field-name">compileJDK</td><td class="field-type">int</td><td class="field-desc">Coerced: 1.8 → 8</td></tr>
+          <tr><td class="field-name">compileCommand</td><td class="field-type">str</td><td class="field-desc">mvn or gradlew command</td></tr>
+          <tr><td class="field-name">hasTestC</td><td class="field-type">bool | None</td><td class="field-desc">Commit has test coverage</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <p class="section-label">Optional Fields</p>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">isPureRefactoring</td><td class="field-type">bool | None</td></tr>
+          <tr><td class="field-name">description</td><td class="field-type">str | None</td></tr>
+          <tr><td class="field-name">packageNameBefore</td><td class="field-type">str | None</td></tr>
+          <tr><td class="field-name">classNameBefore</td><td class="field-type">str | None</td></tr>
+          <tr><td class="field-name">methodNameBefore</td><td class="field-type">str | None</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:16px;">
+        <p class="section-label">Allowed type values</p>
+        <div class="box" style="font-family:monospace;font-size:0.78rem;color:var(--muted);line-height:2;">
+          Extract Method · Move Method · Inline Method<br>
+          Extract And Move Method · Move And Rename Method · Move And Inline Method
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Raw Row Dicts -->
+<section class="slide slide--model">
+  <div class="slide-header">
+    <div class="sh-left">
+      <h2>Raw Row Dicts</h2>
+      <span class="file-path">smellai_datasets/loaders.py</span>
+      <p class="model-desc">
+        Each loader builds <code>list[dict[str, Any]]</code> rows before constructing a
+        <code>pandas.DataFrame</code>. These are not typed classes — they live as inline dict
+        literals — but their shapes are fixed contracts.
+      </p>
+    </div>
+    <span class="tag tag--dict">Dict Schema</span>
+  </div>
+
+  <div class="dict-section">
+    <h3>RMiner Raw Row <span class="ds-source">load_rminer_raw_df · line 164</span></h3>
+    <table class="fields">
+      <thead><tr><th>Key</th><th>Type</th><th>Source JSON field</th></tr></thead>
+      <tbody>
+        <tr><td class="field-name">repository</td>    <td class="field-type">str</td>  <td class="field-desc">commit.repository</td></tr>
+        <tr><td class="field-name">commit_sha</td>    <td class="field-type">str</td>  <td class="field-desc">commit.sha1</td></tr>
+        <tr><td class="field-name">author</td>         <td class="field-type">str</td>  <td class="field-desc">commit.author</td></tr>
+        <tr><td class="field-name">time</td>           <td class="field-type">str</td>  <td class="field-desc">commit.time</td></tr>
+        <tr><td class="field-name">refactoring_type</td><td class="field-type">str</td><td class="field-desc">refactoring.type</td></tr>
+        <tr><td class="field-name">description</td>   <td class="field-type">str</td>  <td class="field-desc">refactoring.description</td></tr>
+        <tr><td class="field-name">validation</td>    <td class="field-type">str</td>  <td class="field-desc">"TP" (tp_only=True) or any value</td></tr>
+        <tr><td class="field-name">detection_tools</td><td class="field-type">str</td> <td class="field-desc">comma-joined list of tool names</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="dict-section" style="margin-top:28px;">
+    <h3>SWE-Refactor Raw Row <span class="ds-source">load_swe_raw_df · line 131</span></h3>
+    <table class="fields">
+      <thead><tr><th>Key</th><th>Type</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="field-name">pair_id</td>          <td class="field-type">str</td>  <td class="field-desc">uniqueId or commitId</td></tr>
+        <tr><td class="field-name">project_name</td>     <td class="field-type">str</td>  <td class="field-desc">projectName</td></tr>
+        <tr><td class="field-name">commit_id</td>        <td class="field-type">str</td>  <td class="field-desc">commitId</td></tr>
+        <tr><td class="field-name">refactoring_type</td> <td class="field-type">str</td>  <td class="field-desc">may contain "+" for compound</td></tr>
+        <tr><td class="field-name">file_path_before</td> <td class="field-type">str</td>  <td class="field-desc">filePathBefore</td></tr>
+        <tr><td class="field-name">file_path_after</td>  <td class="field-type">str</td>  <td class="field-desc">filePathAfter</td></tr>
+        <tr><td class="field-name">class_before</td>     <td class="field-type">str</td>  <td class="field-desc">sourceCodeBeforeForWhole</td></tr>
+        <tr><td class="field-name">class_after</td>      <td class="field-type">str</td>  <td class="field-desc">sourceCodeAfterForWhole</td></tr>
+        <tr><td class="field-name">source_before</td>    <td class="field-type">str</td>  <td class="field-desc">sourceCodeBeforeRefactoring (fragment)</td></tr>
+        <tr><td class="field-name">source_after</td>     <td class="field-type">str</td>  <td class="field-desc">sourceCodeAfterRefactoring (fragment)</td></tr>
+        <tr><td class="field-name">compile_command</td>  <td class="field-type">str</td>  <td class="field-desc">compileCommand</td></tr>
+        <tr><td class="field-name">is_compound</td>      <td class="field-type">bool</td> <td class="field-desc">"+" in refactoring_type</td></tr>
+        <tr><td class="field-name">is_pure</td>          <td class="field-type">bool</td> <td class="field-desc">isPureRefactoring flag</td></tr>
+        <tr><td class="field-name">has_tests</td>        <td class="field-type">bool</td> <td class="field-desc">hasTestC flag</td></tr>
+        <tr><td class="field-name">jdk_version</td>      <td class="field-type">int</td>  <td class="field-desc">coerced: 1.8 → 8</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ════════════════════ DIVIDER 3: RMiner Models ════════════════════════ -->
+<section class="slide slide--divider">
+  <div class="div-num">Part 3 of 7</div>
+  <h2>RMiner Models</h2>
+  <p style="color:var(--muted);margin-top:8px;font-size:0.95rem;">
+    Five Pydantic models for parsing and clustering RefactoringMiner data. <code>models/refactoring.py</code>
+  </p>
+</section>
+
+<!-- RefactoringLocation + Refactoring -->
+<section class="slide slide--model">
+  <div class="two-col">
+    <div>
+      <div class="slide-header" style="margin-bottom:20px;">
+        <div class="sh-left">
+          <h2>RefactoringLocation</h2>
+          <span class="file-path">models/refactoring.py · line 21</span>
+          <p class="model-desc">Precise file/line/column location of a code element before or after a refactoring.</p>
+        </div>
+        <span class="tag tag--pydantic">Pydantic</span>
+      </div>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">file_path</td>    <td class="field-type">str</td></tr>
+          <tr><td class="field-name">start_line</td>   <td class="field-type">int ≥ 1</td></tr>
+          <tr><td class="field-name">end_line</td>     <td class="field-type">int ≥ 1</td></tr>
+          <tr><td class="field-name">start_column</td> <td class="field-type">int | None</td></tr>
+          <tr><td class="field-name">end_column</td>   <td class="field-type">int | None</td></tr>
+          <tr><td class="field-name">code_element</td> <td class="field-type">str | None</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="slide-header" style="margin-bottom:20px;">
+        <div class="sh-left">
+          <h2>Refactoring</h2>
+          <span class="file-path">models/refactoring.py · line 57</span>
+          <p class="model-desc">One refactoring operation with type, description, validation status, and optional location info.</p>
+        </div>
+        <span class="tag tag--pydantic">Pydantic</span>
+      </div>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">type</td>                 <td class="field-type">str</td></tr>
+          <tr><td class="field-name">description</td>          <td class="field-type">str</td></tr>
+          <tr><td class="field-name">validation</td>           <td class="field-type">str | None</td></tr>
+          <tr><td class="field-name">comment</td>              <td class="field-type">str | None</td></tr>
+          <tr><td class="field-name">detection_tools</td>      <td class="field-type">str | None</td></tr>
+          <tr><td class="field-name">validators</td>           <td class="field-type">str | None</td></tr>
+          <tr><td class="field-name">left_side_locations</td>  <td class="field-type">list[RefactoringLocation]</td></tr>
+          <tr><td class="field-name">right_side_locations</td> <td class="field-type">list[RefactoringLocation]</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- RMinerCommit + CommitCluster + RefactoringStats -->
+<section class="slide slide--model">
+  <div class="three-col">
+    <div>
+      <div style="margin-bottom:16px;">
+        <h2 style="font-size:1.4rem;">RMinerCommit</h2>
+        <span class="file-path">models/refactoring.py · line 114</span>
+        <span class="tag tag--pydantic" style="display:inline-block;margin-top:6px;">Pydantic</span>
+      </div>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">id</td>              <td class="field-type">int</td></tr>
+          <tr><td class="field-name">repository</td>      <td class="field-type">str</td></tr>
+          <tr><td class="field-name">sha1</td>            <td class="field-type">str</td></tr>
+          <tr><td class="field-name">url</td>             <td class="field-type">str</td></tr>
+          <tr><td class="field-name">author</td>          <td class="field-type">str</td></tr>
+          <tr><td class="field-name">time</td>            <td class="field-type">str</td></tr>
+          <tr><td class="field-name">refactorings</td>    <td class="field-type">list[Refactoring]</td></tr>
+          <tr><td class="field-name">refDiffExecutionTime</td><td class="field-type">int | None</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div style="margin-bottom:16px;">
+        <h2 style="font-size:1.4rem;">CommitCluster</h2>
+        <span class="file-path">models/refactoring.py · line 155</span>
+        <span class="tag tag--pydantic" style="display:inline-block;margin-top:6px;">Pydantic</span>
+      </div>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">repository</td>    <td class="field-type">str</td></tr>
+          <tr><td class="field-name">commit_ids</td>    <td class="field-type">list[int]</td></tr>
+          <tr><td class="field-name">commits</td>       <td class="field-type">list[RMinerCommit]</td></tr>
+          <tr><td class="field-name">cluster_score</td> <td class="field-type">float 0–1</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div style="margin-bottom:16px;">
+        <h2 style="font-size:1.4rem;">RefactoringStats</h2>
+        <span class="file-path">models/refactoring.py · line 232</span>
+        <span class="tag tag--pydantic" style="display:inline-block;margin-top:6px;">Pydantic</span>
+      </div>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">total_commits</td>          <td class="field-type">int</td></tr>
+          <tr><td class="field-name">total_repositories</td>     <td class="field-type">int</td></tr>
+          <tr><td class="field-name">total_refactorings</td>     <td class="field-type">int</td></tr>
+          <tr><td class="field-name">refactoring_type_counts</td><td class="field-type">dict[str, int]</td></tr>
+          <tr><td class="field-name">validation_counts</td>      <td class="field-type">dict[str, int]</td></tr>
+          <tr><td class="field-name">top_repositories</td>       <td class="field-type">list[dict]</td></tr>
+          <tr><td class="field-name">clusters_found</td>         <td class="field-type">int</td></tr>
+          <tr><td class="field-name">clusters_detail</td>        <td class="field-type">list[dict]</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════ DIVIDER 4: SonarQube Layer ═════════════════════ -->
+<section class="slide slide--divider">
+  <div class="div-num">Part 4 of 7</div>
+  <h2>SonarQube Layer</h2>
+  <p style="color:var(--muted);margin-top:8px;font-size:0.95rem;">
+    Constant maps, issue normalisation, and tool schema.
+    <code>sonarqube/constants.py</code> · <code>sonarqube/commit_scan.py</code> · <code>sonarqube/tool.py</code>
+  </p>
+</section>
+
+<!-- RULE_NAME_MAP + SEVERITY_MAP -->
+<section class="slide slide--model">
+  <div class="slide-header">
+    <div class="sh-left">
+      <h2>RULE_NAME_MAP &amp; SEVERITY_MAP</h2>
+      <p class="model-desc">
+        Two module-level constant dicts. <code>RULE_NAME_MAP</code> lives in
+        <code>sonarqube/constants.py</code> and is re-exported by <code>commit_scan.py</code>.
+        <code>SEVERITY_MAP</code> is defined only in <code>commit_scan.py</code>.
+      </p>
+    </div>
+    <span class="tag tag--const">Constant Map</span>
+  </div>
+  <div class="two-col">
+    <div>
+      <p class="section-label">RULE_NAME_MAP — sonarqube/constants.py · line 3</p>
+      <div class="box">
+        <div class="kv-grid">
+          <span class="kv-key">"java:S1541"</span><span class="kv-val">Complex Method</span>
+          <span class="kv-key">"java:S138"</span> <span class="kv-val">Long Method</span>
+          <span class="kv-key">"java:S107"</span> <span class="kv-val">Long Parameter List</span>
+          <span class="kv-key">"java:S1067"</span><span class="kv-val">Conditional Complexity</span>
+          <span class="kv-key">"java:S1200"</span><span class="kv-val">God Class</span>
+          <span class="kv-key">"java:S110"</span> <span class="kv-val">Large Class</span>
+          <span class="kv-key">"java:S1871"</span><span class="kv-val">Duplicated Conditions</span>
+          <span class="kv-key">"java:S106"</span> <span class="kv-val">Print Statements</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="section-label">SEVERITY_MAP — sonarqube/commit_scan.py · line 36</p>
+      <div class="box">
+        <div class="kv-grid">
+          <span class="kv-key">"BLOCKER"</span>  <span class="kv-val">HIGH</span>
+          <span class="kv-key">"CRITICAL"</span> <span class="kv-val">HIGH</span>
+          <span class="kv-key">"MAJOR"</span>    <span class="kv-val">MEDIUM</span>
+          <span class="kv-key">"MINOR"</span>    <span class="kv-val">LOW</span>
+          <span class="kv-key">"INFO"</span>     <span class="kv-val">LOW</span>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:0.82rem;color:var(--muted);">
+        Note: <code>commit_scan.py</code> imports <code>RULE_NAME_MAP</code> from
+        <code>sonarqube.constants</code> and re-exports it via <code># noqa: F401</code>.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Normalized Issue + SonarScanArgs -->
+<section class="slide slide--model">
+  <div class="two-col">
+    <div>
+      <div class="slide-header" style="margin-bottom:20px;">
+        <div class="sh-left">
+          <h2>Normalized Issue</h2>
+          <span class="file-path">sonarqube/commit_scan.py · normalize_issue · line 278</span>
+          <p class="model-desc">Dict shape returned by <code>scan_commit</code> and <code>scan_commit_file</code>. Strips raw SonarQube API payload to evaluation-relevant fields.</p>
+        </div>
+        <span class="tag tag--dict">Dict Schema</span>
+      </div>
+      <table class="fields">
+        <thead><tr><th>Key</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">smell_type</td>   <td class="field-type">str</td>       <td class="field-desc">Human-readable via RULE_NAME_MAP; falls back to raw rule</td></tr>
+          <tr><td class="field-name">line</td>         <td class="field-type">int | None</td><td class="field-desc">Source line number</td></tr>
+          <tr><td class="field-name">severity</td>     <td class="field-type">str</td>       <td class="field-desc">"HIGH" | "MEDIUM" | "LOW"</td></tr>
+          <tr><td class="field-name">message</td>      <td class="field-type">str | None</td><td class="field-desc">SonarQube issue message</td></tr>
+          <tr><td class="field-name">rule</td>         <td class="field-type">str</td>       <td class="field-desc">Raw rule ID e.g. "java:S1541"</td></tr>
+          <tr><td class="field-name">raw_severity</td> <td class="field-type">str | None</td><td class="field-desc">Original SonarQube severity before mapping</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:12px;">
+        <p class="section-label">Return type of scan_commit</p>
+        <pre><span class="cls">dict</span>[<span class="cls">str</span>, <span class="cls">list</span>[<span class="cls">dict</span>[<span class="cls">str</span>, <span class="cls">Any</span>]]]
+<span class="cmt">#   ↑ file_path    ↑ normalized issues</span></pre>
+      </div>
+    </div>
+    <div>
+      <div class="slide-header" style="margin-bottom:20px;">
+        <div class="sh-left">
+          <h2>SonarScanArgs</h2>
+          <span class="file-path">sonarqube/tool.py · line 19</span>
+          <p class="model-desc">Input schema for the <code>scan_commit_smells</code> LangChain tool. Used by agents to call SonarQube scanning.</p>
+        </div>
+        <span class="tag tag--pydantic">Pydantic</span>
+      </div>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th><th>Default</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">repo_url</td>    <td class="field-type">str</td>              <td class="field-desc">required</td></tr>
+          <tr><td class="field-name">commit_sha</td>  <td class="field-type">str</td>              <td class="field-desc">required</td></tr>
+          <tr><td class="field-name">file_paths</td>  <td class="field-type">list[str] | None</td> <td class="field-desc">None → scan entire commit</td></tr>
+          <tr><td class="field-name">sonar_url</td>   <td class="field-type">str</td>              <td class="field-desc">"http://localhost:9000"</td></tr>
+          <tr><td class="field-name">cache_dir</td>   <td class="field-type">str | None</td>       <td class="field-desc">None</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════ DIVIDER 5: Analytics Persistence ════════════════ -->
+<section class="slide slide--divider">
+  <div class="div-num">Part 5 of 7</div>
+  <h2>Analytics Persistence</h2>
+  <p style="color:var(--muted);margin-top:8px;font-size:0.95rem;">
+    SQLModel ORM tables stored in <code>test_analytics.db</code> (SQLite). Separate from LangGraph state and MLflow.
+    <code>swe_refactor/persistence/models.py</code>
+  </p>
+</section>
+
+<!-- SmellAction -->
+<section class="slide slide--model">
+  <div class="slide-header">
+    <div class="sh-left">
+      <h2>SmellAction</h2>
+      <span class="file-path">swe_refactor/persistence/models.py · line 16</span>
+      <p class="model-desc">String enum used as the <code>action</code> field on <code>SmellEvent</code> to record the lifecycle transition of a smell instance.</p>
+    </div>
+    <span class="tag tag--enum">Enum</span>
+  </div>
+  <div class="two-col">
+    <div>
+      <pre><span class="kw">class</span> <span class="cls">SmellAction</span>(<span class="cls">str</span>, <span class="cls">Enum</span>):
+    DETECTED  = <span class="str">"detected"</span>   <span class="cmt"># found in current iteration</span>
+    RESOLVED  = <span class="str">"resolved"</span>   <span class="cmt"># completely removed</span>
+    CREATED   = <span class="str">"created"</span>    <span class="cmt"># introduced by refactoring</span>
+    PERSISTED = <span class="str">"persisted"</span>  <span class="cmt"># still exists (may have changed)</span></pre>
+    </div>
+    <div class="box" style="align-self:flex-start;">
+      <p style="font-size:0.85rem;color:var(--text);">
+        <strong style="color:#fff;">Lifecycle flow</strong><br><br>
+        Smell first appears → <code>DETECTED</code><br>
+        Refactoring eliminates it → <code>RESOLVED</code><br>
+        Refactoring introduces it → <code>CREATED</code><br>
+        Still present next iteration → <code>PERSISTED</code>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- SQLModel tables -->
+<section class="slide slide--model">
+  <div class="slide-header">
+    <div class="sh-left">
+      <h2>SQLModel Tables</h2>
+      <span class="file-path">swe_refactor/persistence/models.py · lines 25–151</span>
+      <p class="model-desc">Six ORM tables. All share <code>session_id</code> + <code>iteration</code> as the lookup key.</p>
+    </div>
+    <span class="tag tag--sqlmodel">SQLModel</span>
+  </div>
+  <div class="three-col">
+    <div>
+      <p class="section-label">ToolCall — line 25 · table: tool_calls</p>
+      <table class="fields">
+        <thead><tr><th>Column</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">session_id</td>  <td class="field-type">str (index)</td></tr>
+          <tr><td class="field-name">iteration</td>   <td class="field-type">int (index)</td></tr>
+          <tr><td class="field-name">node_name</td>   <td class="field-type">str</td></tr>
+          <tr><td class="field-name">tool_name</td>   <td class="field-type">str</td></tr>
+          <tr><td class="field-name">arguments</td>   <td class="field-type">str (JSON)</td></tr>
+          <tr><td class="field-name">result</td>      <td class="field-type">str | None</td></tr>
+          <tr><td class="field-name">duration_ms</td> <td class="field-type">float</td></tr>
+          <tr><td class="field-name">timestamp</td>   <td class="field-type">datetime</td></tr>
+        </tbody>
+      </table>
+
+      <p class="section-label" style="margin-top:16px;">SmellDependency — line 64 · table: smell_dependencies</p>
+      <table class="fields">
+        <thead><tr><th>Column</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">session_id</td>   <td class="field-type">str (index)</td></tr>
+          <tr><td class="field-name">iteration</td>    <td class="field-type">int</td></tr>
+          <tr><td class="field-name">source_smell</td> <td class="field-type">str (smell_id)</td></tr>
+          <tr><td class="field-name">target_smell</td> <td class="field-type">str (smell_id)</td></tr>
+          <tr><td class="field-name">relationship</td> <td class="field-type">"positive"|"negative"</td></tr>
+          <tr><td class="field-name">timestamp</td>    <td class="field-type">datetime</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <p class="section-label">SmellEvent — line 44 · table: smell_events</p>
+      <table class="fields">
+        <thead><tr><th>Column</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">session_id</td>  <td class="field-type">str (index)</td></tr>
+          <tr><td class="field-name">iteration</td>   <td class="field-type">int (index)</td></tr>
+          <tr><td class="field-name">smell_id</td>    <td class="field-type">str</td></tr>
+          <tr><td class="field-name">smell_type</td>  <td class="field-type">str</td></tr>
+          <tr><td class="field-name">severity</td>    <td class="field-type">str</td></tr>
+          <tr><td class="field-name">file_path</td>   <td class="field-type">str</td></tr>
+          <tr><td class="field-name">line_number</td> <td class="field-type">int</td></tr>
+          <tr><td class="field-name">action</td>      <td class="field-type">SmellAction</td></tr>
+          <tr><td class="field-name">timestamp</td>   <td class="field-type">datetime</td></tr>
+        </tbody>
+      </table>
+
+      <p class="section-label" style="margin-top:16px;">TokenUsage — line 104 · table: token_usage</p>
+      <table class="fields">
+        <thead><tr><th>Column</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">session_id</td>        <td class="field-type">str (index)</td></tr>
+          <tr><td class="field-name">iteration</td>         <td class="field-type">int (index)</td></tr>
+          <tr><td class="field-name">node_name</td>         <td class="field-type">str</td></tr>
+          <tr><td class="field-name">prompt_tokens</td>     <td class="field-type">int</td></tr>
+          <tr><td class="field-name">completion_tokens</td> <td class="field-type">int</td></tr>
+          <tr><td class="field-name">total_tokens</td>      <td class="field-type">int</td></tr>
+          <tr><td class="field-name">model</td>             <td class="field-type">str</td></tr>
+          <tr><td class="field-name">timestamp</td>         <td class="field-type">datetime</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <p class="section-label">RefactoringAttempt — line 82 · table: refactoring_attempts</p>
+      <table class="fields">
+        <thead><tr><th>Column</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">session_id</td>       <td class="field-type">str (index)</td></tr>
+          <tr><td class="field-name">iteration</td>        <td class="field-type">int (index)</td></tr>
+          <tr><td class="field-name">smell_id</td>         <td class="field-type">str</td></tr>
+          <tr><td class="field-name">refactoring_type</td> <td class="field-type">str</td></tr>
+          <tr><td class="field-name">outcome</td>          <td class="field-type">str</td></tr>
+          <tr><td class="field-name">retries</td>          <td class="field-type">int = 0</td></tr>
+          <tr><td class="field-name">smells_resolved</td>  <td class="field-type">int = 0</td></tr>
+          <tr><td class="field-name">smells_created</td>   <td class="field-type">int = 0</td></tr>
+          <tr><td class="field-name">code_diff</td>        <td class="field-type">str | None</td></tr>
+          <tr><td class="field-name">timestamp</td>        <td class="field-type">datetime</td></tr>
+        </tbody>
+      </table>
+
+      <p class="section-label" style="margin-top:16px;">TestRun — line 135 · table: test_runs</p>
+      <table class="fields">
+        <thead><tr><th>Column</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">session_id</td>   <td class="field-type">str (index)</td></tr>
+          <tr><td class="field-name">iteration</td>    <td class="field-type">int (index)</td></tr>
+          <tr><td class="field-name">total / passed / failed / errors / skipped</td><td class="field-type">int = 0</td></tr>
+          <tr><td class="field-name">duration</td>     <td class="field-type">float = 0.0</td></tr>
+          <tr><td class="field-name">success</td>      <td class="field-type">bool = True</td></tr>
+          <tr><td class="field-name">failed_tests</td> <td class="field-type">str | None (JSON)</td></tr>
+          <tr><td class="field-name">test_names</td>   <td class="field-type">str | None (JSON)</td></tr>
+          <tr><td class="field-name">timestamp</td>    <td class="field-type">datetime</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════ DIVIDER 6: Agent Layer ══════════════════════════ -->
+<section class="slide slide--divider">
+  <div class="div-num">Part 6 of 7</div>
+  <h2>Agent Layer</h2>
+  <p style="color:var(--muted);margin-top:8px;font-size:0.95rem;">
+    Dataclasses for test execution, Pydantic for LLM structured output, TypedDict for LangGraph state.
+  </p>
+</section>
+
+<!-- TestResult + TestCounts + TestRunSummary -->
+<section class="slide slide--model">
+  <div class="slide-header">
+    <div class="sh-left">
+      <h2>Java Test Dataclasses</h2>
+      <span class="file-path">agents/tools/java_test_tools.py · lines 22–59</span>
+      <p class="model-desc">Three plain dataclasses that form the test execution return hierarchy. <code>TestRunSummary</code> contains a list of <code>TestResult</code> and a <code>TestCounts</code>. Mirrored (without shared base) by <code>_TestCountsBase / TestRun</code> in the SQLModel persistence layer.</p>
+    </div>
+    <span class="tag tag--dataclass">Dataclass</span>
+  </div>
+  <div class="three-col">
+    <div>
+      <p class="section-label">TestResult — line 22</p>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">name</td>          <td class="field-type">str</td></tr>
+          <tr><td class="field-name">status</td>        <td class="field-type">Literal["PASS","FAIL","ERROR","SKIPPED"]</td></tr>
+          <tr><td class="field-name">duration</td>      <td class="field-type">float = 0.0</td></tr>
+          <tr><td class="field-name">error_message</td> <td class="field-type">str | None</td></tr>
+          <tr><td class="field-name">error_type</td>    <td class="field-type">str | None</td></tr>
+          <tr><td class="field-name">failure_trace</td> <td class="field-type">str | None</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <p class="section-label">TestCounts — line 34</p>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Default</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">total</td>   <td class="field-type">0</td></tr>
+          <tr><td class="field-name">passed</td>  <td class="field-type">0</td></tr>
+          <tr><td class="field-name">failed</td>  <td class="field-type">0</td></tr>
+          <tr><td class="field-name">errors</td>  <td class="field-type">0</td></tr>
+          <tr><td class="field-name">skipped</td> <td class="field-type">0</td></tr>
+          <tr><td class="field-name">duration</td><td class="field-type">0.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <p class="section-label">TestRunSummary — line 46</p>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">build_system</td> <td class="field-type">Literal["maven","gradle"]</td></tr>
+          <tr><td class="field-name">exit_code</td>    <td class="field-type">int = 0</td></tr>
+          <tr><td class="field-name">tests</td>        <td class="field-type">list[TestResult]</td></tr>
+          <tr><td class="field-name">stdout</td>       <td class="field-type">str = ""</td></tr>
+          <tr><td class="field-name">stderr</td>       <td class="field-type">str = ""</td></tr>
+          <tr><td class="field-name">counts</td>       <td class="field-type">TestCounts</td></tr>
+          <tr><td class="field-name">success</td>      <td class="field-type">@property → bool</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- RefactoringMapping + RefactoringMappingOutput + DependencyAnalysis -->
+<section class="slide slide--model">
+  <div class="three-col">
+    <div>
+      <div style="margin-bottom:16px;">
+        <h2 style="font-size:1.4rem;">RefactoringMapping</h2>
+        <span class="file-path">agents/rminer_eval/agent.py · line 27</span>
+        <span class="tag tag--pydantic" style="display:inline-block;margin-top:6px;">Pydantic</span>
+        <p style="font-size:0.82rem;color:var(--muted);margin-top:8px;">One LLM-predicted mapping between a refactoring index and a diff hunk index.</p>
+      </div>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">refactoring_index</td><td class="field-type">int</td></tr>
+          <tr><td class="field-name">hunk_index</td>       <td class="field-type">int</td></tr>
+          <tr><td class="field-name">reasoning</td>        <td class="field-type">str</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div style="margin-bottom:16px;">
+        <h2 style="font-size:1.4rem;">RefactoringMappingOutput</h2>
+        <span class="file-path">agents/rminer_eval/agent.py · line 35</span>
+        <span class="tag tag--pydantic" style="display:inline-block;margin-top:6px;">Pydantic</span>
+        <p style="font-size:0.82rem;color:var(--muted);margin-top:8px;">Complete structured LLM output from the mapping agent.</p>
+      </div>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">analysis</td><td class="field-type">str</td></tr>
+          <tr><td class="field-name">mappings</td><td class="field-type">list[RefactoringMapping]</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div style="margin-bottom:16px;">
+        <h2 style="font-size:1.4rem;">DependencyAnalysis</h2>
+        <span class="file-path">agents/dependency_analysis/agent.py · line 13</span>
+        <span class="tag tag--pydantic" style="display:inline-block;margin-top:6px;">Pydantic</span>
+        <p style="font-size:0.82rem;color:var(--muted);margin-top:8px;">Positive/negative dependency lists for one smell type. Used by the prioritizer.</p>
+      </div>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">smell_type</td>             <td class="field-type">str</td></tr>
+          <tr><td class="field-name">rule_id</td>                <td class="field-type">str</td></tr>
+          <tr><td class="field-name">positive_dependencies</td>  <td class="field-type">list[str]</td></tr>
+          <tr><td class="field-name">negative_dependencies</td>  <td class="field-type">list[str]</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- SWEEvalState -->
+<section class="slide slide--model">
+  <div class="slide-header">
+    <div class="sh-left">
+      <h2>SWEEvalState</h2>
+      <span class="file-path">agents/swe_eval/agent.py · line 39</span>
+      <p class="model-desc">
+        LangGraph state TypedDict for the SWE evaluation agent. Covers both
+        <strong>basic mode</strong> (single refactoring) and <strong>composite mode</strong>
+        (iterative multi-smell refactoring). The <code>messages</code> field
+        uses <code>add_messages</code> reducer for automatic history management.
+      </p>
+    </div>
+    <span class="tag tag--typeddict">TypedDict</span>
+  </div>
+  <div class="two-col">
+    <div>
+      <p class="section-label">Basic mode fields</p>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">messages</td>              <td class="field-type">Annotated[list[BaseMessage], add_messages]</td></tr>
+          <tr><td class="field-name">record</td>                <td class="field-type">RefactoringRecord</td></tr>
+          <tr><td class="field-name">workspace_path</td>        <td class="field-type">Path</td></tr>
+          <tr><td class="field-name">project_path</td>          <td class="field-type">Path</td></tr>
+          <tr><td class="field-name">refactored_code</td>       <td class="field-type">str | None</td></tr>
+          <tr><td class="field-name">refactored_target_code</td><td class="field-type">str | None</td></tr>
+          <tr><td class="field-name">compile_success</td>       <td class="field-type">bool</td></tr>
+          <tr><td class="field-name">test_success</td>          <td class="field-type">bool</td></tr>
+          <tr><td class="field-name">retry_count</td>           <td class="field-type">int</td></tr>
+          <tr><td class="field-name">error_message</td>         <td class="field-type">str | None</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <p class="section-label">Composite mode fields (additional)</p>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type / Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">detected_smells</td>       <td class="field-type">list[SmellEvent] — A1 output</td></tr>
+          <tr><td class="field-name">smell_graph</td>           <td class="field-type">nx.DiGraph | None — A2</td></tr>
+          <tr><td class="field-name">priority_queue</td>        <td class="field-type">list[str] — sorted smell_ids</td></tr>
+          <tr><td class="field-name">current_smell</td>         <td class="field-type">str | None — A3 selection</td></tr>
+          <tr><td class="field-name">refactoring_type</td>      <td class="field-type">str | None — A4 mapping</td></tr>
+          <tr><td class="field-name">refactoring_iteration</td> <td class="field-type">int — loop counter</td></tr>
+          <tr><td class="field-name">max_refactorings</td>      <td class="field-type">int — N-action limit</td></tr>
+          <tr><td class="field-name">initial_smells</td>        <td class="field-type">list[SmellEvent] — iteration 0 snapshot</td></tr>
+          <tr><td class="field-name">smells_resolved_count</td> <td class="field-type">int</td></tr>
+          <tr><td class="field-name">smells_created_count</td>  <td class="field-type">int</td></tr>
+          <tr><td class="field-name">refactoring_history</td>   <td class="field-type">list[dict]</td></tr>
+          <tr><td class="field-name">session_id</td>            <td class="field-type">str — thread_id from LangGraph</td></tr>
+          <tr><td class="field-name">analytics_db</td>          <td class="field-type">AnalyticsDB | None</td></tr>
+          <tr><td class="field-name">sonar_url</td>             <td class="field-type">str</td></tr>
+          <tr><td class="field-name">sonar_cache_dir</td>       <td class="field-type">str | None</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════ DIVIDER 7: Utilities ════════════════════════════ -->
+<section class="slide slide--divider">
+  <div class="div-num">Part 7 of 7</div>
+  <h2>Utilities</h2>
+  <p style="color:var(--muted);margin-top:8px;font-size:0.95rem;">
+    Lightweight dataclasses used for build results and smell prioritization.
+  </p>
+</section>
+
+<!-- CompileResult + SmellInstance -->
+<section class="slide slide--model">
+  <div class="two-col">
+    <div>
+      <div class="slide-header" style="margin-bottom:20px;">
+        <div class="sh-left">
+          <h2>CompileResult</h2>
+          <span class="file-path">swe_refactor/utils/build_util.py · line 13</span>
+          <p class="model-desc">
+            Result of a Java compilation attempt via <code>compile_project()</code>.
+            On Gradle failure, the function tries 4 fallback commands before setting
+            <code>success=False</code>. Caller must check <code>result.success</code>.
+          </p>
+        </div>
+        <span class="tag tag--dataclass">Dataclass</span>
+      </div>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">success</td>       <td class="field-type">bool</td>           <td class="field-desc">True if compilation succeeded</td></tr>
+          <tr><td class="field-name">command</td>       <td class="field-type">str</td>           <td class="field-desc">Actual command used (may differ from input)</td></tr>
+          <tr><td class="field-name">stdout</td>        <td class="field-type">str</td>           <td class="field-desc">Build stdout</td></tr>
+          <tr><td class="field-name">stderr</td>        <td class="field-type">str</td>           <td class="field-desc">Build stderr</td></tr>
+          <tr><td class="field-name">error_summary</td> <td class="field-type">list[str] | None</td><td class="field-desc">First 20 [ERROR] lines extracted via regex</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="slide-header" style="margin-bottom:20px;">
+        <div class="sh-left">
+          <h2>SmellInstance</h2>
+          <span class="file-path">scripts/prioritize_smells.py · line 38</span>
+          <p class="model-desc">
+            In-memory smell used by <code>SmellPrioritizer</code>. Has a
+            <code>severity_score</code> property that maps severity strings to 1–3
+            for the PZ prioritization formula.
+          </p>
+        </div>
+        <span class="tag tag--dataclass">Dataclass</span>
+      </div>
+      <table class="fields">
+        <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">id</td>          <td class="field-type">str</td>  <td class="field-desc">Unique smell identifier</td></tr>
+          <tr><td class="field-name">smell_type</td>  <td class="field-type">str</td>  <td class="field-desc">e.g. "Long Method"</td></tr>
+          <tr><td class="field-name">location</td>    <td class="field-type">str</td>  <td class="field-desc">e.g. "com.example.MyClass.myMethod"</td></tr>
+          <tr><td class="field-name">severity</td>    <td class="field-type">str</td>  <td class="field-desc">HIGH / MEDIUM / LOW</td></tr>
+          <tr><td class="field-name">description</td> <td class="field-type">str = ""</td><td class="field-desc">Optional description</td></tr>
+          <tr><td class="field-name">severity_score</td><td class="field-type">@property → int 1–3</td><td class="field-desc">BLOCKER/CRITICAL/HIGH→3, MAJOR/MEDIUM→2, else→1</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Data Flow summary -->
+<section class="slide">
+  <h2>End-to-End Data Flow</h2>
+  <p style="color:var(--muted);font-size:0.9rem;margin-top:8px;margin-bottom:32px;">
+    Three heterogeneous raw sources → one unified EvalSample shape consumed by agents.
+  </p>
+
+  <div style="margin-bottom:24px;">
+    <p class="section-label" style="margin-bottom:10px;">RMiner path</p>
+    <div class="flow">
+      <div class="flow-node"><div class="fn-name">manifest.json</div><div class="fn-type">raw file</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="fn-name">DiffHunk[]</div><div class="fn-type">Pydantic</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="fn-name">rminer_sample()</div><div class="fn-type">schema.py</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="fn-name">EvalSample</div><div class="fn-type">source="rminer"</div></div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:24px;">
+    <p class="section-label" style="margin-bottom:10px;">SWE-Refactor path</p>
+    <div class="flow">
+      <div class="flow-node"><div class="fn-name">JSON records</div><div class="fn-type">raw file</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="fn-name">SWE Raw Row</div><div class="fn-type">dict[str,Any]</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="fn-name">DataFrame</div><div class="fn-type">pd.DataFrame</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="fn-name">EvalSample</div><div class="fn-type">source="swe"</div></div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:24px;">
+    <p class="section-label" style="margin-bottom:10px;">SonarQube scanner path (runtime)</p>
+    <div class="flow">
+      <div class="flow-node"><div class="fn-name">Git repo</div><div class="fn-type">commit SHA</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="fn-name">sonar-scanner</div><div class="fn-type">CLI subprocess</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="fn-name">SonarQube API</div><div class="fn-type">raw issues</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="fn-name">normalize_issue</div><div class="fn-type">dict[str,Any]</div></div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:40px;">
+    <p class="section-label" style="margin-bottom:10px;">SWE composite agent persistence path</p>
+    <div class="flow">
+      <div class="flow-node"><div class="fn-name">SWEEvalState</div><div class="fn-type">TypedDict</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="fn-name">SmellEvent[]</div><div class="fn-type">SQLModel</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="fn-name">RefactoringAttempt</div><div class="fn-type">SQLModel</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="fn-name">test_analytics.db</div><div class="fn-type">SQLite</div></div>
+    </div>
+  </div>
+
+  <div class="box" style="border-left:3px solid var(--accent);">
+    <p style="font-size:0.88rem;color:var(--text);">
+      <strong style="color:#fff;">Two-layer design</strong><br>
+      Per-source DataFrames hold raw source-specific rows (no Pydantic overhead).
+      Only at the evaluation boundary are rows promoted to <code>EvalSample</code>.
+      Analytics persistence (<code>SmellEvent</code>, <code>RefactoringAttempt</code>, etc.)
+      is a parallel write path from the LangGraph agent — separate from both LangGraph
+      checkpoints and MLflow tracking.
+    </p>
+  </div>
+</section>
+
+</body>
+</html>

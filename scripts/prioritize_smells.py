@@ -17,12 +17,14 @@ Usage:
 import argparse
 import json
 import logging
+from collections import Counter
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Callable, Dict, List, Any
 
 import networkx as nx
 
 from agents.dependency_analysis.agent import DEPENDENCY_RULES
+from agents.dependency_analysis.scorer import STANDARD_SCORE, ScoringContext
 from swe_refactor.persistence.models import SmellEvent, SmellAction
 
 # Configure logging
@@ -132,24 +134,23 @@ class SmellPrioritizer:
                             smell_a.smell_id, smell_b.smell_id, type="negative", color="red"
                         )
 
-    def calculate_priorities(self) -> List[Dict[str, Any]]:
-        """
-        Calculates the priority sequence based on PZ (Positive Impact).
-        PZ = Intrinsic Severity + Impact on other smells (Out-degree weights).
+    def calculate_priorities(
+        self, score_fn: Callable = STANDARD_SCORE
+    ) -> List[Dict[str, Any]]:
+        """Greedy planner: at each step picks the highest-scoring available smell.
+
+        Implements Algorithm 1 from the paper using the spec formula (Eq. 2):
+          P_i^conc = f_i · w_sev · sev(s_i) + Σpos_out^conc − w_neg · Σneg_out^abs
+
+        score_fn can be swapped for experiments via scorer() from scorer.py.
 
         # TODO SPEC-010: Implement cycle detection mechanism and max-step limit.
         # If refactoring A creates smell B, and refactoring B creates smell A,
         # mark as outlier and prevent infinite loops.
         # HIGH priority.
         # (See TECHNICAL_SPECIFICATION.md §4.4)
-
-        # TODO SPEC-011: Investigate Airflow capabilities for handling problematic cyclic dependencies.
-        # Research whether Airflow can help manage cyclic dependency situations.
-        # LOW priority.
-        # (See TECHNICAL_SPECIFICATION.md §4.4)
         """
-        # We will simulate the "remove max PZ" process
-
+        freq_map = Counter(s.smell_type for s in self.smells)
         working_graph = self.graph.copy()
         sequence = []
 
@@ -157,52 +158,45 @@ class SmellPrioritizer:
             scores = {}
             for node in working_graph.nodes():
                 smell = working_graph.nodes[node]["data"]
+                pos_out = sum(
+                    1 for _, _, d in working_graph.out_edges(node, data=True)
+                    if d.get("type") == "positive"
+                )
+                neg_out = sum(
+                    1 for _, _, d in working_graph.out_edges(node, data=True)
+                    if d.get("type") == "negative"
+                )
+                ctx = ScoringContext(
+                    freq=freq_map[smell.smell_type],
+                    pos_out=pos_out,
+                    neg_out=neg_out,
+                )
+                scores[node] = score_fn(smell, ctx)
 
-                # Base Score (Intrinsic)
-                pz = smell.severity_score
-
-                # Impact Score (Dependencies)
-                # Count outgoing POSITIVE edges in the CURRENT graph
-                impact_count = 0
-                for _, _, data in working_graph.out_edges(node, data=True):
-                    if data.get("type") == "positive":
-                        impact_count += 1
-
-                # We can weight the impact. Let's say helping another smell is worth 2 points.
-                pz += impact_count * 2
-
-                scores[node] = pz
-
-            # Find max PZ
             if not scores:
                 break
 
             best_node = max(scores, key=scores.get)
-            best_score = scores[best_node]
             best_smell = working_graph.nodes[best_node]["data"]
-
-            # Count impacts for reporting
-            positive_impacts = 0
-            negative_impacts = 0
-            for _, _, data in working_graph.out_edges(best_node, data=True):
-                if data.get("type") == "positive":
-                    positive_impacts += 1
-                elif data.get("type") == "negative":
-                    negative_impacts += 1
-
-            sequence.append(
-                {
-                    "order": len(sequence) + 1,
-                    "smell_id": best_node,
-                    "smell_type": best_smell.smell_type,
-                    "location": best_smell.location,
-                    "pz_score": best_score,
-                    "positive_impacts": positive_impacts,
-                    "negative_impacts": negative_impacts,
-                }
+            pos_impacts = sum(
+                1 for _, _, d in working_graph.out_edges(best_node, data=True)
+                if d.get("type") == "positive"
+            )
+            neg_impacts = sum(
+                1 for _, _, d in working_graph.out_edges(best_node, data=True)
+                if d.get("type") == "negative"
             )
 
-            # Remove from graph
+            sequence.append({
+                "order": len(sequence) + 1,
+                "smell_id": best_node,
+                "smell_type": best_smell.smell_type,
+                "location": best_smell.location,
+                "pz_score": scores[best_node],
+                "positive_impacts": pos_impacts,
+                "negative_impacts": neg_impacts,
+            })
+
             working_graph.remove_node(best_node)
 
         return sequence
