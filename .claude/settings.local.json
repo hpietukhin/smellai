@@ -76,7 +76,13 @@
       "Bash($PY -c \"import sys; lines=sys.stdin.readlines\\(\\); [print\\(l,end=''''''''\\) for l in lines[:120]]\" echo done)",
       "Bash(presenterm -h)",
       "Bash(presenterm /Users/havriil.pietukhin/uni/masterThesis/code/smellai/docs/development/onboarding.md --validate-overflows)",
-      "Bash(git worktree:*)"
+      "Bash(git worktree:*)",
+      "Skill(update-config)",
+      "Bash(mkdir -p scripts/viz scripts/rminer)",
+      "Bash(mv scripts/dashboard.py scripts/viz/)",
+      "Bash(mv scripts/run_visualizer.py scripts/viz/)",
+      "Bash(mv scripts/visualize_analytics.py scripts/viz/)",
+      "Bash(mv scripts/extract_compound_refactorings.py scripts/viz/)"
     ],
     "deny": []
   },
