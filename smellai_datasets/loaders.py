@@ -22,6 +22,7 @@ import pandas as pd
 from pydantic import TypeAdapter
 
 from .schema import DatasetSource, EvalSample, rminer_sample
+from swe_refactor.dataset import RefactoringRecord
 
 # ---------------------------------------------------------------------------
 # Default dataset path resolution
@@ -74,12 +75,6 @@ def _require(path: Path | None, label: str) -> Path:
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-def _coerce_jdk(value: Any) -> int:
-    if value is None:
-        return 11
-    if isinstance(value, float) and value == 1.8:
-        return 8
-    return int(round(float(value)))
 
 
 def _load_swe_raw_jsons(path: Path) -> list[dict]:
@@ -132,30 +127,35 @@ def load_swe_raw_df(path: Path | None = None) -> pd.DataFrame:
     """Load the raw SWE-Refactor JSON into a normalised DataFrame.
 
     One row per refactoring pair with all relevant columns.
+    Field mapping and JDK coercion are delegated to RefactoringRecord.
     """
     resolved = _require(_resolve_swe_path(path), "SWE-Refactor JSON")
-    records = _load_swe_raw_jsons(resolved)
+    raw_records = _load_swe_raw_jsons(resolved)
 
     rows: list[dict[str, Any]] = []
-    for rec in records:
-        refactoring_type = rec.get("type", "")
+    for raw in raw_records:
+        try:
+            r = RefactoringRecord.model_validate(raw)
+        except Exception:
+            continue
+        refactoring_type = r.type
         rows.append(
             {
-                "pair_id": rec.get("uniqueId") or rec.get("commitId", ""),
-                "project_name": rec.get("projectName", ""),
-                "commit_id": rec.get("commitId", ""),
+                "pair_id": raw.get("uniqueId") or r.commitId,
+                "project_name": r.projectName,
+                "commit_id": r.commitId,
                 "refactoring_type": refactoring_type,
-                "file_path_before": rec.get("filePathBefore", ""),
-                "file_path_after": rec.get("filePathAfter", ""),
-                "class_before": rec.get("sourceCodeBeforeForWhole", ""),
-                "class_after": rec.get("sourceCodeAfterForWhole", ""),
-                "source_before": rec.get("sourceCodeBeforeRefactoring", ""),
-                "source_after": rec.get("sourceCodeAfterRefactoring", ""),
-                "compile_command": rec.get("compileCommand", ""),
+                "file_path_before": r.filePathBefore,
+                "file_path_after": r.filePathAfter,
+                "class_before": r.sourceCodeBeforeForWhole,
+                "class_after": r.sourceCodeAfterForWhole,
+                "source_before": raw.get("sourceCodeBeforeRefactoring", ""),
+                "source_after": raw.get("sourceCodeAfterRefactoring", ""),
+                "compile_command": r.compileCommand,
                 "is_compound": "+" in refactoring_type,
-                "is_pure": bool(rec.get("isPureRefactoring", False)),
-                "has_tests": bool(rec.get("hasTestC", False)),
-                "jdk_version": _coerce_jdk(rec.get("compileJDK")),
+                "is_pure": bool(r.isPureRefactoring),
+                "has_tests": bool(r.hasTestC),
+                "jdk_version": r.compileJDK,
             }
         )
     return pd.DataFrame(rows)

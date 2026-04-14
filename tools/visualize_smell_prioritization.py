@@ -28,7 +28,6 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from scripts.prioritize_smells import (
     SmellPrioritizer,
-    SmellInstance,
     generate_sample_data,
     smell_json_to_instances,
 )
@@ -49,7 +48,7 @@ logger = logging.getLogger(__name__)
 
 class PrioritizationVisualizer:
     def __init__(self):
-        self.smells: List[SmellInstance] = []
+        self.smells = []
         self.prioritizer: SmellPrioritizer | None = None
         self.sequence: List[Dict[str, Any]] = []
         self.chart = None
@@ -189,18 +188,7 @@ class PrioritizationVisualizer:
         # Filter only "detected" events for this iteration
         detected_events = [e for e in events if e.action.value == "detected"]
 
-        # Convert to SmellInstance format
-        self.smells = []
-        for event in detected_events:
-            self.smells.append(
-                SmellInstance(
-                    id=event.smell_id,
-                    smell_type=event.smell_type,
-                    location=f"{event.file_path}:{event.line_number}",
-                    severity=event.severity,
-                    description=f"{event.smell_type} at {event.file_path}:{event.line_number}",
-                )
-            )
+        self.smells = list(detected_events)
 
         # Rebuild prioritization graph
         if self.smells:

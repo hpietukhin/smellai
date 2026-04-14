@@ -1,8 +1,5 @@
 """Prompt templates for refactoring generation by type."""
 
-from typing import Literal
-
-
 SYSTEM_PROMPT = """You are an expert Java refactoring assistant.
 
 Your task is to apply a specific refactoring to Java code while preserving behavior.
@@ -18,14 +15,7 @@ Key requirements:
 
 
 def get_refactoring_prompt(
-    refactoring_type: Literal[
-        "Extract Method",
-        "Move Method",
-        "Inline Method",
-        "Extract And Move Method",
-        "Move And Rename Method",
-        "Move And Inline Method",
-    ],
+    refactoring_type: str,
     source_code_before: str,
     target_code_before: str | None,
     file_path_before: str,

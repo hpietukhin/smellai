@@ -45,20 +45,37 @@ class SmellEvent(SQLModel, table=True):
     """Records smell detection/resolution events during workflow.
 
     Each event represents a state change for a specific smell instance.
+    session_id and iteration default to "" / 0 so the model can be used
+    as a plain in-memory value without a database context (e.g. in SmellPrioritizer).
     """
 
     __tablename__ = "smell_events"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    session_id: str = Field(index=True)
-    iteration: int = Field(index=True)
+    session_id: str = Field(default="", index=True)
+    iteration: int = Field(default=0, index=True)
     smell_id: str  # Composite key: {type}:{file}:{line}
     smell_type: str  # "Long Method", "God Class", etc.
     severity: str  # "HIGH", "MEDIUM", "LOW" (normalized from SonarQube)
     file_path: str
-    line_number: int
-    action: SmellAction
+    line_number: int = Field(default=0)
+    action: SmellAction = Field(default=SmellAction.DETECTED)
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+    @property
+    def location(self) -> str:
+        """Composite location string used by SmellPrioritizer."""
+        return f"{self.file_path}:{self.line_number}"
+
+    @property
+    def severity_score(self) -> int:
+        """Numeric severity for PZ prioritization formula (1–3)."""
+        s = self.severity.upper()
+        if s in ("BLOCKER", "CRITICAL", "HIGH"):
+            return 3
+        if s in ("MAJOR", "MEDIUM"):
+            return 2
+        return 1
 
 
 class SmellDependency(SQLModel, table=True):

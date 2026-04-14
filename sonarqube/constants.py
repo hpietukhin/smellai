@@ -1,5 +1,13 @@
 """Shared SonarQube constants used across agents and scanning scripts."""
 
+SEVERITY_MAP: dict[str, str] = {
+    "BLOCKER": "HIGH",
+    "CRITICAL": "HIGH",
+    "MAJOR": "MEDIUM",
+    "MINOR": "LOW",
+    "INFO": "LOW",
+}
+
 RULE_NAME_MAP = {
     "java:S1541": "Complex Method",
     "java:S138": "Long Method",

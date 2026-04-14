@@ -447,7 +447,7 @@ def create_swe_eval_agent(
 
     def a2_prioritize_smells(state: SWEEvalState) -> dict:
         """A2: Prioritize smells using dependency analysis."""
-        from scripts.prioritize_smells import SmellPrioritizer, smell_events_to_instances
+        from scripts.prioritize_smells import SmellPrioritizer
 
         detected_smells = state.get("detected_smells", [])
 
@@ -457,10 +457,7 @@ def create_swe_eval_agent(
 
         LOGGER.info("A2: Prioritizing %d smells", len(detected_smells))
 
-        # Convert SmellEvent to SmellInstance format
-        smell_instances = smell_events_to_instances(detected_smells)
-
-        prioritizer = SmellPrioritizer(smell_instances)
+        prioritizer = SmellPrioritizer(detected_smells)
 
         # Get priority queue (sorted by PZ score descending)
         priority_sequence = prioritizer.calculate_priorities()

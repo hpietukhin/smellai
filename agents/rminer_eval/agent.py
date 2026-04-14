@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Annotated, List
+from typing import Annotated, List, TypedDict
 
 from langchain_core.messages import BaseMessage
 from langchain_litellm import ChatLiteLLM
@@ -39,7 +39,7 @@ class RefactoringMappingOutput(BaseModel):
     mappings: List[RefactoringMapping] = Field(description="Mappings")
 
 
-class RMinerEvalState(dict):
+class RMinerEvalState(TypedDict):
     """State for RMiner evaluation agent.
 
     # TODO SPEC-003: Add simple persistence mechanism for long-running workflows.

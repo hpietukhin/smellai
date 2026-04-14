@@ -27,19 +27,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-from sonarqube.constants import RULE_NAME_MAP  # noqa: F401 (re-exported for callers)
-
-# TODO SPEC-012: Verify this severity mapping table exists in codebase and document exact location.
-# Mapping shown in specification but location needs verification.
-# LOW priority - informational verification task.
-# (See TECHNICAL_SPECIFICATION.md §5.1)
-SEVERITY_MAP = {
-    "BLOCKER": "HIGH",
-    "CRITICAL": "HIGH",
-    "MAJOR": "MEDIUM",
-    "MINOR": "LOW",
-    "INFO": "LOW",
-}
+from sonarqube.constants import RULE_NAME_MAP, SEVERITY_MAP  # noqa: F401 (re-exported for callers)
 
 
 def run_command(

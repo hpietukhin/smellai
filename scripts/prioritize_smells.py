@@ -19,86 +19,53 @@ import json
 import logging
 from pathlib import Path
 from typing import Dict, List, Any
-from dataclasses import dataclass
 
 import networkx as nx
 
 from agents.dependency_analysis.agent import DEPENDENCY_RULES
+from swe_refactor.persistence.models import SmellEvent, SmellAction
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 LOGGER = logging.getLogger(__name__)
 
 # -----------------------------------------------------------------------------
-# Data Models
+# Data Model: SmellEvent (imported from swe_refactor.persistence.models)
 # -----------------------------------------------------------------------------
+# SmellEvent is used directly — no separate SmellInstance class.
+# In-memory use: SmellEvent(smell_id=..., smell_type=..., file_path=..., severity=...)
+# DB use: same model with session_id/iteration/action populated before saving.
 
 
-@dataclass
-class SmellInstance:
-    id: str
-    smell_type: str
-    location: str  # e.g., "com.example.MyClass" or "com.example.MyClass.myMethod"
-    severity: str  # HIGH, MEDIUM, LOW
-    description: str = ""
-
-    @property
-    def severity_score(self) -> int:
-        # Map severity strings to numeric scores
-        # Handle "critical", "major", "minor" from manifest as well
-        s = self.severity.upper()
-        if s in ["BLOCKER", "CRITICAL", "HIGH"]:
-            return 3
-        elif s in ["MAJOR", "MEDIUM"]:
-            return 2
-        else:
-            return 1
-
-
-def smell_json_to_instances(data: Any) -> "List[SmellInstance]":
-    """Parse SmellInstance list from JSON data (smells_manifest or flat list format)."""
-    smells: List[SmellInstance] = []
+def smell_json_to_instances(data: Any) -> "List[SmellEvent]":
+    """Parse SmellEvent list from JSON data (smells_manifest or flat list format)."""
+    smells: List[SmellEvent] = []
     if isinstance(data, dict) and "files" in data:
         for file_entry in data["files"]:
             filename = file_entry.get("filename", "UnknownFile")
             for i, smell in enumerate(file_entry.get("smells", [])):
-                smell_id = f"{filename}_{i}_{smell.get('type').replace(' ', '')}"
-                loc = f"{filename}:{smell.get('location', '')}"
+                smell_id = f"{filename}_{i}_{smell.get('type', '').replace(' ', '')}"
                 smells.append(
-                    SmellInstance(
-                        id=smell_id,
+                    SmellEvent(
+                        smell_id=smell_id,
                         smell_type=smell.get("type", "Unknown"),
-                        location=loc,
+                        file_path=filename,
+                        line_number=int(smell.get("location", 0) or 0),
                         severity=smell.get("severity", "LOW"),
-                        description=smell.get("description", ""),
                     )
                 )
     elif isinstance(data, list):
         for item in data:
             smells.append(
-                SmellInstance(
-                    id=str(item.get("id", len(smells) + 1)),
+                SmellEvent(
+                    smell_id=str(item.get("id", len(smells) + 1)),
                     smell_type=item.get("smell_type", "Unknown"),
-                    location=item.get("location", "Unknown"),
+                    file_path=item.get("location", "Unknown"),
+                    line_number=0,
                     severity=item.get("severity", "LOW"),
-                    description=item.get("description", ""),
                 )
             )
     return smells
-
-
-def smell_events_to_instances(detected_smells) -> "List[SmellInstance]":
-    """Convert a list of SmellEvent objects to SmellInstance objects."""
-    return [
-        SmellInstance(
-            id=f"{s.smell_type}:{s.file_path}:{s.line_number}",
-            smell_type=s.smell_type,
-            location=f"{s.file_path}:{s.line_number}",
-            severity=s.severity,
-            description=getattr(s, "description", ""),
-        )
-        for s in detected_smells
-    ]
 
 
 # -----------------------------------------------------------------------------
@@ -121,7 +88,7 @@ def smell_events_to_instances(detected_smells) -> "List[SmellInstance]":
 
 
 class SmellPrioritizer:
-    def __init__(self, smells: List[SmellInstance]):
+    def __init__(self, smells: List[SmellEvent]):
         self.smells = smells
         self.graph = nx.DiGraph()
         self._build_dependency_graph()
@@ -134,7 +101,7 @@ class SmellPrioritizer:
         """
         # Add all nodes
         for smell in self.smells:
-            self.graph.add_node(smell.id, data=smell)
+            self.graph.add_node(smell.smell_id, data=smell)
 
         # Add edges based on rules and location
         for i, smell_a in enumerate(self.smells):
@@ -155,14 +122,14 @@ class SmellPrioritizer:
                     positive_impacts = rules.get("positive", [])
                     if smell_b.smell_type in positive_impacts:
                         self.graph.add_edge(
-                            smell_a.id, smell_b.id, type="positive", color="green"
+                            smell_a.smell_id, smell_b.smell_id, type="positive", color="green"
                         )
 
                     # Negative Impact (Red)
                     negative_impacts = rules.get("negative", [])
                     if smell_b.smell_type in negative_impacts:
                         self.graph.add_edge(
-                            smell_a.id, smell_b.id, type="negative", color="red"
+                            smell_a.smell_id, smell_b.smell_id, type="negative", color="red"
                         )
 
     def calculate_priorities(self) -> List[Dict[str, Any]]:
@@ -428,24 +395,20 @@ class SmellPrioritizer:
 # -----------------------------------------------------------------------------
 
 
-def generate_sample_data() -> List[SmellInstance]:
+def generate_sample_data() -> List[SmellEvent]:
     """Generates sample data for demonstration."""
+    samples = [
+        ("1", "God Class",           "com.app.UserManager",                 "HIGH"),
+        ("2", "Long Method",         "com.app.UserManager.createUser",      "HIGH"),
+        ("3", "Feature Envy",        "com.app.UserManager.validateAddress", "MEDIUM"),
+        ("4", "Duplicated Code",     "com.app.UserManager.updateUser",      "LOW"),
+        ("5", "Complex Method",      "com.app.UserManager.createUser",      "MEDIUM"),
+        ("6", "Long Parameter List", "com.app.UserManager.createUser",      "LOW"),
+        ("7", "Data Clumps",         "com.app.OrderService",                "MEDIUM"),
+    ]
     return [
-        SmellInstance("1", "God Class", "com.app.UserManager", "HIGH"),
-        SmellInstance("2", "Long Method", "com.app.UserManager.createUser", "HIGH"),
-        SmellInstance(
-            "3", "Feature Envy", "com.app.UserManager.validateAddress", "MEDIUM"
-        ),
-        SmellInstance("4", "Duplicated Code", "com.app.UserManager.updateUser", "LOW"),
-        SmellInstance(
-            "5", "Complex Method", "com.app.UserManager.createUser", "MEDIUM"
-        ),
-        SmellInstance(
-            "6", "Long Parameter List", "com.app.UserManager.createUser", "LOW"
-        ),
-        SmellInstance(
-            "7", "Data Clumps", "com.app.OrderService", "MEDIUM"
-        ),  # Different class
+        SmellEvent(smell_id=s[0], smell_type=s[1], file_path=s[2], severity=s[3])
+        for s in samples
     ]
 
 

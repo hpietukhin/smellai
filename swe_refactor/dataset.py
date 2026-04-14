@@ -3,7 +3,6 @@
 import json
 import logging
 from pathlib import Path
-from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -16,14 +15,7 @@ class RefactoringRecord(BaseModel):
     # Identifiers
     projectName: str = Field(description="Project name (e.g., 'checkstyle')")
     commitId: str = Field(description="Full commit hash")
-    type: Literal[
-        "Extract Method",
-        "Move Method",
-        "Inline Method",
-        "Extract And Move Method",
-        "Move And Rename Method",
-        "Move And Inline Method",
-    ] = Field(description="Refactoring type")
+    type: str = Field(description="Refactoring type; may be compound e.g. 'Extract Method+Move Method'")
 
     # File paths
     filePathBefore: str = Field(description="Source file path before refactoring")
@@ -36,8 +28,8 @@ class RefactoringRecord(BaseModel):
     # Build configuration
     compileJDK: int = Field(description="JDK version for compilation (e.g., 8, 11, 17, 21)")
     compileCommand: str = Field(description="Build command to use")
-    compileResultBefore: bool = Field(description="Whether code compiled successfully before refactoring")
-    compileResultCurrent: bool = Field(description="Whether code compiles successfully after refactoring")
+    compileResultBefore: bool | None = Field(default=None, description="Whether code compiled successfully before refactoring")
+    compileResultCurrent: bool | None = Field(default=None, description="Whether code compiles successfully after refactoring")
     hasTestC: bool | None = Field(default=None, description="Whether commit has test coverage (None if unknown)")
 
     # Optional metadata (may not be in all records)
