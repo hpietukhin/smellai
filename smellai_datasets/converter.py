@@ -1,7 +1,8 @@
 """Convert raw dataset sources to pandas DataFrames.
 
-Three converters:
+Four converters:
 - rminer_to_df: RMiner 2.0 oracle data.json → flat DataFrame (one row per refactoring)
+- rminer_planner_to_df: RMiner oracle → per-commit DataFrame for planner evaluation
 - swe_refactor_to_df: SWE-Refactor ZIP/dir/JSON → flat DataFrame (one row per record)
 - tdd_to_df: Technical Debt Dataset SQLite → flat DataFrame (one row per smell event)
 """
@@ -10,12 +11,23 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sqlite3
 import zipfile
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
+
+SMELL_RELEVANT_TYPES = {
+    "Extract Method",
+    "Move Method",
+    "Extract Class",
+    "Move Class",
+    "Extract And Move Method",
+    "Extract Superclass",
+    "Inline Method",
+}
 
 
 def rminer_to_df(
@@ -75,6 +87,87 @@ def rminer_to_df(
         rows = rows[:limit]
 
     return pd.DataFrame(rows)
+
+
+def rminer_planner_to_df(
+    oracle_path: str | Path,
+    filter_tp: bool = True,
+    smell_relevant_only: bool = True,
+    min_refactorings: int = 1,
+    limit: int | None = None,
+    max_per_repo: int | None = None,
+) -> pd.DataFrame:
+    """Convert RMiner oracle to a per-commit DataFrame for planner evaluation.
+
+    Unlike rminer_to_df (one row per refactoring), this produces one row per
+    commit — aggregating all smell-relevant refactorings.
+
+    Args:
+        oracle_path: Path to data.json (RMiner oracle)
+        filter_tp: If True, keep only validation == "TP" refactorings
+        smell_relevant_only: If True, keep only smell-relevant refactoring types
+        min_refactorings: Minimum number of (filtered) refactorings per commit
+        limit: Optional commit limit (applied after all filtering)
+        max_per_repo: Optional cap per repository
+
+    Returns:
+        DataFrame with one row per commit.
+    """
+    oracle_path = Path(os.path.expandvars(str(oracle_path)))
+    with open(oracle_path) as f:
+        raw = json.load(f)
+
+    rows: list[dict[str, Any]] = []
+    for commit in raw:
+        repo = commit.get("repository", "")
+        sha = commit.get("sha1", "")
+
+        refs = commit.get("refactorings", [])
+        if filter_tp:
+            refs = [r for r in refs if r.get("validation") == "TP"]
+        if smell_relevant_only:
+            refs = [r for r in refs if r.get("type") in SMELL_RELEVANT_TYPES]
+        if len(refs) < min_refactorings:
+            continue
+
+        first = refs[0]
+        first_desc = first.get("description", "")
+        first_class = _parse_class_from_description(first_desc)
+        unique_types = sorted({r.get("type", "") for r in refs})
+
+        refs_json = json.dumps(
+            [{"type": r.get("type", ""), "description": r.get("description", "")} for r in refs],
+            ensure_ascii=False,
+        )
+
+        rows.append({
+            "commit_sha": sha,
+            "repository": repo,
+            "author": commit.get("author", ""),
+            "time": commit.get("time", ""),
+            "refactoring_count": len(refs),
+            "refactorings_json": refs_json,
+            "first_refactoring_type": first.get("type", ""),
+            "first_refactoring_class": first_class,
+            "smell_relevant_types": "|".join(unique_types),
+        })
+
+    if max_per_repo is not None:
+        df = pd.DataFrame(rows)
+        if not df.empty:
+            df = df.groupby("repository").head(max_per_repo).reset_index(drop=True)
+            rows = df.to_dict("records")
+
+    if limit is not None:
+        rows = rows[:limit]
+
+    return pd.DataFrame(rows)
+
+
+def _parse_class_from_description(desc: str) -> str:
+    """Extract class name from refactoring description."""
+    m = re.search(r"(?:in|from) class (\S+)", desc)
+    return m.group(1) if m else ""
 
 
 def swe_refactor_to_df(
@@ -196,19 +289,21 @@ def tdd_to_df(
     project: str | None = None,
     limit: int | None = None,
 ) -> pd.DataFrame:
-    """Convert Technical Debt Dataset SQLite to a DataFrame.
+    """Convert Technical Debt Dataset v2 SQLite to a DataFrame.
 
-    One row per smell event (introduced / resolved / persistent).
+    One row per SonarQube issue, with creation/close commit hashes resolved
+    via SONAR_ANALYSIS.
 
     Args:
-        db_path: Path to TDD SQLite file.  Falls back to TDD_DB_PATH env var.
-        project: Filter to a single project name (optional)
+        db_path: Path to TDD SQLite file (td_V2.db).  Falls back to TDD_DB_PATH env var.
+        project: Filter to a single PROJECT_ID (e.g. "org.apache:cayenne")
         limit: Optional row limit
 
     Returns:
         DataFrame with columns:
-            project, commit_sha, parent_sha, smell_type, severity,
-            file_path, rule_id, status
+            project, creation_commit, close_commit, issue_type, rule,
+            severity, status, resolution, component, message,
+            start_line, end_line, creation_date, close_date, effort, debt
     """
     resolved_path = db_path or os.environ.get("TDD_DB_PATH")
     if not resolved_path:
@@ -241,14 +336,21 @@ def _query_tdd(
     project: str | None,
     limit: int | None,
 ) -> list[dict[str, Any]]:
-    """Query TDD DB with best-effort schema detection."""
-    # Try common table/column naming conventions used by TDD releases
-    if "REFACTORING_MINER" in tables or "refactoring_miner" in tables:
+    """Query TDD DB with best-effort schema detection.
+
+    TDD v2.0.1 schema (Lenarduzzi et al.):
+        SONAR_ISSUES  — one row per SonarQube issue with CREATION/CLOSE_ANALYSIS_KEY
+        SONAR_ANALYSIS — maps ANALYSIS_KEY → git REVISION (commit hash)
+        REFACTORING_MINER — refactoring type + detail per commit
+        PROJECTS — project metadata
+    """
+    upper = {t.upper() for t in tables}
+    if "SONAR_ISSUES" in upper and "SONAR_ANALYSIS" in upper:
         return _query_tdd_v2(cur, project, limit)
-    if "SMELL" in tables or "smell" in tables:
-        return _query_tdd_smell_table(cur, project, limit)
-    # Fallback: try to read any table that looks smell-like
-    return _query_tdd_fallback(cur, tables, project, limit)
+    raise ValueError(
+        f"Unrecognised TDD schema. Expected SONAR_ISSUES + SONAR_ANALYSIS tables, "
+        f"got: {sorted(tables)}"
+    )
 
 
 def _query_tdd_v2(
@@ -256,103 +358,38 @@ def _query_tdd_v2(
     project: str | None,
     limit: int | None,
 ) -> list[dict[str, Any]]:
-    """TDD v2 schema: COMMIT + SMELL_METRICS tables."""
+    """TDD v2.0.1 schema: SONAR_ISSUES + SONAR_ANALYSIS → commit hashes."""
     sql = """
         SELECT
-            c.project         AS project,
-            c.commit_hash     AS commit_sha,
-            c.parent_hash     AS parent_sha,
-            s.smell_type      AS smell_type,
-            s.severity        AS severity,
-            s.file_path       AS file_path,
-            s.rule_id         AS rule_id,
-            s.status          AS status
-        FROM SMELL s
-        JOIN COMMIT c ON c.id = s.commit_id
+            si.PROJECT_ID            AS project,
+            sa_create.REVISION       AS creation_commit,
+            sa_close.REVISION        AS close_commit,
+            si.TYPE                  AS issue_type,
+            si.RULE                  AS rule,
+            si.SEVERITY              AS severity,
+            si.STATUS                AS status,
+            si.RESOLUTION            AS resolution,
+            si.COMPONENT             AS component,
+            si.MESSAGE               AS message,
+            si.START_LINE            AS start_line,
+            si.END_LINE              AS end_line,
+            si.CREATION_DATE         AS creation_date,
+            si.CLOSE_DATE            AS close_date,
+            si.EFFORT                AS effort,
+            si.DEBT                  AS debt
+        FROM SONAR_ISSUES si
+        LEFT JOIN SONAR_ANALYSIS sa_create
+            ON sa_create.ANALYSIS_KEY = si.CREATION_ANALYSIS_KEY
+        LEFT JOIN SONAR_ANALYSIS sa_close
+            ON sa_close.ANALYSIS_KEY = si.CLOSE_ANALYSIS_KEY
+            AND si.CLOSE_ANALYSIS_KEY != ''
     """
     params: list[Any] = []
     if project:
-        sql += " WHERE c.project = ?"
+        sql += " WHERE si.PROJECT_ID = ?"
         params.append(project)
     if limit:
         sql += f" LIMIT {limit}"
 
     cur.execute(sql, params)
     return [dict(row) for row in cur.fetchall()]
-
-
-def _query_tdd_smell_table(
-    cur: sqlite3.Cursor,
-    project: str | None,
-    limit: int | None,
-) -> list[dict[str, Any]]:
-    """TDD schema with single smell table containing all fields."""
-    # Detect actual column names
-    cur.execute("PRAGMA table_info(smell)")
-    cols = {row[1].lower() for row in cur.fetchall()}
-
-    col_map = {
-        "project": next((c for c in cols if "project" in c), "project"),
-        "commit_sha": next((c for c in cols if "commit" in c and "hash" in c or c == "commit_sha"), "commit_sha"),
-        "parent_sha": next((c for c in cols if "parent" in c), "parent_sha"),
-        "smell_type": next((c for c in cols if "type" in c), "smell_type"),
-        "severity": next((c for c in cols if "severity" in c), "severity"),
-        "file_path": next((c for c in cols if "file" in c), "file_path"),
-        "rule_id": next((c for c in cols if "rule" in c), "rule_id"),
-        "status": next((c for c in cols if "status" in c), "status"),
-    }
-
-    sel = ", ".join(f"{v} AS {k}" for k, v in col_map.items())
-    sql = f"SELECT {sel} FROM smell"
-    params: list[Any] = []
-    if project:
-        sql += f" WHERE {col_map['project']} = ?"
-        params.append(project)
-    if limit:
-        sql += f" LIMIT {limit}"
-
-    cur.execute(sql, params)
-    return [dict(row) for row in cur.fetchall()]
-
-
-def _query_tdd_fallback(
-    cur: sqlite3.Cursor,
-    tables: set[str],
-    project: str | None,
-    limit: int | None,
-) -> list[dict[str, Any]]:
-    """Last-resort: dump first smell-like table as-is."""
-    candidates = [t for t in tables if any(k in t.lower() for k in ("smell", "issue", "metric"))]
-    if not candidates:
-        candidates = list(tables)[:1]
-    if not candidates:
-        return []
-
-    table = candidates[0]
-    sql = f"SELECT * FROM {table}"  # noqa: S608 — internal helper, no user input
-    if limit:
-        sql += f" LIMIT {limit}"
-    cur.execute(sql)
-    rows = cur.fetchall()
-    if not rows:
-        return []
-
-    # Normalise to expected schema with empty defaults for missing keys
-    schema_defaults = {
-        "project": "",
-        "commit_sha": "",
-        "parent_sha": "",
-        "smell_type": "",
-        "severity": "",
-        "file_path": "",
-        "rule_id": "",
-        "status": "",
-    }
-    result = []
-    for row in rows:
-        d = dict(row)
-        entry = {**schema_defaults, **d}
-        if project and entry.get("project", "") != project:
-            continue
-        result.append(entry)
-    return result

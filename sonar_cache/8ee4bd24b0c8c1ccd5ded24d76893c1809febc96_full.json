@@ -1,0 +1,184 @@
+{
+  "example-github/src/main/java/feign/example/github/GitHubExample.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 69,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 73,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 63,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 66,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "core/src/main/java/feign/Logger.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 153,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "core/src/main/java/feign/SynchronousMethodHandler.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 46,
+      "severity": "MEDIUM",
+      "message": "Constructor has 11 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "jaxb/src/test/java/feign/jaxb/examples/IAMExample.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 40,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "slf4j/src/test/java/feign/slf4j/RecordingSimpleLogger.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 76,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "jackson/src/test/java/feign/jackson/examples/GitHubExample.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 20,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 23,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "gson/src/test/java/feign/gson/examples/GitHubExample.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 35,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 38,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "sax/src/test/java/feign/sax/examples/IAMExample.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 33,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "example-wikipedia/src/main/java/feign/example/wikipedia/WikipediaExample.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 71,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 74,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 96,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "jaxrs/src/test/java/feign/jaxrs/examples/GitHubExample.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 37,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 40,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "core/src/test/java/feign/examples/GitHubExample.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 47,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 50,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ]
+}

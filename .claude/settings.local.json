@@ -63,7 +63,19 @@
       "Bash(open:*)",
       "Bash(uv sync:*)",
       "Bash(grep:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(docker compose:*)",
+      "Bash(PYTHON=/opt/homebrew/opt/python@3.14/libexec/bin/python __NEW_LINE_074ab1c9f238d466__ for repo_path in \"lidatong/dataclasses-json|tests/hypothesis2/strategies.py\" \"lidatong/dataclasses-json|tests/test_invariants.py\" \"python-attrs/cattrs|tests/conftest.py\" \"nccgroup/blackboxprotobuf|lib/tests/py_test/strategies.py\" \"nccgroup/blackboxprotobuf|lib/tests/py_test/test_typedef.py\" \"ics-py/ics-py|tests/contentline/__init__.py\" \"Aiven-Open/karapace|tests/unit/protobuf/test_protobuf_normalization.py\" \"mobilityhouse/ocpp|tests/test_messages.py\" do \"repo=$repo_path%%|*\" \"path=$repo_path##*|\" echo '====== $repo / $path ======' gh api repos/$repo/contents/$path --jq .content)",
+      "Bash($PYTHON -c \":*)",
+      "Bash(/bin/bash -c \"which python3 || which python\")",
+      "Bash(PY=/opt/homebrew/bin/python3 __NEW_LINE_f54fb791427cb1dd__ gh api \"repos/lidatong/dataclasses-json/contents/tests/hypothesis2/strategies.py\" --jq '.content')",
+      "Bash($PY -c \"import sys,base64; print\\(base64.b64decode\\(sys.stdin.read\\(\\)\\).decode\\(\\)[:4000]\\)\")",
+      "Bash(PY=/opt/homebrew/bin/python3 __NEW_LINE_abfa1e0158be7422__ for repo_path in \"lidatong/dataclasses-json|tests/test_invariants.py\" \"python-attrs/cattrs|tests/conftest.py\" \"nccgroup/blackboxprotobuf|lib/tests/py_test/strategies.py\" \"nccgroup/blackboxprotobuf|lib/tests/py_test/test_typedef.py\" \"ics-py/ics-py|tests/contentline/__init__.py\" \"Aiven-Open/karapace|tests/unit/protobuf/test_protobuf_normalization.py\" \"mobilityhouse/ocpp|tests/test_messages.py\" \"schemathesis/schemathesis|src/schemathesis/generation/hypothesis/given.py\" do \"repo=$repo_path%%|*\" \"path=$repo_path##*|\" echo '====== $repo / $path ======' gh api repos/$repo/contents/$path --jq .content)",
+      "Bash($PY -c \"import sys,base64; t=base64.b64decode\\(sys.stdin.read\\(\\)\\).decode\\(\\); print\\(''''\\\\n''''.join\\(t.split\\(''''\\\\n''''\\)[:120]\\)\\)\" echo done)",
+      "Bash(PY=/opt/homebrew/bin/python3 __NEW_LINE_f947117539f2e904__ for url in \"https://raw.githubusercontent.com/python-attrs/cattrs/main/tests/conftest.py\" \"https://raw.githubusercontent.com/nccgroup/blackboxprotobuf/master/lib/tests/py_test/strategies.py\" \"https://raw.githubusercontent.com/nccgroup/blackboxprotobuf/master/lib/tests/py_test/test_typedef.py\" \"https://raw.githubusercontent.com/ics-py/ics-py/master/tests/contentline/__init__.py\" \"https://raw.githubusercontent.com/Aiven-Open/karapace/master/tests/unit/protobuf/test_protobuf_normalization.py\" \"https://raw.githubusercontent.com/mobilityhouse/ocpp/master/tests/test_messages.py\" \"https://raw.githubusercontent.com/schemathesis/schemathesis/master/src/schemathesis/generation/hypothesis/given.py\" do echo \"====== $url##*/github.com/ ======\" curl -s \"$url\")",
+      "Bash($PY -c \"import sys; lines=sys.stdin.readlines\\(\\); [print\\(l,end=''''''''\\) for l in lines[:120]]\" echo done)",
+      "Bash(presenterm -h)",
+      "Bash(presenterm /Users/havriil.pietukhin/uni/masterThesis/code/smellai/docs/development/onboarding.md --validate-overflows)"
     ],
     "deny": []
   },

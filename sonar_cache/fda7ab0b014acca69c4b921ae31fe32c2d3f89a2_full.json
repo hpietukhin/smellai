@@ -1,0 +1,594 @@
+{
+  "src/com/google/javascript/jscomp/GenerateExports.java": [
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 121,
+      "severity": "MEDIUM",
+      "message": "This branch's code block is the same as the block for the branch on line 118.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 123,
+      "severity": "MEDIUM",
+      "message": "This branch's code block is the same as the block for the branch on line 118.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/newtypes/Declaration.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 38,
+      "severity": "MEDIUM",
+      "message": "Constructor has 9 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/NewTypeInference.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 360,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 326,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/newtypes/JSTypeCreatorFromJSDoc.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 655,
+      "severity": "MEDIUM",
+      "message": "Method has 8 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Long Parameter List",
+      "line": 873,
+      "severity": "MEDIUM",
+      "message": "Method has 8 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "test/com/google/javascript/jscomp/CompilerTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 254,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/refactoring/RefasterJs.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 117,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 124,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 127,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 137,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 89,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 130,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/CheckAccessControls.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 809,
+      "severity": "MEDIUM",
+      "message": "Method has 8 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/TypeTransformation.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 864,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/refactoring/Matchers.java": [
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 390,
+      "severity": "MEDIUM",
+      "message": "This branch's code block is the same as the block for the branch on line 387.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/CommandLineRunner.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 864,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 864,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/newtypes/JSType.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 716,
+      "severity": "MEDIUM",
+      "message": "Method has 8 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/DefinitionsRemover.java": [
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 88,
+      "severity": "MEDIUM",
+      "message": "This branch's code block is the same as the block for the branch on line 86.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/FunctionInjector.java": [
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 201,
+      "severity": "MEDIUM",
+      "message": "This branch's code block is the same as the block for the branch on line 197.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/CodeConsumer.java": [
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 224,
+      "severity": "MEDIUM",
+      "message": "This branch's code block is the same as the block for the branch on line 219.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 227,
+      "severity": "MEDIUM",
+      "message": "This branch's code block is the same as the block for the branch on line 219.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/newtypes/Property.java": [
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 198,
+      "severity": "MEDIUM",
+      "message": "This branch's code block is the same as the block for the branch on line 194.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/Compiler.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 778,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/newtypes/FunctionType.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 51,
+      "severity": "MEDIUM",
+      "message": "Constructor has 9 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Long Parameter List",
+      "line": 124,
+      "severity": "MEDIUM",
+      "message": "Method has 9 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/PeepholeMinimizeConditions.java": [
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 812,
+      "severity": "MEDIUM",
+      "message": "This branch's code block is the same as the block for the branch on line 809.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/PhaseOptimizer.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 228,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/CodeGenerator.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 1705,
+      "severity": "MEDIUM",
+      "message": "Method has 8 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/PeepholeFoldConstants.java": [
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 1114,
+      "severity": "MEDIUM",
+      "message": "This case's code block is the same as the block for the case on line 1102.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "test/com/google/javascript/jscomp/ProcessCommonJSModulesTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 216,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/PureFunctionIdentifier.java": [
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 790,
+      "severity": "MEDIUM",
+      "message": "This case's code block is the same as the block for the case on line 787.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 793,
+      "severity": "MEDIUM",
+      "message": "This case's code block is the same as the block for the case on line 787.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 797,
+      "severity": "MEDIUM",
+      "message": "This case's code block is the same as the block for the case on line 787.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 801,
+      "severity": "MEDIUM",
+      "message": "This case's code block is the same as the block for the case on line 787.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/PassConfig.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 294,
+      "severity": "MEDIUM",
+      "message": "Constructor has 9 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/TransformAMDToCJSModule.java": [
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 114,
+      "severity": "MEDIUM",
+      "message": "This branch's code block is the same as the block for the branch on line 102.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/PeepholeRemoveDeadCode.java": [
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 624,
+      "severity": "MEDIUM",
+      "message": "This branch's code block is the same as the block for the branch on line 621.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/NameReferenceGraphConstruction.java": [
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 161,
+      "severity": "MEDIUM",
+      "message": "This branch's code block is the same as the block for the branch on line 158.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 164,
+      "severity": "MEDIUM",
+      "message": "This branch's code block is the same as the block for the branch on line 158.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "test/com/google/javascript/jscomp/deps/JsFunctionParserTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 45,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/AbstractCommandLineRunner.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 416,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 140,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 140,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/JsMessage.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 102,
+      "severity": "MEDIUM",
+      "message": "Constructor has 10 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "test/com/google/javascript/jscomp/deps/JsFileLineParserTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 40,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "test/com/google/javascript/jscomp/deps/DepsFileParserTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 45,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "test/com/google/javascript/jscomp/deps/JsFileParserTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 44,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "test/com/google/javascript/jscomp/JSModuleTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 134,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "test/com/google/javascript/jscomp/regtests/CompileEachLineOfProgramOutput.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 55,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 57,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 72,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 74,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 75,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 76,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 77,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 85,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 89,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 90,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 105,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 107,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/com/google/javascript/jscomp/Result.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 39,
+      "severity": "MEDIUM",
+      "message": "Constructor has 12 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Long Parameter List",
+      "line": 62,
+      "severity": "MEDIUM",
+      "message": "Constructor has 9 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ]
+}

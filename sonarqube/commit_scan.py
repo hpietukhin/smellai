@@ -118,18 +118,25 @@ def _compile_java_project(project_path: Path) -> Path | None:
 
 
 def run_sonar_scanner_local(
-    clone_dir: Path, project_key: str, sonar_url: str, sonar_token: str
+    clone_dir: Path,
+    project_key: str,
+    sonar_url: str,
+    sonar_token: str,
+    skip_compile: bool = False,
 ) -> str:
     """Run sonar-scanner locally via CLI. Returns the CE task ID."""
-    classes_dir = _compile_java_project(clone_dir)
-    if classes_dir:
-        binaries = str(classes_dir)
-    else:
-        logging.warning(
-            "Could not find compiled classes for %s; Java bytecode analysis will be degraded",
-            project_key,
-        )
+    if skip_compile:
         binaries = "."
+    else:
+        classes_dir = _compile_java_project(clone_dir)
+        if classes_dir:
+            binaries = str(classes_dir)
+        else:
+            logging.warning(
+                "Could not find compiled classes for %s; Java bytecode analysis will be degraded",
+                project_key,
+            )
+            binaries = "."
 
     props_content = (
         f"sonar.projectKey={project_key}\n"
@@ -138,10 +145,21 @@ def run_sonar_scanner_local(
         f"sonar.host.url={sonar_url}\n"
         f"sonar.token={sonar_token}\n"
         f"sonar.java.binaries={binaries}\n"
+        # Restrict to Java files only — our 8 smell rules are all Java
+        "sonar.inclusions=**/*.java\n"
+        # Skip test code — we only care about production smell density
+        "sonar.exclusions=**/test/**,**/tests/**,**/src/test/**,"
+        "**/node_modules/**,**/generated/**,**/build/**,**/target/**\n"
+        # Skip duplicate detection — not needed for smell analysis
+        "sonar.cpd.exclusions=**/*\n"
     )
     (clone_dir / "sonar-project.properties").write_text(props_content)
     logging.info("Starting sonar-scanner (this may take several minutes)...")
-    run_command(["sonar-scanner"], cwd=clone_dir, verbose=True)
+    run_command(
+        ["sonar-scanner", f"-Dsonar.token={sonar_token}"],
+        cwd=clone_dir,
+        verbose=True,
+    )
 
     report_file = clone_dir / ".scannerwork" / "report-task.txt"
     if not report_file.exists():
@@ -347,9 +365,21 @@ def scan_commit(
     sonar_url: str,
     sonar_token: str,
     cache_dir: Optional[Path] = None,
+    repo_path: Optional[Path] = None,
+    skip_compile: bool = False,
 ) -> Dict[str, List[Dict[str, Any]]]:
     """
     Scan entire commit with SonarQube.
+
+    Args:
+        repo_url: Repository URL (used for project key derivation)
+        commit_sha: Commit SHA to checkout and scan
+        sonar_url: SonarQube server URL
+        sonar_token: SonarQube authentication token
+        cache_dir: Optional cache directory for scan results
+        repo_path: Optional path to an existing clone. If provided, the repo
+            is checked out in-place (no clone, no cleanup). Caller owns the repo.
+        skip_compile: If True, skip Java compilation (faster, source-only analysis).
 
     Returns:
         Dictionary mapping file paths to lists of issues
@@ -365,16 +395,23 @@ def scan_commit(
 
     from repo_utils import checkout_repo, clone_repository as clone_repo
 
-    # Clone and checkout
-    work_dir = Path(tempfile.mkdtemp(prefix="sonar_commit_scan_"))
-    try:
+    owns_workdir = repo_path is None
+    work_dir: Path | None = None
+
+    if repo_path is not None:
+        scan_path = repo_path
+    else:
+        work_dir = Path(tempfile.mkdtemp(prefix="sonar_commit_scan_"))
         clone_dir = work_dir / "repo"
         repo_name = clone_repo(repo_url, clone_dir)
-        repo_path = clone_dir / repo_name
-        checkout_repo(repo_path, commit_sha)
+        scan_path = clone_dir / repo_name
+
+    try:
+        checkout_repo(scan_path, commit_sha)
 
         task_id = run_sonar_scanner_local(
-            repo_path, project_key, sonar_url, sonar_token
+            scan_path, project_key, sonar_url, sonar_token,
+            skip_compile=skip_compile,
         )
         poll_analysis_completion(task_id, sonar_url, sonar_token)
 
@@ -402,7 +439,8 @@ def scan_commit(
         return issues_by_file
 
     finally:
-        shutil.rmtree(work_dir, ignore_errors=True)
+        if owns_workdir and work_dir is not None:
+            shutil.rmtree(work_dir, ignore_errors=True)
 
 
 def parse_args() -> argparse.Namespace:

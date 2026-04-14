@@ -101,20 +101,15 @@ def get_repo_name(repo_url: str):
 
 @require_git_import()
 def clone_repository(repo_url: str, target_dir: Path = Path("./repos")) -> str:
+    from repo_utils.operations import clone_repository as _clone
+
     repo_url = sanitize_repo_url(repo_url)
     if not remote_repo_exists(repo_url):
         raise RepoDontExistError()
 
     repo_name = get_repo_name(repo_url)
-
     dest = target_dir / repo_name
-    if dest.exists():
-        logger.info(f"Repository {repo_name} already exists at {dest}, pulling latest.")
-        repo = Repo(dest)
-        repo.remotes.origin.pull()
-    else:
-        logger.info(f"Cloning {repo_url} into {dest}")
-        Repo.clone_from(repo_url, dest)
+    _clone(repo_url, dest, pull_if_exists=True)
     logger.info("Cloning finished!")
     return repo_name
 

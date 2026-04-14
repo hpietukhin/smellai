@@ -1,0 +1,4018 @@
+{
+  "aws-java-sdk-core/src/test/java/com/amazonaws/util/BinaryUtilsTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 37,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 43,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-s3/src/main/java/com/amazonaws/services/s3/transfer/DownloadCallable.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 54,
+      "severity": "MEDIUM",
+      "message": "Constructor has 8 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-sqs/src/main/java/com/amazonaws/services/sqs/buffered/QueueBufferConfig.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 113,
+      "severity": "MEDIUM",
+      "message": "Constructor has 9 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-core/src/test/java/com/amazonaws/auth/EC2MetadataServiceMock.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 90,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 150,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-core/src/test/java/com/amazonaws/http/AmazonHttpClientSslHandshakeTimeoutTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 85,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 111,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 175,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 178,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 186,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-core/src/test/java/com/amazonaws/internal/config/InternalConfigJsonHelperTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 62,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-core/src/test/java/com/amazonaws/internal/config/SignerConfigTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 35,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-core/src/test/java/com/amazonaws/util/ClassesTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 53,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 54,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-core/src/test/java/com/amazonaws/util/DateUtilsTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 157,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 158,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 169,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 172,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 176,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 186,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 264,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-core/src/test/java/com/amazonaws/util/FileUtils.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 102,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-core/src/test/java/com/amazonaws/util/LengthCheckInputStreamTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 107,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-core/src/test/java/com/amazonaws/util/VersionInfoUtilsTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 41,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 42,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-core/src/test/java/org/bitpedia/util/Base32.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 129,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 132,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 134,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 140,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 142,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 143,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonKinesis/AmazonKinesisApplicationSample.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 99,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 108,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 120,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 130,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonKinesis/AmazonKinesisRecordProducerSample.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 82,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 85,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 94,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 119,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 121,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 124,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 125,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 134,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 142,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 157,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-s3/src/main/java/com/amazonaws/services/s3/internal/crypto/ContentCryptoMaterial.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 794,
+      "severity": "MEDIUM",
+      "message": "Method has 8 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Long Parameter List",
+      "line": 731,
+      "severity": "MEDIUM",
+      "message": "Method has 8 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonDynamoDBDocumentAPI/quick-start/com/amazonaws/services/dynamodbv2/document/quickstart/A_CreateTableTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 51,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 59,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonDynamoDBDocumentAPI/quick-start/com/amazonaws/services/dynamodbv2/document/quickstart/B_PutItemJacksonTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 53,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 55,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 73,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 83,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 85,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 125,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 127,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 148,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 158,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 160,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonDynamoDBDocumentAPI/quick-start/com/amazonaws/services/dynamodbv2/document/quickstart/B_PutItemJsonTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 49,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 56,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 66,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonDynamoDBDocumentAPI/quick-start/com/amazonaws/services/dynamodbv2/document/quickstart/B_PutItemTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 40,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonDynamoDBDocumentAPI/quick-start/com/amazonaws/services/dynamodbv2/document/quickstart/C_GetItemOutComeTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 51,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 52,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 54,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 57,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 60,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 62,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 64,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 66,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 68,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 70,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 72,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 74,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 76,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 93,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 94,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 96,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 98,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 100,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 102,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 115,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 116,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 118,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 120,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 122,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 124,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 136,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonDynamoDBDocumentAPI/quick-start/com/amazonaws/services/dynamodbv2/document/quickstart/C_GetItemTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 49,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 50,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 52,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 55,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 58,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 60,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 62,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 64,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 66,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 68,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 70,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 72,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 88,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 89,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 91,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 93,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 95,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 107,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 108,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 110,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 112,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 114,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonDynamoDBDocumentAPI/quick-start/com/amazonaws/services/dynamodbv2/document/quickstart/D_QueryTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 48,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 64,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 69,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 93,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 99,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 121,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 147,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonDynamoDBDocumentAPI/quick-start/com/amazonaws/services/dynamodbv2/document/quickstart/E_ScanTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 47,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 72,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 98,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 128,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonDynamoDBDocumentAPI/quick-start/com/amazonaws/services/dynamodbv2/document/quickstart/F_UpdateItemTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 135,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 146,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 157,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 206,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 236,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 246,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 262,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonDynamoDBDocumentAPI/quick-start/com/amazonaws/services/dynamodbv2/document/quickstart/H_BatchGetItemTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 66,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 68,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 97,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 99,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 136,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 138,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 182,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 184,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 189,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonDynamoDBDocumentAPI/quick-start/com/amazonaws/services/dynamodbv2/document/quickstart/I_BatchWriteItemTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 45,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 90,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 101,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 112,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 157,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 168,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 179,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 189,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 199,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 246,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 248,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonDynamoDBDocumentAPI/quick-start/com/amazonaws/services/dynamodbv2/document/quickstart/Z_DeleteTableTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 32,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 38,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonDynamoDB/AmazonDynamoDBSample.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 103,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 111,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 114,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 121,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 127,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 133,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 143,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 146,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 148,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 149,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 150,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 151,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 152,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 154,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 157,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonEC2SpotInstances-Advanced/CreateSecurityGroupApp.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 78,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 82,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 114,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 118,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonEC2SpotInstances-Advanced/GettingStartedApp.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 59,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 60,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 61,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 120,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 121,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 122,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 123,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonEC2SpotInstances-Advanced/InlineGettingStartedCodeSampleApp.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 202,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 267,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 268,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 269,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 270,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 271,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 283,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 284,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 285,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 286,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 287,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonEC2SpotInstances-Advanced/InlineTaggingCodeSampleApp.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 136,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 158,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 159,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 160,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 161,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 162,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 234,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 235,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 236,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 237,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 238,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 251,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 252,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 253,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 254,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 255,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 267,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 268,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 269,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 270,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 271,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonEC2SpotInstances-Advanced/Requests.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 220,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 251,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 271,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 284,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 299,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 300,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 301,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 302,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 303,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 329,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 330,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 331,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 332,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 333,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 364,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 369,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 370,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 371,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 372,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 373,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 378,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 383,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 384,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 385,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 386,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 387,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonEC2SpotInstances-GettingStarted/CreateSecurityGroupApp.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 78,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 82,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 114,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 118,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonEC2SpotInstances-GettingStarted/GettingStartedApp.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 55,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 56,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 57,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 90,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 91,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 92,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 93,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonEC2SpotInstances-GettingStarted/InlineGettingStartedCodeSampleApp.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 134,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 199,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 200,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 201,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 202,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 203,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 215,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 216,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 217,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 218,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 219,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonEC2SpotInstances-GettingStarted/Requests.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 129,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 150,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 163,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 178,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 179,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 180,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 181,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 182,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 202,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 207,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 208,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 209,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 210,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 211,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 216,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 221,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 222,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 223,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 224,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 225,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonS3/S3Sample.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 85,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 86,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 87,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 98,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 104,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 106,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 108,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 118,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 133,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 135,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 146,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 151,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 154,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 160,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 168,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 171,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 173,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 174,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 175,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 176,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 177,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 179,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 182,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 223,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 225,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonSimpleEmailService/AmazonSESSample.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 68,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 102,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 105,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 106,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AmazonSimpleQueueService/SimpleQueueServiceSample.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 72,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 73,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 74,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 78,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 83,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 85,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 87,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 90,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 94,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 98,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 99,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 100,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 101,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 102,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 104,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 105,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 106,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 109,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 112,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 117,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 120,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 122,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 123,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 124,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 125,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 126,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 128,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 131,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsCloudFormation/CloudFormationSample.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 76,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 77,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 78,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 88,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 93,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 97,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 102,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 110,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 112,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 118,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 123,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 126,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 128,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 129,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 130,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 131,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 132,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 134,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 137,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 169,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 192,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 199,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsConsoleApp/AwsConsoleApp.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 120,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 121,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 122,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 137,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 148,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 150,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 151,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 152,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 153,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 177,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 180,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 181,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 182,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 183,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 221,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 230,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 231,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 232,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 233,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 234,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 244,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/booking/ActivityHost.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 54,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 78,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 82,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 84,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/booking/BookingActivitiesImpl.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 21,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 26,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 31,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/booking/WorkflowHost.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 47,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 59,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 69,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 73,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 77,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/common/WorkflowExecutionFlowThreadDumper.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 31,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 51,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 54,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 55,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 58,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/common/WorkflowExecutionGetState.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 31,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 49,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 50,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/common/WorkflowExecutionHistoryPrinter.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 30,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 43,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/common/WorkflowExecutionReplayer.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 30,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 50,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 52,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 53,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 55,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/cron/ActivityHost.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 44,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 51,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 59,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/cron/CronExampleActivitiesImpl.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 45,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/cron/CronWorkflowExecutionStarter.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 32,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 42,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 78,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 83,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/cron/WorkflowHost.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 39,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 46,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 54,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/cronwithretry/ActivityHost.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 44,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 51,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 59,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/cronwithretry/CronExampleActivitiesImpl.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 51,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/cronwithretry/CronWithRetryWorkflowExecutionStarter.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 35,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 45,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 86,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 91,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 95,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 97,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/cronwithretry/WorkflowHost.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 39,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 46,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 54,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/deployment/DeploymentInitiator.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 49,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/fileprocessing/ActivityHost.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 47,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 55,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 65,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 73,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/fileprocessing/FileProcessingActivitiesZipImpl.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 50,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 76,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/fileprocessing/SimpleStoreActivitiesS3Impl.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 74,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 77,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 101,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 128,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 150,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 154,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/fileprocessing/WorkflowExecutionStarter.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 50,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/fileprocessing/WorkflowHost.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 42,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 49,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 57,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/helloworld/ActivityHost.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 44,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 51,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 59,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/helloworld/HelloWorldActivitiesImpl.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 24,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/helloworld/WorkflowExecutionStarter.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 37,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/helloworld/WorkflowHost.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 37,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 44,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 52,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/periodicworkflow/ActivityHost.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 44,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 51,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 59,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/periodicworkflow/ErrorReportingActivitiesImpl.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 38,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.err by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/periodicworkflow/PeriodicWorkflowActivitiesImpl.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 44,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/periodicworkflow/WorkflowExecutionStarter.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 64,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 69,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/periodicworkflow/WorkflowHost.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 37,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 44,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 52,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/splitmerge/ActivityHost.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 46,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 53,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 61,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/splitmerge/AverageCalculatorActivitiesImpl.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 81,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 87,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/splitmerge/WorkflowExecutionStarter.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 46,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/splitmerge/WorkflowHost.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 37,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 44,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 52,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-dynamodb/src/main/java/com/amazonaws/services/dynamodbv2/datamodeling/DynamoDBMapper.java": [
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 2625,
+      "severity": "MEDIUM",
+      "message": "This branch's code block is the same as the block for the branch on line 2621.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-dynamodb/src/main/java/com/amazonaws/services/dynamodbv2/datamodeling/DynamoDBMapperConfig.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 717,
+      "severity": "MEDIUM",
+      "message": "Constructor has 9 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-dynamodb/src/main/java/com/amazonaws/services/dynamodbv2/document/api/UpdateItemApi.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 145,
+      "severity": "MEDIUM",
+      "message": "Method has 8 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-s3/src/main/java/com/amazonaws/services/s3/AmazonS3Client.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 2913,
+      "severity": "MEDIUM",
+      "message": "Method has 9 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-core/src/main/java/com/amazonaws/util/ImmutableMapParameter.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 151,
+      "severity": "MEDIUM",
+      "message": "Method has 8 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Long Parameter List",
+      "line": 185,
+      "severity": "MEDIUM",
+      "message": "Method has 10 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-cloudfront/src/main/java/com/amazonaws/services/cloudfront/CloudFrontUrlSigner.java": [
+    {
+      "smell_type": "Long Parameter List",
+      "line": 142,
+      "severity": "MEDIUM",
+      "message": "Method has 8 parameters, which is greater than 7 authorized.",
+      "rule": "java:S107",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "aws-java-sdk-sns/src/main/java/com/amazonaws/services/sns/util/Topics.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 124,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ]
+}

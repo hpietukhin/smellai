@@ -1,0 +1,12 @@
+{
+  "src/main/java/redis/clients/jedis/HostAndPort.java": [
+    {
+      "smell_type": "Duplicated Conditions",
+      "line": 48,
+      "severity": "MEDIUM",
+      "message": "This branch's code block is the same as the block for the branch on line 47.",
+      "rule": "java:S1871",
+      "raw_severity": "MAJOR"
+    }
+  ]
+}

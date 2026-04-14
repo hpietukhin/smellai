@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smell Dependency Graph + Formulas</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      padding: 2rem;
+      line-height: 1.6;
+    }
+    h1 { font-size: 1.6rem; margin-bottom: 0.3rem; color: #f8fafc; }
+    h2 { font-size: 1.1rem; margin: 2rem 0 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .subtitle { color: #64748b; margin-bottom: 2rem; font-size: 0.9rem; }
+
+    /* legend */
+    .legend { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .legend-item {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.82rem; color: #cbd5e1;
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .arrow-pos { width: 24px; height: 2px; background: #51cf66; flex-shrink: 0; }
+    .arrow-neg { width: 24px; height: 2px; background: #ff6b6b; border-top: 2px dashed #ff6b6b; flex-shrink: 0; }
+
+    /* diagram container */
+    .diagram-box {
+      background: #1e2530;
+      border: 1px solid #2d3748;
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      overflow-x: auto;
+    }
+    .diagram-box .mermaid { min-height: 300px; }
+
+    /* formulas */
+    .formula-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .formula-card {
+      background: #1e2530;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+    }
+    .formula-card h3 { font-size: 0.85rem; color: #64748b; text-transform: uppercase; margin-bottom: 0.6rem; letter-spacing: 0.04em; }
+    .formula-card .math { font-size: 1.05rem; margin: 0.5rem 0; }
+    .formula-card ul { margin-top: 0.6rem; padding-left: 1.2rem; font-size: 0.84rem; color: #94a3b8; }
+    .formula-card ul li { margin-bottom: 0.2rem; }
+
+    /* search tree */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    @media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+
+    .path-box {
+      background: #1e2530;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 1.2rem;
+    }
+    .path-box h3 { font-size: 0.95rem; margin-bottom: 0.8rem; }
+    .path-box pre {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      white-space: pre-wrap;
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+    }
+    .bad  { color: #ff6b6b; }
+    .good { color: #51cf66; }
+    .warn { color: #ffa94d; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-right: 0.3rem;
+      font-weight: 600;
+    }
+    .tag-pos { background: #1a3a24; color: #51cf66; border: 1px solid #51cf66; }
+    .tag-neg { background: #3a1a1a; color: #ff6b6b; border: 1px solid #ff6b6b; }
+  </style>
+</head>
+<body>
+
+<h1>Smell Dependency Graph &amp; Planning Formulas</h1>
+<p class="subtitle">DebugProcessImpl.java · IntelliJ commit 7655200f · Markovič &amp; Polášek dependency rules</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="dot" style="background:#4c6ef5"></div> Smell with dataset refactoring</div>
+  <div class="legend-item"><div class="dot" style="background:#868e96"></div> Smell — ground truth gap</div>
+  <div class="legend-item"><div class="arrow-pos"></div> Positive dep (resolves another smell)</div>
+  <div class="legend-item"><div class="arrow-neg"></div> Negative dep (may create a smell)</div>
+</div>
+
+<!-- ── Full dependency graph ── -->
+<h2>Full Smell Dependency Graph (8 smells)</h2>
+<div class="diagram-box">
+  <div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"edgeLabelBackground": "#1e2530"}} }%%
+graph TD
+  LM["Long Method\njava:S138 · HIGH\n✅ Extract Method"]
+  CM["Complex Method\njava:S1541 · HIGH\n✅ Extract Method"]
+  CC["Conditional Complexity\njava:S1067 · MEDIUM\n✅ Extract Method"]
+  LPL["Long Param List\njava:S107 · MEDIUM\n❌ no ground truth"]
+  GC["God Class\njava:S1200 · HIGH\n✅ Move/Extract Class"]
+  LC["Large Class\njava:S110 · HIGH\n✅ Extract Class"]
+  DC["Dup Conditions\njava:S1871 · MEDIUM\n❌ no ground truth"]
+  PS["Print Statements\njava:S106 · LOW\n❌ no ground truth"]
+
+  LM  -->|"+ resolves Feature Envy"| GC
+  LM  -->|"+ resolves Dup Code"| DC
+  LM  -->|"+ resolves Long Param List"| LPL
+  CM  -->|"+ resolves Feature Envy"| GC
+  CM  -->|"+ resolves Dup Code"| DC
+  CM  -->|"+ resolves Long Param List"| LPL
+  CC  -->|"+ resolves Feature Envy"| GC
+  CC  -->|"+ resolves Dup Code"| DC
+  LPL -->|"+ resolves Data Clumps"| LPL
+  GC  -->|"+ resolves Data Clumps"| LPL
+  GC  -->|"+ resolves Feature Envy"| LM
+  LC  -->|"+ resolves Data Clumps"| LPL
+  LC  -->|"+ resolves Feature Envy"| LM
+  DC  -->|"+ resolves Divergent Change"| DC
+
+  LM  -.->|"− may create LM"| LM
+  LM  -.->|"− may create LPL"| LPL
+  CM  -.->|"− may create LM"| LM
+  CM  -.->|"− may create LPL"| LPL
+  CC  -.->|"− may create LM"| LM
+  CC  -.->|"− may create LPL"| LPL
+  LPL -.->|"− may create Data Class"| GC
+  GC  -.->|"− may create LM"| LM
+  GC  -.->|"− may create Inapp. Intimacy"| LC
+  LC  -.->|"− may create LM"| LM
+  LC  -.->|"− may create Inapp. Intimacy"| GC
+  DC  -.->|"− may create Large Class"| LC
+  DC  -.->|"− may create Bad Inheritance"| LC
+  PS  -.->|"− may create Lazy Class"| GC
+
+  style LM  fill:#4c6ef5,color:#fff,stroke:#4c6ef5
+  style CM  fill:#4c6ef5,color:#fff,stroke:#4c6ef5
+  style CC  fill:#4c6ef5,color:#fff,stroke:#4c6ef5
+  style GC  fill:#4c6ef5,color:#fff,stroke:#4c6ef5
+  style LC  fill:#4c6ef5,color:#fff,stroke:#4c6ef5
+  style LPL fill:#868e96,color:#fff,stroke:#868e96
+  style DC  fill:#868e96,color:#fff,stroke:#868e96
+  style PS  fill:#868e96,color:#fff,stroke:#868e96
+  </div>
+</div>
+
+<!-- ── Formulas ── -->
+<h2>Formulas</h2>
+<div class="formula-grid">
+
+  <div class="formula-card">
+    <h3>PD — General (abstract)</h3>
+    <div class="math">
+      \[ PD_i = w \cdot \text{severity}(s_i) \cdot \text{freq}(s_i) + \sum\text{pos\_out}(s_i) - \sum\text{neg\_out}(s_i) \]
+    </div>
+    <ul>
+      <li>\(w = 0.5\) — weight constant</li>
+      <li>\(\text{freq}\) — occurrence count (future work)</li>
+      <li>severity: HIGH=3, MED=2, LOW=1</li>
+    </ul>
+  </div>
+
+  <div class="formula-card">
+    <h3>PD — Concrete (implementation)</h3>
+    <div class="math">
+      \[ PD^{\text{conc}}_i = w \cdot \text{severity}(s_i) + \sum\text{pos\_out}^{\text{conc}}(s_i) - \sum\text{neg\_out}^{\text{abs}}(s_i) \]
+    </div>
+    <ul>
+      <li>pos_out<sup>conc</sup>: co-located smells found in actual source file</li>
+      <li>neg_out<sup>abs</sup>: catalogue rules (Markovič &amp; Polášek)</li>
+    </ul>
+  </div>
+
+  <div class="formula-card">
+    <h3>State heuristic h(S)</h3>
+    <div class="math">
+      \[ h(S) = \sum_{s \in S} \text{severity}(s) \]
+    </div>
+    <ul>
+      <li>Total remaining severity of all active smells</li>
+      <li>Goal state: \(h(S) = 0\)</li>
+    </ul>
+  </div>
+
+  <div class="formula-card">
+    <h3>State transition</h3>
+    <div class="math">
+      \[ S' = (S \setminus \text{resolved}(s_i)) \cup \text{created}(s_i) \]
+    </div>
+    <ul>
+      <li>resolved: smells eliminated by refactoring \(r(s_i)\)</li>
+      <li>created: new smells from negative dependencies</li>
+    </ul>
+  </div>
+
+  <div class="formula-card">
+    <h3>Greedy selection</h3>
+    <div class="math">
+      \[ r^* = \arg\max_{s_i \in S}\; PD_i \]
+    </div>
+    <ul>
+      <li>Picks highest PD at each step — depth-1 lookahead only</li>
+      <li>Ignores cascading neg-deps</li>
+    </ul>
+  </div>
+
+  <div class="formula-card">
+    <h3>PD extended (cross-file scope, proposed)</h3>
+    <div class="math">
+      \[ PD'_i = PD_i + \delta \cdot \text{files\_affected}(s_i) \]
+    </div>
+    <ul>
+      <li>\(\delta\) — cross-file scope weight</li>
+      <li>Accounts for smells spanning multiple files</li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ── DebugProcessImpl search tree ── -->
+<h2>DebugProcessImpl — Greedy vs BFS Search Tree</h2>
+<div class="diagram-box">
+  <div class="mermaid">
+%%{init: {"theme": "dark"} }%%
+graph TD
+  S0["S₀: GC + LM + LPL\nh = 3+3+2 = 8"]
+
+  S0 -->|"GREEDY: Extract Class GC\nPD=0.5"| G1["S₁ᴳ: LM + LPL + LM' + II\nh = 3+2+3+2 = 10 ↑ WORSE"]
+  S0 -->|"BFS tries: Extract Method LM\nPD=0.5 → h=5"| B1["S₁ᴮ: GC + LPL\nh = 3+2 = 5 ✓"]
+  S0 -->|"BFS tries: Merge Param LPL\n→ h=6"| X1["S₁: GC + LM\nh = 3+3 = 6"]
+
+  G1 -->|"Extract Method LM"| G2["S₂ᴳ: LPL + LM' + II\nh=7"]
+  G2 -->|"Extract Method LM'"| G3["S₃ᴳ: LPL + II\nh=4"]
+  G3 -->|"Merge Param LPL"| G4["S₄ᴳ: II\nh=2"]
+  G4 -->|"Move Method II"| GF["✅ {} h=0\n5 steps · 2 new smells"]
+
+  B1 -->|"Extract Class GC\nno neg-deps fire"| B2["S₂ᴮ: LPL\nh=2"]
+  B2 -->|"Merge Param LPL"| BF["✅ {} h=0\n3 steps · 0 new smells"]
+
+  style S0  fill:#4c6ef5,color:#fff
+  style G1  fill:#c0392b,color:#fff
+  style G2  fill:#c0392b,color:#fff
+  style G3  fill:#c0392b,color:#fff
+  style G4  fill:#c0392b,color:#fff
+  style GF  fill:#868e96,color:#fff
+  style B1  fill:#2ecc71,color:#000
+  style B2  fill:#2ecc71,color:#000
+  style BF  fill:#27ae60,color:#fff
+  style X1  fill:#f39c12,color:#000
+  </div>
+</div>
+
+<!-- ── Greedy vs BFS summary ── -->
+<h2>Result Comparison</h2>
+<div class="two-col">
+  <div class="path-box">
+    <h3><span class="tag tag-neg">GREEDY</span> picks God Class first</h3>
+    <pre>
+S₀: {GC, LM, LPL}              h=8
+<span class="bad">Step 1: Extract Class (GC)       h=10 ↑ NEW SMELLS
+  ❌ creates Long Method' in extracted class
+  ❌ creates Inappropriate Intimacy</span>
+Step 2: Extract Method (LM)      h=7
+Step 3: Extract Method (LM')     h=4
+Step 4: Merge Param (LPL)        h=2
+Step 5: Move Method (II)         h=0 ✅
+<span class="bad">──────────────────────────────────
+5 steps · 2 new smells created</span>
+    </pre>
+  </div>
+  <div class="path-box">
+    <h3><span class="tag tag-pos">BFS</span> picks Long Method first</h3>
+    <pre>
+S₀: {GC, LM, LPL}              h=8
+<span class="good">Step 1: Extract Method (LM)      h=5
+  ✅ resolves Feature Envy (co-located with GC)
+  ✅ removes neg-dep precondition for GC → II</span>
+<span class="good">Step 2: Extract Class (GC)       h=2
+  ✅ neg-deps don't fire (LM gone)
+Step 3: Merge Param (LPL)        h=0 ✅</span>
+<span class="good">──────────────────────────────────
+3 steps · 0 new smells
+Matches actual developer commit ✓</span>
+    </pre>
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose' });
+</script>
+</body>
+</html>

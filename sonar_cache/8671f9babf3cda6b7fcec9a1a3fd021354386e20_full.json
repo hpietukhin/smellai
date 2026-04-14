@@ -1,0 +1,64 @@
+{
+  "spring-data-neo4j/src/test/java/org/springframework/data/neo4j/integration/helloworld/GalaxyServiceTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 171,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 192,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 210,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 232,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "spring-data-neo4j/src/test/java/org/springframework/data/neo4j/integration/movies/TransactionIntegrationTest.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 58,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    },
+    {
+      "smell_type": "Print Statements",
+      "line": 84,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ],
+  "spring-data-neo4j/src/test/java/org/springframework/data/neo4j/integration/web/controller/UserController.java": [
+    {
+      "smell_type": "Print Statements",
+      "line": 35,
+      "severity": "MEDIUM",
+      "message": "Replace this use of System.out by a logger.",
+      "rule": "java:S106",
+      "raw_severity": "MAJOR"
+    }
+  ]
+}

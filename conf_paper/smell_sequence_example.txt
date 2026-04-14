@@ -1,0 +1,206 @@
+Real dataset example: DebugProcessImpl (RMiner oracle, IntelliJ intellij-community)
+Commit: 7655200f58293e5a30bf8b3cbb29ebadae374564
+File: DebugProcessImpl.java (2108 LOC, 133 methods)
+
+================================================================================
+WHY GREEDY ALWAYS FAILS HERE — THE DEPENDENCY STRUCTURE
+================================================================================
+
+The smell graph for this class looks like this:
+
+  GC ──(+)──► [resolves Feature Envy between GC and LM]
+  GC ──(-)──► LM   (Extract Class may produce new Long Methods in the extracted class)
+  GC ──(-)──► II   (extracted class still calls private fields of parent → Inappropriate Intimacy)
+              └─ this neg-dep ONLY fires when LM already exists in the class
+                 (structural precondition: long orchestration methods are present to be moved)
+
+  LM ──(+)──► [resolves Feature Envy between LM and GC]
+  LM ──(+)──► [may resolve co-located Dup Code]
+  LM ──(-)──► LM'  (Extract Method may produce another Long Method if extraction is partial)
+  LM ──(-)──► LPL  (extracted helper methods may need extra parameters)
+              └─ these neg-deps are weak: they fire only if the method is very long
+                 and extraction splits responsibilities poorly
+
+  LPL ──(+)──► DC  (Merge Parameter resolves Data Clumps across callers)
+  LPL ──(-)──► DataClass  (Parameter Object may become a data-only class)
+
+Key structural fact: GC's negative dependencies toward LM and II have a
+PRECONDITION — they only fire if Long Methods already exist in the class.
+This is state-dependent: once LM is resolved first, GC's neg-deps are suppressed.
+
+This is the core trap for greedy. Here is why greedy always steps into it:
+
+  1. GC and LM both have HIGH severity (3). Both get the same pos_out count (1
+     each, pointing at each other's Feature Envy). Both get the same neg_out (2).
+     Result: PD(GC) = PD(LM) = 0.5*3+1-2 = 0.5.
+
+  2. Greedy must break the tie somehow — by insertion order, alphabetical, or
+     index. GC appears first in the SonarQube output (class-level rules are
+     reported before method-level). So greedy picks GC.
+
+  3. Even if the tie were broken in favour of LM (lucky choice), greedy still
+     fails in a different class configuration: if GC had one extra positive
+     co-located edge (e.g. also co-located with a Data Clump), its PD would
+     become 0.5*3+2-2 = 1.5 while LM stays at 0.5. Greedy would then pick GC
+     deterministically — and still step into the same neg-dep trap.
+
+  4. Greedy has no mechanism to look at what happens AFTER step 1. It only
+     scores the current state. It cannot detect that picking GC now will raise
+     h from 8 to 10 — i.e. make the situation worse before it gets better.
+
+BFS explicitly simulates all three possible first steps and measures the
+resulting h. It sees:
+  - GC first → h goes up to 10 (bad)
+  - LM first → h drops to 5 (best)
+  - LPL first → h drops to 6 (ok but not optimal)
+And selects LM. After LM is gone, GC's neg-dep precondition is no longer met,
+so Extract Class runs cleanly with 0 new smells.
+
+================================================================================
+SMELL DEPENDENCY MAP (Markovič & Polášek rules, as used in the system)
+================================================================================
+
+Positive dependencies (refactoring A may RESOLVE smell B as side effect):
+  Long Method / Complex Method  →  Feature Envy, Dup Code, Long Param List
+  God Class / Large Class       →  Feature Envy, Data Clumps
+  Long Param List               →  Data Clumps
+  Dup Conditions                →  Divergent Change
+
+Negative dependencies (refactoring A may INTRODUCE smell B):
+  Long Method / Complex Method  →  Long Method (partial extraction), Long Param List
+  God Class / Large Class       →  Long Method, Inappropriate Intimacy, Data Class
+  Long Param List               →  Data Class
+  Dup Conditions                →  Large Class
+
+State-dependence of negative edges:
+  The neg-dep "GC → LM" fires only if the class already contains Long Methods
+  that will be pulled into the extracted class verbatim. If Long Methods are
+  resolved first (Extract Method shrinks them), the extracted class receives
+  short focused methods — the neg-dep does not materialise.
+
+  Similarly "LM → LPL" fires only if the extracted helper needs to receive
+  data from the original method via parameters. If the method is short and
+  self-contained, no extra parameters are needed.
+
+This state-dependence is what makes ordering matter and what makes greedy
+provably suboptimal: it scores smells in isolation without modelling how
+resolving one smell changes the firing conditions of another's neg-deps.
+
+================================================================================
+INITIAL STATE S0
+================================================================================
+
+Smells (w=0.5, freq=1):
+
+  GC  — God Class        (S1200, HIGH=3)
+        pos_out = 1  (Feature Envy edge toward co-located LM)
+        neg_out = 2  (→ LM', → II)
+        PD = 0.5*3 + 1 - 2 = 0.5
+
+  LM  — Long Method      (S138, HIGH=3)
+        methods: runToCursor, addRunToCursorBreakpoint, createRunToCursorCommand
+        pos_out = 1  (Feature Envy edge toward co-located GC)
+        neg_out = 2  (→ LM', → LPL)
+        PD = 0.5*3 + 1 - 2 = 0.5
+
+  LPL — Long Param List  (S107, MEDIUM=2)
+        [document: Document, line: int] passed identically across 3 callers
+        pos_out = 1  (→ Data Clumps resolved across callers)
+        neg_out = 1  (→ Data Class risk)
+        PD = 0.5*2 + 1 - 1 = 1.0
+
+h(S0) = 3 + 3 + 2 = 8
+
+Note: LPL actually has the highest PD (1.0 > 0.5). Greedy should pick LPL first.
+But the problem is that after LPL is resolved (Merge Parameter), GC and LM
+remain and the tie between them still occurs at step 2 — greedy picks GC there,
+neg-deps fire, and the plan lengthens. BFS avoids this by choosing LM at step 2.
+
+================================================================================
+GREEDY EXECUTION
+================================================================================
+
+Step 1: pick max PD → LPL (PD=1.0)
+  Action: Merge Parameter [document,line] → XSourcePosition across 3 callers
+  + pos dep: Data Clumps across callers resolved
+  - neg dep: DataClass risk — but XSourcePosition is an interface, not a plain
+             data holder, so this neg-dep does not materialise here
+  S1 = {GC, LM}   h = 3+3 = 6
+
+Step 2: recalculate PD for {GC, LM}
+  GC: pos_out=1 (FE→LM), neg_out=2 (→LM',→II)   PD = 0.5*3+1-2 = 0.5
+  LM: pos_out=1 (FE→GC), neg_out=2 (→LM',→LPL)  PD = 0.5*3+1-2 = 0.5
+  Tie → greedy picks GC (first in list / higher-indexed rule)
+
+  Action: Extract Class on GC (133 methods → split)
+  + pos dep: Feature Envy resolved
+  - neg dep fires: LM still exists → extracted class inherits long orchestration
+    methods → NEW smell LM' (Long Method in extracted class, HIGH=3)
+  - neg dep fires: extracted class accesses private fields of parent → NEW smell
+    II (Inappropriate Intimacy, MEDIUM=2)
+  S2 = {LM, LM', II}   h = 3+3+2 = 8
+
+Step 3: pick max PD → LM or LM' (HIGH, tied)
+  Action: Extract Method on LM
+  S3 = {LM', II}   h = 3+2 = 5
+
+Step 4: Extract Method on LM'
+  S4 = {II}   h = 2
+
+Step 5: Fix Inappropriate Intimacy (Move Method / hide field)
+  S5 = {}   h = 0 ✓
+
+GREEDY TOTAL: 5 steps, 2 new smells introduced (LM', II)
+
+================================================================================
+BFS EXECUTION
+================================================================================
+
+From S0 = {GC, LM, LPL}, expand all first steps:
+
+  Option A: LPL first → S1 = {GC, LM}            h = 6
+  Option B: LM  first → S1 = {GC, LPL}            h = 5   ← lowest
+  Option C: GC  first → S1 = {LM, LPL, LM', II}   h = 10
+
+BFS selects Option B (h=5).
+
+Step 1: Extract Method on LM  [actual commit: extract checkRemap()]
+  + pos dep: Feature Envy resolved → removes precondition for GC's neg-dep
+  - neg dep LM→LPL: does not fire (extraction is clean, no extra params needed)
+  S1 = {GC, LPL}   h = 5
+
+From S1, expand all next steps:
+  Option A: GC  first → precond for neg-dep gone (LM removed) → S2 = {LPL}   h = 2
+  Option B: LPL first → S2 = {GC}                                              h = 3
+
+BFS selects GC first (h=2).
+
+Step 2: Extract Class on GC
+  neg-dep → LM does NOT fire (LM already resolved, precondition absent)
+  neg-dep → II does NOT fire (no long methods to move, extracted class is lean)
+  S2 = {LPL}   h = 2
+
+Step 3: Merge Parameter LPL → XSourcePosition  [actual commit refactoring]
+  S3 = {}   h = 0 ✓
+
+BFS TOTAL: 3 steps, 0 new smells
+
+================================================================================
+SUMMARY
+================================================================================
+
+              Greedy      BFS
+  Steps:        5          3
+  New smells:   2 (LM',II) 0
+  Final h:      0          0
+
+BFS matches the exact sequence the developer committed:
+  1. Extract checkRemap() [Extract Method on LM]
+  2. Extract Class from DebugProcessImpl [GC]
+  3. Merge [document,line] → XSourcePosition [LPL]
+
+The fundamental reason greedy fails: it scores each smell in the current
+state without simulating the state that results from each choice. It cannot
+detect that picking GC (even when PD-optimal in isolation) raises h before
+lowering it. BFS explicitly minimises h(next_state) and discovers that
+LM-first suppresses GC's neg-deps entirely.

@@ -14,9 +14,14 @@ DATASET_CONFIGS = {
         "stratify_col": "refactoring_type",
     },
     "tdd": {
-        "dedup_keys": ["commit_sha", "smell_type", "file_path"],
+        "dedup_keys": ["project", "creation_commit", "rule", "component", "start_line"],
         "default_filters": {},
-        "stratify_col": "smell_type",
+        "stratify_col": "rule",
+    },
+    "planner": {
+        "dedup_keys": ["commit_sha"],
+        "default_filters": {},
+        "stratify_col": "first_refactoring_type",
     },
 }
 
@@ -45,5 +50,15 @@ MLFLOW_COLUMN_MAP = {
         ],
         "expectation_cols": [],
         "tag_cols": ["validation", "detection_tools"],
+    },
+    "planner": {
+        "input_cols": ["repository", "commit_sha", "smell_set_s0"],
+        "expectation_cols": [
+            "refactorings_json",
+            "first_refactoring_type",
+            "first_refactoring_class",
+            "refactoring_count",
+        ],
+        "tag_cols": ["smell_count_s0", "smell_relevant_types"],
     },
 }

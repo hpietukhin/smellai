@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Smell States — DebugProcessImpl</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; padding: 2rem; }
+
+h1 { font-size: 1.5rem; color: #f8fafc; margin-bottom: 0.3rem; }
+.sub { color: #64748b; font-size: 0.88rem; margin-bottom: 2.5rem; }
+
+/* State card */
+.state {
+  border: 2px solid #2d3748;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.state.active-bfs  { border-color: #2ecc71; }
+.state.active-bad  { border-color: #e74c3c; }
+.state.initial     { border-color: #4c6ef5; }
+.state.goal        { border-color: #f39c12; }
+
+.state-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.2rem;
+  background: #1a2030;
+  cursor: pointer;
+  user-select: none;
+}
+.state-header:hover { background: #1e2840; }
+
+.state-label {
+  font-size: 1rem;
+  font-weight: 700;
+  min-width: 60px;
+  color: #f8fafc;
+}
+.smells-list { display: flex; gap: 0.4rem; flex-wrap: wrap; flex: 1; }
+.smell-tag {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.HIGH { background: #3b1a1a; color: #ff6b6b; border: 1px solid #ff6b6b; }
+.MED  { background: #2a2a10; color: #ffa94d; border: 1px solid #ffa94d; }
+.NEW  { background: #3b0000; color: #ff4444; border: 1px solid #ff4444; font-style: italic; }
+.h-score { font-size: 0.85rem; color: #94a3b8; margin-left: auto; white-space: nowrap; }
+
+.state-body { display: none; }
+.state-body.open { display: block; }
+
+.body-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+@media (max-width: 900px) { .body-inner { grid-template-columns: 1fr; } }
+
+.code-panel, .info-panel {
+  padding: 1.2rem 1.4rem;
+  border-top: 1px solid #2d3748;
+}
+.code-panel { border-right: 1px solid #2d3748; }
+
+.panel-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  margin-bottom: 0.7rem;
+}
+
+pre {
+  font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  background: #0d1117;
+  border-radius: 6px;
+  padding: 1rem;
+  overflow-x: auto;
+  white-space: pre;
+}
+.del { color: #ff6b6b; background: #1a0000; display: block; }
+.add { color: #51cf66; background: #001a00; display: block; }
+.ctx { color: #8892a4; display: block; }
+.hi  { color: #ffd43b; font-weight: bold; display: block; }
+
+.info-panel ul { padding-left: 1.2rem; font-size: 0.85rem; color: #94a3b8; }
+.info-panel li { margin-bottom: 0.4rem; }
+.info-panel li strong { color: #e2e8f0; }
+.pos-dep { color: #51cf66; }
+.neg-dep { color: #ff6b6b; }
+.formula-line { margin-top: 0.8rem; font-size: 0.88rem; color: #94a3b8; }
+
+/* Arrow between states */
+.arrow {
+  text-align: center;
+  padding: 0.5rem 0;
+  font-size: 0.82rem;
+  color: #4c6ef5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.arrow::before, .arrow::after { content: ''; flex: 1; height: 1px; max-width: 80px; }
+.arrow.bfs::before, .arrow.bfs::after { background: #2ecc71; }
+.arrow.greedy::before, .arrow.greedy::after { background: #e74c3c; }
+.arrow.bfs { color: #2ecc71; }
+.arrow.greedy { color: #e74c3c; }
+
+/* Track switcher */
+.track-switcher {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.track-btn {
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #2d3748;
+  background: #1e2530;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+}
+.track-btn.active-bfs  { background: #1a3a24; color: #2ecc71; border-color: #2ecc71; }
+.track-btn.active-bad  { background: #3a1a1a; color: #e74c3c; border-color: #e74c3c; }
+.track-btn.active-both { background: #1a2030; color: #f8fafc; border-color: #4c6ef5; }
+
+/* Diagram */
+.diagram-box {
+  background: #1e2530;
+  border: 1px solid #2d3748;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 2.5rem;
+  overflow-x: auto;
+}
+
+h2 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 1rem; margin-top: 2.5rem; }
+
+.divider {
+  border: none;
+  border-top: 1px solid #2d3748;
+  margin: 2rem 0;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 700;
+  margin-right: 0.3rem;
+}
+.badge-bfs    { background: #1a3a24; color: #2ecc71; }
+.badge-greedy { background: #3a1a1a; color: #e74c3c; }
+</style>
+</head>
+<body>
+
+<h1>State-by-State: DebugProcessImpl.java</h1>
+<p class="sub">IntelliJ · commit 7655200f · 3 smells detected · BFS vs Greedy</p>
+
+<h2>Search Overview Diagram</h2>
+<div class="diagram-box">
+<div class="mermaid">
+%%{init: {"theme": "dark"}}%%
+stateDiagram-v2
+  direction LR
+  S0 : S₀ · GC + LM + LPL · h=8
+  S1B: S₁ᴮ · GC + LPL · h=5
+  S1G: S₁ᴳ · LM + LPL + LM' + II · h=10
+  S2B: S₂ᴮ · LPL · h=2
+  S2G: S₂ᴳ · LPL + LM' + II · h=7
+  GOAL: ✅ {} · h=0
+
+  [*] --> S0
+  S0 --> S1B : BFS: Extract Method LM
+  S0 --> S1G : Greedy: Extract Class GC
+  S1B --> S2B : Extract Class GC (safe)
+  S1G --> S2G : Extract Method LM
+  S2B --> GOAL : Merge Param LPL
+  S2G --> GOAL : 3 more steps...
+</div>
+</div>
+
+<h2>Step-by-step States</h2>
+<div class="track-switcher">
+  <button class="track-btn active-both" onclick="setTrack('both')">Both paths</button>
+  <button class="track-btn" onclick="setTrack('bfs')">BFS only</button>
+  <button class="track-btn" onclick="setTrack('greedy')">Greedy only</button>
+</div>
+
+<!-- ════════════════ S0 ════════════════ -->
+<div class="state initial" id="s0">
+  <div class="state-header" onclick="toggle('s0-body')">
+    <span class="state-label">S₀</span>
+    <div class="smells-list">
+      <span class="smell-tag HIGH">God Class [H=3]</span>
+      <span class="smell-tag HIGH">Long Method [H=3]</span>
+      <span class="smell-tag MED">Long Param List [M=2]</span>
+    </div>
+    <span class="h-score">h = 8</span>
+    <span style="margin-left:0.5rem;color:#64748b;font-size:0.8rem">▼</span>
+  </div>
+  <div class="state-body open" id="s0-body">
+    <div class="body-inner">
+      <div class="code-panel">
+        <div class="panel-title">Code — createRunToCursorCommand (line ~2038)</div>
+<pre><span class="hi">// SMELL: Long Method — inline PSI lookup, no delegation</span>
+<span class="hi">// SMELL: Long Param List — (Document, int) should be XSourcePosition</span>
+<span class="ctx">public ResumeCommand createRunToCursorCommand(</span>
+<span class="hi">    SuspendContextImpl suspendContext,</span>
+<span class="hi">    Document document,        // ← smell: raw Document</span>
+<span class="hi">    int lineIndex,            // ← smell: raw int, not typed</span>
+<span class="hi">    final boolean ignoreBreakpoints)</span>
+<span class="ctx">    throws EvaluateException {</span>
+<span class="ctx">  RunToCursorCommand runToCursorCommand =</span>
+<span class="hi">      new RunToCursorCommand(suspendContext, document, lineIndex,</span>
+<span class="hi">                             ignoreBreakpoints);</span>
+<span class="ctx">  if(runToCursorCommand.myRunToCursorBreakpoint == null) {</span>
+<span class="hi">    final PsiFile psiFile =            // ← smell: PSI lookup inline</span>
+<span class="hi">        PsiDocumentManager.getInstance(getProject())</span>
+<span class="hi">                          .getPsiFile(document);</span>
+<span class="ctx">    throw new EvaluateException(</span>
+<span class="ctx">        DebuggerBundle.message(</span>
+<span class="ctx">            "error.running.to.cursor.no.executable.code",</span>
+<span class="hi">            psiFile != null ? psiFile.getName() : "&lt;No File&gt;",</span>
+<span class="hi">            lineIndex), null);</span>
+<span class="ctx">  }</span>
+<span class="ctx">  return runToCursorCommand;</span>
+<span class="ctx">}</span></pre>
+      </div>
+      <div class="info-panel">
+        <div class="panel-title">Smell analysis</div>
+        <ul>
+          <li><strong>God Class</strong> — DebugProcessImpl.java: 2108 LOC, 133 methods, owns entire debug session lifecycle. SonarQube rule java:S1200. Severity HIGH.
+            <div class="formula-line">PD = 0.5·3 + 1(pos: co-loc LM) − 2(neg: LM,II) = <strong>0.5</strong></div>
+          </li>
+          <li><strong>Long Method</strong> — <code>createRunToCursorCommand</code>: inline PSI lookup + error building + breakpoint creation. SonarQube rule java:S138. Severity HIGH.
+            <div class="formula-line">PD = 0.5·3 + 1(pos: co-loc GC) − 2(neg: LM,LPL) = <strong>0.5</strong></div>
+          </li>
+          <li><strong>Long Param List</strong> — <code>(Document, int lineIndex)</code> repeated in <code>createRunToCursorCommand</code>, <code>RunToCursorCommand constructor</code>, <code>addRunToCursorBreakpoint</code>. SonarQube rule java:S107. Severity MED.
+            <div class="formula-line">PD = 0.5·2 + 1(pos: DC cross-file) − 1(neg: DataClass) = <strong>1.0</strong></div>
+          </li>
+        </ul>
+        <br/>
+        <ul>
+          <li><strong>h(S₀)</strong> = 3 + 3 + 2 = <strong>8</strong></li>
+          <li>Greedy picks: <span class="neg-dep">God Class or Long Method (tied PD=0.5)</span> → defaults to GC (higher severity)</li>
+          <li>BFS explores all 3 first steps, picks lowest resulting h</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- arrow -->
+<div style="display:flex;gap:1rem;justify-content:center;padding:0.4rem 0">
+  <div class="arrow greedy track-greedy track-both">Greedy → Extract Class on GC</div>
+  <div class="arrow bfs track-bfs track-both">BFS → Extract Method on LM</div>
+</div>
+
+<!-- ════════════════ S1 GREEDY ════════════════ -->
+<div class="state active-bad track-greedy track-both" id="s1g">
+  <div class="state-header" onclick="toggle('s1g-body')">
+    <span class="state-label"><span class="badge badge-greedy">GREEDY</span>S₁ᴳ</span>
+    <div class="smells-list">
+      <span class="smell-tag HIGH">Long Method [H=3]</span>
+      <span class="smell-tag MED">Long Param List [M=2]</span>
+      <span class="smell-tag NEW">Long Method' NEW [H=3]</span>
+      <span class="smell-tag NEW">Inapp. Intimacy NEW [M=2]</span>
+    </div>
+    <span class="h-score" style="color:#ff6b6b">h = 10 ↑ WORSE</span>
+    <span style="margin-left:0.5rem;color:#64748b;font-size:0.8rem">▼</span>
+  </div>
+  <div class="state-body" id="s1g-body">
+    <div class="body-inner">
+      <div class="code-panel">
+        <div class="panel-title">Code after Extract Class on God Class (hypothetical)</div>
+<pre><span class="ctx">// DebugProcessImpl.java — after Extract Class</span>
+<span class="add">// NEW class DebugRunController extracted</span>
+<span class="add">class DebugRunController {</span>
+<span class="add">  private DebugProcessImpl process; // ← Inappropriate Intimacy</span>
+<span class="add">                                    //   accesses private fields</span>
+<span class="add"></span>
+<span class="add">  // SMELL: Long Method' — orchestration logic copied over</span>
+<span class="add">  public ResumeCommand createRunToCursorCommand(</span>
+<span class="add">      SuspendContextImpl ctx, Document doc, int line,</span>
+<span class="add">      boolean ignoreBreakpoints) throws EvaluateException {</span>
+<span class="add">    // entire original method body here — still long</span>
+<span class="add">    RunToCursorCommand cmd =</span>
+<span class="add">        new RunToCursorCommand(ctx, doc, line, ignoreBreakpoints);</span>
+<span class="add">    if (cmd.myRunToCursorBreakpoint == null) {</span>
+<span class="add">      // still accesses process.myProject (private!)</span>
+<span class="add">      PsiFile f = PsiDocumentManager</span>
+<span class="add">          .getInstance(process.getProject())</span>
+<span class="add">          .getPsiFile(doc);</span>
+<span class="add">      throw new EvaluateException(...);</span>
+<span class="add">    }</span>
+<span class="add">    return cmd;</span>
+<span class="add">  }</span>
+<span class="add">}</span></pre>
+      </div>
+      <div class="info-panel">
+        <div class="panel-title">What happened</div>
+        <ul>
+          <li><span class="pos-dep">✅ Feature Envy resolved</span> — moved methods no longer envy parent</li>
+          <li><span class="neg-dep">❌ neg-dep fired: creates Long Method'</span> — extracted class inherits the long orchestration method verbatim</li>
+          <li><span class="neg-dep">❌ neg-dep fired: creates Inappropriate Intimacy</span> — DebugRunController calls 47 private fields of DebugProcessImpl</li>
+          <li>Long Method (original) still exists in DebugProcessImpl</li>
+          <li>Long Param List still exists — signature unchanged</li>
+        </ul>
+        <br/>
+        <ul>
+          <li><strong>h(S₁ᴳ)</strong> = 3 + 2 + 3 + 2 = <strong>10</strong> — worse than S₀!</li>
+          <li>4 more steps needed from here</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ S1 BFS ════════════════ -->
+<div class="state active-bfs track-bfs track-both" id="s1b">
+  <div class="state-header" onclick="toggle('s1b-body')">
+    <span class="state-label"><span class="badge badge-bfs">BFS</span>S₁ᴮ</span>
+    <div class="smells-list">
+      <span class="smell-tag HIGH">God Class [H=3]</span>
+      <span class="smell-tag MED">Long Param List [M=2]</span>
+    </div>
+    <span class="h-score" style="color:#2ecc71">h = 5 ✓</span>
+    <span style="margin-left:0.5rem;color:#64748b;font-size:0.8rem">▼</span>
+  </div>
+  <div class="state-body" id="s1b-body">
+    <div class="body-inner">
+      <div class="code-panel">
+        <div class="panel-title">Code diff — Extract Method (Merge Param List into XSourcePosition)</div>
+<pre><span class="ctx">public ResumeCommand createRunToCursorCommand(</span>
+<span class="ctx">    SuspendContextImpl suspendContext,</span>
+<span class="del">-   Document document,</span>
+<span class="del">-   int lineIndex,</span>
+<span class="del">-   final boolean ignoreBreakpoints)</span>
+<span class="add">+   @NotNull XSourcePosition position,</span>
+<span class="add">+   boolean ignoreBreakpoints)</span>
+<span class="ctx">    throws EvaluateException {</span>
+<span class="ctx">  RunToCursorCommand runToCursorCommand =</span>
+<span class="del">-     new RunToCursorCommand(suspendContext, document, lineIndex,</span>
+<span class="del">-                            ignoreBreakpoints);</span>
+<span class="add">+     new RunToCursorCommand(suspendContext, position,</span>
+<span class="add">+                            ignoreBreakpoints);</span>
+<span class="ctx">  if (runToCursorCommand.myRunToCursorBreakpoint == null) {</span>
+<span class="del">-   final PsiFile psiFile =</span>
+<span class="del">-       PsiDocumentManager.getInstance(getProject())</span>
+<span class="del">-                         .getPsiFile(document);</span>
+<span class="add">+   PsiFile psiFile =</span>
+<span class="add">+       PsiManager.getInstance(myProject)</span>
+<span class="add">+                 .findFile(position.getFile());</span>
+<span class="ctx">    throw new EvaluateException(</span>
+<span class="ctx">        DebuggerBundle.message(</span>
+<span class="ctx">            "error.running.to.cursor.no.executable.code",</span>
+<span class="del">-           psiFile != null ? psiFile.getName() : "&lt;No File&gt;",</span>
+<span class="del">-           lineIndex), null);</span>
+<span class="add">+           psiFile != null ? psiFile.getName() : "&lt;No File&gt;",</span>
+<span class="add">+           position.getLine()), null);</span>
+<span class="ctx">  }</span>
+<span class="ctx">  return runToCursorCommand;</span>
+<span class="ctx">}</span></pre>
+      </div>
+      <div class="info-panel">
+        <div class="panel-title">What happened</div>
+        <ul>
+          <li><span class="pos-dep">✅ Long Method resolved</span> — method is now shorter, single responsibility</li>
+          <li><span class="pos-dep">✅ Long Param List partially resolved</span> — (Document, int) → XSourcePosition across all callers</li>
+          <li><span class="pos-dep">✅ Feature Envy resolved</span> — no longer depends on Document model; pos-dep cascade from LM → GC fired</li>
+          <li><span class="pos-dep">✅ neg-dep precondition removed</span> — GC's neg-dep "creates Long Method" won't fire now because LM is gone</li>
+        </ul>
+        <br/>
+        <ul>
+          <li>Constructor also updated: <code>(Document, int)</code> → <code>(XSourcePosition)</code></li>
+          <li>Same change in <code>BreakpointManager.addRunToCursorBreakpoint</code></li>
+          <li><strong>h(S₁ᴮ)</strong> = 3 + 2 = <strong>5</strong></li>
+          <li>Recalculate PD for GC: pos_out = 0 (FE gone), neg_out = 1 (II, but LM gone → won't fire) → PD = 0.5·3+0−0 = <strong>1.5</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow bfs track-bfs track-both">BFS → Extract Class on GC (now safe)</div>
+
+<!-- ════════════════ S2 BFS ════════════════ -->
+<div class="state active-bfs track-bfs track-both" id="s2b">
+  <div class="state-header" onclick="toggle('s2b-body')">
+    <span class="state-label"><span class="badge badge-bfs">BFS</span>S₂ᴮ</span>
+    <div class="smells-list">
+      <span class="smell-tag MED">Long Param List [M=2]</span>
+    </div>
+    <span class="h-score" style="color:#2ecc71">h = 2</span>
+    <span style="margin-left:0.5rem;color:#64748b;font-size:0.8rem">▼</span>
+  </div>
+  <div class="state-body" id="s2b-body">
+    <div class="body-inner">
+      <div class="code-panel">
+        <div class="panel-title">Code diff — Extract Class on God Class (safe now)</div>
+<pre><span class="ctx">// DebugProcessImpl.java — after Extract Class</span>
+<span class="ctx">// LM is gone so neg-dep "creates Long Method" cannot fire</span>
+<span class="ctx">// Feature Envy already resolved in S₁ᴮ</span>
+<span class="add">class RunToCursorController {</span>
+<span class="add">  // Clean extraction — no long methods to copy</span>
+<span class="add">  // No private field access needed (XSourcePosition</span>
+<span class="add">  // is self-contained, no Document reference)</span>
+<span class="add">  public ResumeCommand createRunToCursorCommand(</span>
+<span class="add">      SuspendContextImpl ctx,</span>
+<span class="add">      @NotNull XSourcePosition position,</span>
+<span class="add">      boolean ignoreBreakpoints) { ... }</span>
+<span class="add">}</span>
+<span class="ctx"></span>
+<span class="ctx">// DebugProcessImpl still has Long Param List</span>
+<span class="ctx">// in BreakpointManager callers — next step</span></pre>
+      </div>
+      <div class="info-panel">
+        <div class="panel-title">What happened</div>
+        <ul>
+          <li><span class="pos-dep">✅ God Class resolved</span> — Extract Class splits responsibilities cleanly</li>
+          <li><span class="pos-dep">✅ No new smells created</span> — neg-dep "LM" can't fire (LM was removed in S₁ᴮ)</li>
+          <li><span class="pos-dep">✅ No Inappropriate Intimacy</span> — XSourcePosition needs no private fields</li>
+        </ul>
+        <br/>
+        <ul>
+          <li>Only Long Param List remains — 3 callers still using old signature in BreakpointManager</li>
+          <li><strong>h(S₂ᴮ)</strong> = 2</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow bfs track-bfs track-both">BFS → Merge Parameter (Document,int) → XSourcePosition</div>
+
+<!-- ════════════════ GOAL ════════════════ -->
+<div class="state goal track-bfs track-both" id="sg">
+  <div class="state-header" onclick="toggle('sg-body')">
+    <span class="state-label">✅ S₃ᴮ</span>
+    <div class="smells-list">
+      <em style="color:#f39c12;font-size:0.85rem">No smells remaining</em>
+    </div>
+    <span class="h-score" style="color:#f39c12">h = 0  GOAL</span>
+    <span style="margin-left:0.5rem;color:#64748b;font-size:0.8rem">▼</span>
+  </div>
+  <div class="state-body" id="sg-body">
+    <div class="body-inner">
+      <div class="code-panel">
+        <div class="panel-title">Final code — all 3 callers fixed</div>
+<pre><span class="ctx">// DebuggerSession.java</span>
+<span class="del">- myDebugProcess.createRunToCursorCommand(ctx, document, line, ignore)</span>
+<span class="add">+ myDebugProcess.createRunToCursorCommand(ctx, position, ignore)</span>
+<span class="ctx"></span>
+<span class="ctx">// BreakpointManager.java</span>
+<span class="del">- addRunToCursorBreakpoint(Document doc, int lineIndex, boolean ignore)</span>
+<span class="add">+ addRunToCursorBreakpoint(XSourcePosition pos, boolean ignore)</span>
+<span class="ctx"></span>
+<span class="ctx">// DebugProcessImpl.java — RunToCursorCommand constructor</span>
+<span class="del">- new RunToCursorCommand(ctx, document, lineIndex, ignoreBreakpoints)</span>
+<span class="add">+ new RunToCursorCommand(ctx, position, ignoreBreakpoints)</span>
+<span class="ctx"></span>
+<span class="ctx">// XSourcePosition encapsulates VirtualFile + line</span>
+<span class="ctx">// Works inside lambdas — no open editor needed</span></pre>
+      </div>
+      <div class="info-panel">
+        <div class="panel-title">Summary</div>
+        <ul>
+          <li>BFS path: <strong>3 steps</strong>, 0 new smells created</li>
+          <li>Greedy path: <strong>5 steps</strong>, 2 new smells created (LM', II)</li>
+          <li>BFS sequence matches the actual developer commit exactly</li>
+          <li>Bug fixed: <code>XSourcePosition.getFile()</code> is a VirtualFile — works even when no editor/document is open for lambdas</li>
+        </ul>
+        <br/>
+        <ul>
+          <li>\( h(S_0)=8 \to h(S_1^B)=5 \to h(S_2^B)=2 \to h(S_3^B)=0 \)</li>
+          <li>At each step BFS picked the action that minimised \(h(S')\)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose' });
+
+function toggle(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+function setTrack(track) {
+  document.querySelectorAll('.track-btn').forEach(b => {
+    b.className = 'track-btn';
+    if (b.getAttribute('onclick').includes(track)) b.classList.add('active-' + track);
+  });
+
+  const allTracked = document.querySelectorAll('[class*="track-"]');
+  allTracked.forEach(el => {
+    const classes = [...el.classList];
+    const tracks = classes.filter(c => c.startsWith('track-'));
+    if (track === 'both') {
+      el.style.display = '';
+    } else {
+      const show = tracks.includes('track-' + track);
+      el.style.display = show ? '' : 'none';
+    }
+  });
+}
+</script>
+</body>
+</html>

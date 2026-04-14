@@ -27,6 +27,7 @@ def clone_repository(
     *,
     shallow: bool = False,
     branch: str | None = None,
+    pull_if_exists: bool = False,
 ) -> git.Repo:
     """Clone a Git repository.
 
@@ -35,6 +36,8 @@ def clone_repository(
         target_dir: Directory to clone into
         shallow: Whether to perform shallow clone (depth=1)
         branch: Specific branch to clone (None = default branch)
+        pull_if_exists: If True, pull latest changes when repo already exists;
+                        if False, return existing repo as-is
 
     Returns:
         git.Repo object
@@ -46,13 +49,16 @@ def clone_repository(
 
     if target_path.exists():
         logger.warning(f"Target directory already exists: {target_path}")
-        # Try to return existing repo
         try:
-            return git.Repo(target_path)
+            repo = git.Repo(target_path)
         except git.InvalidGitRepositoryError:
             raise RepositoryError(
                 f"Directory exists but is not a valid Git repository: {target_path}"
             )
+        if pull_if_exists:
+            logger.info(f"Pulling latest changes in {target_path}")
+            repo.remotes.origin.pull()
+        return repo
 
     try:
         logger.info(f"Cloning repository {repo_url} to {target_path}")
