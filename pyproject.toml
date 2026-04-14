@@ -39,6 +39,9 @@ packages = ["agents", "code_analysis", "models", "repo_utils", "rminer", "sonarq
 [tool.uv.sources]
 
 [dependency-groups]
+ablation = [
+    "mini-swe-agent>=2.2.8",
+]
 dev = [
     "autoflake>=2.3.1",
     "autopep8>=2.3.2",

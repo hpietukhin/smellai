@@ -1,18 +1,35 @@
-"""Pandas-based dataset integration for SmellAI research datasets."""
+"""Unified dataset integration for SmellAI research datasets.
 
-from .converter import rminer_to_df, swe_refactor_to_df, tdd_to_df
-from .preprocessor import deduplicate, split, filter_by, save, load
-from .mlflow_bridge import hf_to_genai_records, load_for_evaluation
+Public API
+----------
+EvalSample, DatasetSource   — unified evaluation-sample schema
+load_swe_raw_df             — raw SWE-Refactor DataFrame (for inspection)
+load_rminer_raw_df          — raw RMiner oracle DataFrame (for inspection)
+load_eval_samples           — list[EvalSample] from one or more sources
+load_eval_df                — MLflow-ready DataFrame
+enrich_swe_with_sonar       — optional SonarQube enrichment for SWE samples
+samples_to_mlflow_records   — EvalSample → list[dict] for mlflow.genai.evaluate
+samples_to_mlflow_df        — EvalSample → pandas DataFrame
+"""
+
+from .schema import DatasetSource, EvalSample
+from .loaders import (
+    load_rminer_raw_df,
+    load_swe_raw_df,
+    load_eval_samples,
+    load_eval_df,
+)
+from .enrich_sonar import enrich_swe_with_sonar
+from .mlflow_bridge import samples_to_mlflow_records, samples_to_mlflow_df
 
 __all__ = [
-    "rminer_to_df",
-    "swe_refactor_to_df",
-    "tdd_to_df",
-    "deduplicate",
-    "split",
-    "filter_by",
-    "save",
-    "load",
-    "hf_to_genai_records",
-    "load_for_evaluation",
+    "DatasetSource",
+    "EvalSample",
+    "load_rminer_raw_df",
+    "load_swe_raw_df",
+    "load_eval_samples",
+    "load_eval_df",
+    "enrich_swe_with_sonar",
+    "samples_to_mlflow_records",
+    "samples_to_mlflow_df",
 ]

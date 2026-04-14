@@ -1,0 +1,37 @@
+"""Unified evaluation-sample schema shared across all dataset sources.
+
+Design note
+-----------
+The three research datasets (RMiner, SWE-Refactor, TDD) have different raw
+schemas. A single rigid row model would either drop information or collapse into
+dict[str, Optional[Any]]. Instead we use a two-layer approach:
+
+1. Per-source raw pandas DataFrames (produced by source-specific loaders).
+2. One rigid ``EvalSample`` pydantic model — the generalised form. Its shape
+   matches the MLflow GenAI evaluate contract: every sample carries ``inputs``,
+   ``expectations``, and ``tags`` dicts plus a ``source`` discriminator and a
+   stable ``sample_id``. Source-specific keys live *inside* those dicts.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+DatasetSource = Literal["rminer", "swe", "tdd"]
+
+
+class EvalSample(BaseModel):
+    """One evaluation sample in the generalised, source-agnostic form."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    source: DatasetSource
+    sample_id: str = Field(..., min_length=1)
+    inputs: dict[str, Any] = Field(default_factory=dict)
+    expectations: dict[str, Any] = Field(default_factory=dict)
+    tags: dict[str, Any] = Field(default_factory=dict)
+
+
+__all__ = ["DatasetSource", "EvalSample"]

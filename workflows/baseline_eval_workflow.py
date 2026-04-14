@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 from agents.baseline import invoke_baseline_agent
 from agents.rminer_eval import mapping_accuracy, hunk_coverage, prediction_completeness
-from rminer.create_rminer_dataset import build_genai_records
+from smellai_datasets import load_eval_samples, samples_to_mlflow_records, EvalSample
 from workflows.common import setup_workflow_mlflow, print_eval_results
 
 load_dotenv()
@@ -41,16 +41,44 @@ def main() -> int:
 
     setup_workflow_mlflow(args.tracking_uri, args.experiment)
 
-    records = build_genai_records(manifest_path, limit=args.limit)
-    if not records:
+    samples = load_eval_samples(
+        ["rminer"],
+        rminer_manifest_path=manifest_path,
+        limit=args.limit,
+    )
+    if not samples:
         print("No records to evaluate", file=sys.stderr)
         return 1
 
+    records = samples_to_mlflow_records(samples)
     print(f"Model: {args.model}")
     print(f"Records: {len(records)}")
 
-    def predict_fn(pair_id: str, sonar_issues: list[dict] | None = None) -> dict:
-        return invoke_baseline_agent(pair_id, str(manifest_path), model_name=args.model)
+    def predict_fn(
+        pair_id: str,
+        before_code: str,
+        file_path: str,
+        refactoring_types: list,
+        refactoring_descriptions: list,
+        diff_hunks: list,
+        sonar_issues: list | None = None,
+    ) -> dict:
+        sample = EvalSample(
+            source="rminer",
+            sample_id=f"rminer:{pair_id}",
+            inputs={
+                "pair_id": pair_id,
+                "before_code": before_code,
+                "file_path": file_path,
+                "refactoring_types": refactoring_types,
+                "refactoring_descriptions": refactoring_descriptions,
+                "diff_hunks": diff_hunks,
+                "sonar_issues": sonar_issues or [],
+            },
+            expectations={},
+            tags={},
+        )
+        return invoke_baseline_agent(sample, model_name=args.model)
 
     results = mlflow.genai.evaluate(
         data=records,

@@ -1,19 +1,15 @@
 #!/usr/bin/env python3
 """Unified MLflow GenAI evaluation workflow.
 
-Loads data from preprocessed HF datasets (preferred) or raw sources,
-converts to MLflow GenAI format, and runs agent evaluation with
-source-appropriate scorers.
+Loads EvalSamples from raw dataset sources, converts to MLflow records,
+and runs agent evaluation with source-appropriate scorers.
 
 Usage:
-    # Evaluate from preprocessed HF dataset
-    uv run workflows/eval_workflow.py --source swe --hf-dataset-path data/processed/swe --limit 5
-
-    # Evaluate from raw data (fallback)
-    uv run workflows/eval_workflow.py --source swe --raw-data-path /tmp/SWE-Refactor/pure_refactoring_data.json
+    # SWE evaluation
+    uv run workflows/eval_workflow.py --source swe --raw-path /path/to/pure_refactoring_data.json --limit 5
 
     # RMiner evaluation
-    uv run workflows/eval_workflow.py --source rminer --hf-dataset-path data/processed/rminer --limit 10
+    uv run workflows/eval_workflow.py --source rminer --manifest rminer_data/manifest.json --limit 10
 
     # Draw agent graph
     uv run workflows/eval_workflow.py --source swe --draw-graph
@@ -27,14 +23,13 @@ import sys
 import mlflow
 from dotenv import load_dotenv
 
-from smellai_datasets.mlflow_bridge import hf_to_genai_records, load_for_evaluation
-from swe_refactor.dataset import RefactoringRecord
+from smellai_datasets import load_eval_samples, samples_to_mlflow_records, EvalSample
 from workflows.common import setup_workflow_mlflow, save_agent_graph, print_eval_results
 
 load_dotenv()
 
 # ---------------------------------------------------------------------------
-# Source-specific agent/scorer factories
+# Agent / scorer factories
 # ---------------------------------------------------------------------------
 
 def _create_rminer_agent(model: str):
@@ -62,46 +57,37 @@ def _get_swe_scorers():
 
 
 # ---------------------------------------------------------------------------
-# Data loading
+# Predict functions — reconstruct EvalSample from MLflow inputs kwargs
 # ---------------------------------------------------------------------------
 
-def _load_records(args) -> list[dict]:
-    """Load evaluation records from HF dataset or raw fallback."""
-    if args.hf_dataset_path:
-        records = load_for_evaluation(args.hf_dataset_path, args.source)
-        print(f"Loaded {len(records)} records from HF dataset: {args.hf_dataset_path}")
-    elif args.source == "rminer" and args.raw_data_path:
-        from smellai_datasets.converter import rminer_to_df
-        ds = rminer_to_df(args.raw_data_path, limit=args.limit)
-        records = hf_to_genai_records(ds, "rminer")
-        print(f"Loaded {len(records)} records from raw RMiner data")
-    elif args.source == "swe" and args.raw_data_path:
-        from smellai_datasets.converter import swe_refactor_to_df
-        ds = swe_refactor_to_df(args.raw_data_path, limit=args.limit)
-        records = hf_to_genai_records(ds, "swe")
-        print(f"Loaded {len(records)} records from raw SWE data")
-    else:
-        print(
-            "Either --hf-dataset-path or --raw-data-path is required",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    if args.limit and len(records) > args.limit:
-        records = records[: args.limit]
-
-    return records
-
-
-# ---------------------------------------------------------------------------
-# Predict functions
-# ---------------------------------------------------------------------------
-
-def _make_rminer_predict_fn(agent, manifest_path: str | None):
+def _make_rminer_predict_fn(agent):
     from agents.rminer_eval import invoke_agent as rminer_invoke
 
-    def predict_fn(pair_id: str, sonar_issues: list[dict] | None = None) -> dict:
-        return rminer_invoke(agent, pair_id, manifest_path or "", sonar_issues)
+    def predict_fn(
+        pair_id: str,
+        before_code: str,
+        file_path: str,
+        refactoring_types: list,
+        refactoring_descriptions: list,
+        diff_hunks: list,
+        sonar_issues: list | None = None,
+    ) -> dict:
+        sample = EvalSample(
+            source="rminer",
+            sample_id=f"rminer:{pair_id}",
+            inputs={
+                "pair_id": pair_id,
+                "before_code": before_code,
+                "file_path": file_path,
+                "refactoring_types": refactoring_types,
+                "refactoring_descriptions": refactoring_descriptions,
+                "diff_hunks": diff_hunks,
+                "sonar_issues": sonar_issues or [],
+            },
+            expectations={},
+            tags={},
+        )
+        return rminer_invoke(agent, sample)
 
     return predict_fn
 
@@ -110,7 +96,7 @@ def _make_swe_predict_fn(agent, args):
     from agents.swe_eval import invoke_agent as swe_invoke
 
     analytics_db = None
-    if args.enable_composite:
+    if getattr(args, "enable_composite", False):
         from swe_refactor.persistence.database import AnalyticsDB
         analytics_db = AnalyticsDB(args.analytics_db)
 
@@ -118,36 +104,75 @@ def _make_swe_predict_fn(agent, args):
         project_name: str,
         commit_id: str,
         refactoring_type: str,
-        source_before: str,
-        class_before: str,
         file_path_before: str,
         file_path_after: str,
+        class_before: str,
+        source_before: str,
         jdk_version: int,
         compile_command: str,
     ) -> dict:
-        """Reconstruct RefactoringRecord from flat HF row inputs."""
-        record = RefactoringRecord(
-            projectName=project_name,
-            commitId=commit_id,
-            type=refactoring_type,
-            filePathBefore=file_path_before,
-            filePathAfter=file_path_after,
-            sourceCodeBeforeForWhole=class_before,
-            sourceCodeAfterForWhole="",  # ground truth not given to agent
-            compileJDK=jdk_version,
-            compileCommand=compile_command,
-            compileResultBefore=True,
-            compileResultCurrent=True,
+        sample = EvalSample(
+            source="swe",
+            sample_id=f"swe:{commit_id}",
+            inputs={
+                "project_name": project_name,
+                "commit_id": commit_id,
+                "refactoring_type": refactoring_type,
+                "file_path_before": file_path_before,
+                "file_path_after": file_path_after,
+                "class_before": class_before,
+                "source_before": source_before,
+                "jdk_version": jdk_version,
+                "compile_command": compile_command,
+            },
+            expectations={},
+            tags={},
         )
         return swe_invoke(
             agent,
-            record,
+            sample,
             args.workspace,
             analytics_db=analytics_db,
             max_refactorings=args.max_refactorings,
             sonar_url=args.sonar_url,
             sonar_cache_dir=args.sonar_cache_dir,
         )
+
+    return predict_fn
+
+
+def _make_mini_swe_predict_fn(handle, args):
+    from evals.ablation.mini_swe_agent import invoke_agent as mini_invoke
+
+    def predict_fn(
+        project_name: str,
+        commit_id: str,
+        refactoring_type: str,
+        file_path_before: str,
+        file_path_after: str,
+        class_before: str,
+        source_before: str,
+        jdk_version: int,
+        compile_command: str,
+    ) -> dict:
+        sample = EvalSample(
+            source="swe",
+            sample_id=f"swe:{commit_id}",
+            inputs={
+                "project_name": project_name,
+                "commit_id": commit_id,
+                "refactoring_type": refactoring_type,
+                "file_path_before": file_path_before,
+                "file_path_after": file_path_after,
+                "class_before": class_before,
+                "source_before": source_before,
+                "jdk_version": jdk_version,
+                "compile_command": compile_command,
+            },
+            expectations={},
+            tags={},
+        )
+        return mini_invoke(handle, sample, args.workspace)
 
     return predict_fn
 
@@ -168,9 +193,8 @@ def main() -> int:
         required=True,
         help="Dataset source",
     )
-    parser.add_argument("--hf-dataset-path", help="Path to preprocessed HF dataset on disk")
-    parser.add_argument("--raw-data-path", help="Path to raw data (fallback)")
-    parser.add_argument("--manifest", help="RMiner manifest path (for predict_fn)")
+    parser.add_argument("--raw-path", help="Path to raw dataset file (SWE JSON or directory)")
+    parser.add_argument("--manifest", help="RMiner manifest.json path")
     parser.add_argument("--experiment", help="MLflow experiment name")
     parser.add_argument(
         "--tracking-uri",
@@ -178,59 +202,79 @@ def main() -> int:
         help="MLflow tracking URI",
     )
     parser.add_argument("--model", help="LLM model name")
-    parser.add_argument("--limit", type=int, help="Limit number of records")
+    parser.add_argument("--limit", type=int, help="Limit number of records per source")
     parser.add_argument(
-        "--draw-graph",
-        action="store_true",
-        help="Draw agent graph to PNG",
+        "--agent",
+        choices=["swe", "swe-composite", "mini-swe"],
+        default="swe",
+        help="Agent scaffold (default: swe)",
     )
+    parser.add_argument("--mini-step-limit", type=int, default=80, help="mini-swe-agent step limit")
+    parser.add_argument("--mini-cost-limit", type=float, default=2.0, help="mini-swe-agent cost limit (USD)")
+    parser.add_argument("--draw-graph", action="store_true", help="Draw agent graph to PNG")
     # SWE-specific options
-    parser.add_argument(
-        "--workspace",
-        default="/tmp/swe-eval-workspace",
-        help="Workspace directory for cloned repos",
-    )
-    parser.add_argument(
-        "--enable-composite",
-        action="store_true",
-        help="Enable composite refactoring mode",
-    )
+    parser.add_argument("--workspace", default="/tmp/swe-eval-workspace")
+    parser.add_argument("--enable-composite", action="store_true")
     parser.add_argument("--max-refactorings", type=int, default=5)
     parser.add_argument("--analytics-db", default="analytics.db")
     parser.add_argument("--sonar-url", default="http://localhost:9000")
     parser.add_argument("--sonar-cache-dir", default="./sonar_cache")
     args = parser.parse_args()
 
-    # Defaults per source
+    # --agent swe-composite is sugar for --agent swe --enable-composite
+    if args.agent == "swe-composite":
+        args.enable_composite = True
+
     if not args.model:
         args.model = "gpt-4o-mini" if args.source == "rminer" else "claude-sonnet-4-5-20250929"
     if not args.experiment:
-        args.experiment = f"{args.source}-evaluation"
+        args.experiment = f"{args.source}-{args.agent}-evaluation"
 
     if args.draw_graph:
-        print("Generating agent graph...")
-        if args.source == "rminer":
-            agent = _create_rminer_agent(args.model)
-        else:
-            agent = _create_swe_agent(args.model, enable_composite=args.enable_composite)
+        agent = _create_rminer_agent(args.model) if args.source == "rminer" \
+            else _create_swe_agent(args.model, enable_composite=args.enable_composite)
         save_agent_graph(agent, f"{args.source}_agent_graph.png")
         return 0
 
-    records = _load_records(args)
-    if not records:
+    # Load EvalSamples
+    from pathlib import Path
+    swe_path = Path(args.raw_path) if args.raw_path and args.source == "swe" else None
+    rminer_manifest = Path(args.manifest) if args.manifest and args.source == "rminer" else None
+
+    samples = load_eval_samples(
+        [args.source],
+        swe_path=swe_path,
+        rminer_manifest_path=rminer_manifest,
+        limit=args.limit,
+    )
+    if not samples:
         print("No records to evaluate", file=sys.stderr)
         return 1
 
-    setup_workflow_mlflow(args.tracking_uri, args.experiment)
+    records = samples_to_mlflow_records(samples)
+    print(f"Loaded {len(records)} {args.source} EvalSamples")
 
-    print(f"Source: {args.source}")
-    print(f"Model: {args.model}")
-    print(f"Records: {len(records)}")
+    setup_workflow_mlflow(args.tracking_uri, args.experiment)
 
     if args.source == "rminer":
         agent = _create_rminer_agent(args.model)
-        predict_fn = _make_rminer_predict_fn(agent, args.manifest)
+        predict_fn = _make_rminer_predict_fn(agent)
         scorers = _get_rminer_scorers()
+    elif args.agent == "mini-swe":
+        from evals.ablation.mini_swe_agent import create_agent as _create_mini
+        from evals.ablation.mini_swe_agent.scorers import (
+            mini_cost_scorer,
+            mini_step_count_scorer,
+            mini_exit_status_scorer,
+        )
+        handle = _create_mini(
+            args.model,
+            step_limit=args.mini_step_limit,
+            cost_limit=args.mini_cost_limit,
+        )
+        predict_fn = _make_mini_swe_predict_fn(handle, args)
+        scorers = _get_swe_scorers() + [mini_cost_scorer, mini_step_count_scorer, mini_exit_status_scorer]
+        print(f"Agent: mini-swe | step_limit={args.mini_step_limit} | cost_limit={args.mini_cost_limit}")
     else:
         agent = _create_swe_agent(args.model, enable_composite=args.enable_composite)
         predict_fn = _make_swe_predict_fn(agent, args)

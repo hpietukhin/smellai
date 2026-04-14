@@ -1,62 +1,27 @@
-"""Bridge between pandas DataFrames and MLflow GenAI evaluation format.
-
-Converts DataFrame rows into MLflow GenAI evaluate() records using
-column mappings defined in config.py.
-"""
+"""Thin bridge between EvalSample objects and MLflow GenAI evaluate format."""
 
 from __future__ import annotations
 
 import pandas as pd
 
-from .config import MLFLOW_COLUMN_MAP
-from .preprocessor import load
+from .schema import EvalSample
 
 
-def hf_to_genai_records(df: pd.DataFrame, source: str) -> list[dict]:
-    """Convert DataFrame rows to MLflow GenAI evaluate() format.
+def samples_to_mlflow_records(samples: list[EvalSample]) -> list[dict]:
+    """Convert EvalSamples to the MLflow GenAI evaluate() record format.
 
-    Args:
-        df: pandas DataFrame (flat rows from converter)
-        source: Dataset source key ("swe" or "rminer")
-
-    Returns:
-        List of dicts with keys: inputs, expectations, tags
+    Each record is a dict with keys: source, sample_id, inputs, expectations, tags.
+    This matches the shape consumed by mlflow.genai.evaluate(data=...).
     """
-    col_map = MLFLOW_COLUMN_MAP.get(source)
-    if col_map is None:
-        raise ValueError(
-            f"Unknown source {source!r}. Available: {list(MLFLOW_COLUMN_MAP)}"
-        )
-
-    input_cols = col_map["input_cols"]
-    expectation_cols = col_map["expectation_cols"]
-    tag_cols = col_map["tag_cols"]
-
-    records: list[dict] = []
-    for row in df.to_dict("records"):
-        record = {
-            "inputs": {col: row.get(col) for col in input_cols if col in row},
-            "expectations": {col: row.get(col) for col in expectation_cols if col in row},
-            "tags": {col: str(row.get(col, "")) for col in tag_cols if col in row},
-        }
-        records.append(record)
-
-    return records
+    return [s.model_dump() for s in samples]
 
 
-def load_for_evaluation(path: str, source: str) -> list[dict]:
-    """Load a preprocessed dataset from disk and convert to MLflow format.
+def samples_to_mlflow_df(samples: list[EvalSample]) -> pd.DataFrame:
+    """Convert EvalSamples to a MLflow-ready DataFrame.
 
-    Args:
-        path: Directory written by preprocessor.save()
-        source: Dataset source key ("swe" or "rminer")
-
-    Returns:
-        List of MLflow GenAI records
+    Columns: source, sample_id, inputs (dict), expectations (dict), tags (dict).
     """
-    result = load(path)
-    if isinstance(result, dict):
-        df = pd.concat(result.values(), ignore_index=True)
-    else:
-        df = result
-    return hf_to_genai_records(df, source)
+    return pd.DataFrame([s.model_dump() for s in samples])
+
+
+__all__ = ["samples_to_mlflow_records", "samples_to_mlflow_df"]

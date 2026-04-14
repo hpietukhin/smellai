@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import logging
-from pathlib import Path
 from typing import Annotated, List
 
 from langchain_core.messages import BaseMessage
@@ -18,9 +17,9 @@ from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 
-from rminer.create_rminer_dataset import parse_diff_hunks, parse_refactoring_info
 from agents.rminer_eval.config import DEFAULT_CONFIG, RMinerEvalAgentConfig
 from agents.dependency_analysis.agent import analyze_dependencies, DependencyAnalysis
+from smellai_datasets.schema import EvalSample
 
 LOGGER = logging.getLogger(__name__)
 
@@ -217,54 +216,39 @@ def create_rminer_eval_agent(model_name: str | None = None) -> StateGraph:
 
 def invoke_agent(
     agent,
-    pair_id: str,
-    manifest_path: str | Path,
-    sonar_issues: List[dict] | None = None,
+    sample: EvalSample,
 ) -> dict:
-    """Invoke agent for a single refactoring pair.
+    """Invoke agent for a single refactoring pair from an EvalSample.
+
+    The EvalSample must have source="rminer" and carry all required data in
+    inputs (pair_id, before_code, file_path, refactoring_types,
+    refactoring_descriptions, diff_hunks, sonar_issues).  These are produced
+    by smellai_datasets.loaders._rminer_samples() at load time.
 
     Args:
         agent: Compiled LangGraph agent
-        pair_id: ID of the refactoring pair to evaluate
-        manifest_path: Path to the manifest.json file
-        sonar_issues: Optional SonarQube issues for the file
+        sample: EvalSample with source="rminer"
 
     Returns:
         Dictionary with pair_id, filename, and predictions
     """
-    manifest_file = Path(manifest_path)
-    base_dir = manifest_file.parent
+    if sample.source != "rminer":
+        raise ValueError(
+            f"RMiner agent expects source='rminer', got {sample.source!r}"
+        )
 
-    with open(manifest_file) as f:
-        manifest = json.load(f)
-
-    pair = None
-    for p in manifest.get("pairs", []):
-        if p["id"] == pair_id:
-            pair = p
-            break
-
-    if not pair:
-        return {"pair_id": pair_id, "predictions": [], "error": "Pair not found"}
-
-    before_path = base_dir / pair["before_file"]
-    after_path = base_dir / pair["after_file"]
-
-    with open(before_path) as f:
-        before_code = f.read()
-
-    diff_hunks = parse_diff_hunks(before_path, after_path)
-    types, descriptions = parse_refactoring_info(pair)
+    inputs = sample.inputs
+    pair_id: str = inputs["pair_id"]
 
     result = agent.invoke(
         {
             "messages": [],
-            "before_code": before_code,
-            "filename": pair["file_path"],
-            "refactoring_types": types,
-            "refactoring_descriptions": descriptions,
-            "diff_hunks": [h.model_dump() for h in diff_hunks],
-            "sonar_issues": sonar_issues or [],
+            "before_code": inputs["before_code"],
+            "filename": inputs["file_path"],
+            "refactoring_types": inputs["refactoring_types"],
+            "refactoring_descriptions": inputs["refactoring_descriptions"],
+            "diff_hunks": inputs["diff_hunks"],
+            "sonar_issues": inputs.get("sonar_issues") or [],
             "dependency_analysis": [],
             "predictions": [],
         }
@@ -272,6 +256,6 @@ def invoke_agent(
 
     return {
         "pair_id": pair_id,
-        "filename": pair["file_path"],
+        "filename": inputs["file_path"],
         "predictions": result.get("predictions", []),
     }

@@ -1,6 +1,6 @@
 import textwrap
 
-from smellai_datasets.models import DiffHunk
+from rminer.diff_hunk import DiffHunk
 from rminer.rminer_utils import parse_diff_hunks
 
 

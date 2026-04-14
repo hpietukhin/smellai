@@ -36,15 +36,15 @@ class DatasetManager:
 
     def create_dataset_from_records(
         self,
-        records: list[dict],
+        records: list[dict] | list[Any],
         name: str,
         experiment: str,
         tags: dict[str, str] | None = None,
     ) -> str | None:
-        """Create an MLflow GenAI dataset from pre-built records.
+        """Create an MLflow GenAI dataset from EvalSamples or pre-built dicts.
 
         Args:
-            records: List of MLflow GenAI records (inputs/expectations/tags dicts)
+            records: list[EvalSample] or list[dict] (inputs/expectations/tags)
             name: Dataset name
             experiment: MLflow experiment name
             tags: Optional dataset-level tags
@@ -52,6 +52,9 @@ class DatasetManager:
         Returns:
             Dataset ID, or None on failure
         """
+        # Accept list[EvalSample] — convert to dicts
+        if records and hasattr(records[0], "model_dump"):
+            records = [r.model_dump() for r in records]  # type: ignore[union-attr]
         try:
             from mlflow.genai.datasets import create_dataset as create_genai_dataset
 

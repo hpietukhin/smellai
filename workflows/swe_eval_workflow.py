@@ -9,14 +9,11 @@ Scorers:
 - overall_success_rate: fraction that both compiles and passes tests
 
 Usage:
-    # Evaluate single commit
-    uv run workflows/swe_eval_workflow.py --commit 65655da4 --project checkstyle
+    # Evaluate from raw SWE-Refactor JSON
+    uv run workflows/swe_eval_workflow.py --dataset /path/to/pure_refactoring_data.json --limit 10
 
-    # Evaluate using dataset
-    uv run workflows/swe_eval_workflow.py --dataset /tmp/SWE-Refactor/pure_refactoring_data.json --limit 10
-
-    # Use different model
-    uv run workflows/swe_eval_workflow.py --dataset <path> --model gpt-4o
+    # With SonarQube enrichment
+    uv run workflows/swe_eval_workflow.py --dataset /path/to/data.json --with-sonar
 
     # Draw agent graph
     uv run workflows/swe_eval_workflow.py --draw-graph
@@ -24,7 +21,6 @@ Usage:
 
 import argparse
 import sys
-import uuid
 from pathlib import Path
 
 import mlflow
@@ -33,7 +29,7 @@ from mlflow.entities import Feedback
 from mlflow.genai.scorers import scorer
 
 from agents.swe_eval import create_swe_eval_agent, invoke_agent
-from swe_refactor.dataset import load_swe_refactor_dataset, RefactoringRecord
+from smellai_datasets import load_eval_samples, samples_to_mlflow_records, EvalSample
 from workflows.common import setup_workflow_mlflow, save_agent_graph, print_eval_results
 
 load_dotenv()
@@ -45,7 +41,7 @@ def compile_success_scorer(outputs: dict) -> Feedback:
     success = outputs.get("compile_success", False)
     return Feedback(
         value=1.0 if success else 0.0,
-        rationale="Compilation succeeded" if success else "Compilation failed"
+        rationale="Compilation succeeded" if success else "Compilation failed",
     )
 
 
@@ -60,7 +56,7 @@ def test_pass_scorer(outputs: dict) -> Feedback:
 
     return Feedback(
         value=1.0 if test_ok else 0.0,
-        rationale="Tests passed" if test_ok else "Tests failed"
+        rationale="Tests passed" if test_ok else "Tests failed",
     )
 
 
@@ -89,11 +85,9 @@ def main() -> int:
     )
     parser.add_argument(
         "--dataset",
-        help="Path to pure_refactoring_data.json",
+        help="Path to pure_refactoring_data.json (or directory)",
         default="/tmp/SWE-Refactor/pure_refactoring_data.json",
     )
-    parser.add_argument("--commit", help="Specific commit to evaluate")
-    parser.add_argument("--project", help="Project name (with --commit)")
     parser.add_argument("--experiment", default="swe-refactor-evaluation")
     parser.add_argument(
         "--tracking-uri",
@@ -107,39 +101,20 @@ def main() -> int:
         default="/tmp/swe-eval-workspace",
         help="Workspace directory for cloned repos",
     )
-    parser.add_argument(
-        "--draw-graph",
-        action="store_true",
-        help="Draw agent graph to PNG",
-    )
+    parser.add_argument("--draw-graph", action="store_true", help="Draw agent graph to PNG")
     parser.add_argument(
         "--enable-composite",
         action="store_true",
         help="Enable composite refactoring mode (A1-A6 loop)",
     )
+    parser.add_argument("--max-refactorings", type=int, default=5)
+    parser.add_argument("--analytics-db", type=str, default="analytics.db")
+    parser.add_argument("--sonar-url", type=str, default="http://localhost:9000")
+    parser.add_argument("--sonar-cache-dir", type=str, default="./sonar_cache")
     parser.add_argument(
-        "--max-refactorings",
-        type=int,
-        default=5,
-        help="Max refactoring iterations (N-action limit)",
-    )
-    parser.add_argument(
-        "--analytics-db",
-        type=str,
-        default="analytics.db",
-        help="Analytics database path",
-    )
-    parser.add_argument(
-        "--sonar-url",
-        type=str,
-        default="http://localhost:9000",
-        help="SonarQube server URL",
-    )
-    parser.add_argument(
-        "--sonar-cache-dir",
-        type=str,
-        default="./sonar_cache",
-        help="SonarQube cache directory",
+        "--with-sonar",
+        action="store_true",
+        help="Enrich EvalSamples with SonarQube scan results before evaluation",
     )
     args = parser.parse_args()
 
@@ -156,33 +131,41 @@ def main() -> int:
         print(f"Dataset not found: {dataset_path}", file=sys.stderr)
         return 1
 
-    records = load_swe_refactor_dataset(dataset_path)
+    # Load EvalSamples
+    samples = load_eval_samples(
+        ["swe"],
+        swe_path=dataset_path,
+        limit=args.limit,
+    )
 
-    if args.commit:
-        if not args.project:
-            print("--project required with --commit", file=sys.stderr)
-            return 1
-        records = [
-            r
-            for r in records
-            if r.commitId.startswith(args.commit) and r.projectName == args.project
-        ]
-        print(f"Filtered to {len(records)} records from commit {args.commit}")
-
-    if args.limit:
-        records = records[: args.limit]
-
-    if not records:
+    if not samples:
         print("No records to evaluate", file=sys.stderr)
         return 1
 
+    # Optional SonarQube enrichment
+    if args.with_sonar:
+        from smellai_datasets import enrich_swe_with_sonar
+        import os
+        sonar_token = os.environ.get("SONAR_TOKEN", "")
+        if not sonar_token:
+            print("WARNING: SONAR_TOKEN not set — skipping sonar enrichment", file=sys.stderr)
+        else:
+            print(f"Enriching {len(samples)} samples with SonarQube scan...")
+            samples = enrich_swe_with_sonar(
+                samples,
+                sonar_url=args.sonar_url,
+                sonar_token=sonar_token,
+                cache_dir=args.sonar_cache_dir,
+            )
+            print("SonarQube enrichment complete")
+
+    records = samples_to_mlflow_records(samples)
+
     setup_workflow_mlflow(args.tracking_uri, args.experiment)
 
-    # Initialize analytics DB for composite mode
     analytics_db = None
     if args.enable_composite:
         from swe_refactor.persistence.database import AnalyticsDB
-
         analytics_db = AnalyticsDB(args.analytics_db)
         print(f"Analytics DB: {args.analytics_db}")
 
@@ -191,32 +174,41 @@ def main() -> int:
     print(f"Records: {len(records)}")
     print(f"Workspace: {args.workspace}")
 
-    print("Creating agent...")
     agent = create_swe_eval_agent(
         model_name=args.model, enable_composite=args.enable_composite
     )
 
-    genai_records = [
-        {
-            "inputs": {
-                "record_dict": r.model_dump(),
+    def predict_fn(
+        project_name: str,
+        commit_id: str,
+        refactoring_type: str,
+        file_path_before: str,
+        file_path_after: str,
+        class_before: str,
+        source_before: str,
+        jdk_version: int,
+        compile_command: str,
+    ) -> dict:
+        sample = EvalSample(
+            source="swe",
+            sample_id=f"swe:{commit_id}",
+            inputs={
+                "project_name": project_name,
+                "commit_id": commit_id,
+                "refactoring_type": refactoring_type,
+                "file_path_before": file_path_before,
+                "file_path_after": file_path_after,
+                "class_before": class_before,
+                "source_before": source_before,
+                "jdk_version": jdk_version,
+                "compile_command": compile_command,
             },
-            "outputs": {},
-            "tags": {
-                "project": r.projectName,
-                "commit": r.commitId[:8],
-                "type": r.type,
-            },
-        }
-        for r in records
-    ]
-
-    def predict_fn(record_dict: dict) -> dict:
-        """Prediction function for MLflow evaluation."""
-        record = RefactoringRecord(**record_dict)
+            expectations={},
+            tags={},
+        )
         return invoke_agent(
             agent,
-            record,
+            sample,
             args.workspace,
             analytics_db=analytics_db,
             max_refactorings=args.max_refactorings,
@@ -224,10 +216,10 @@ def main() -> int:
             sonar_cache_dir=args.sonar_cache_dir,
         )
 
-    print(f"Running evaluation on {len(genai_records)} records...")
+    print(f"Running evaluation on {len(records)} records...")
 
     results = mlflow.genai.evaluate(
-        data=genai_records,
+        data=records,
         predict_fn=predict_fn,
         scorers=[
             compile_success_scorer,
@@ -237,7 +229,6 @@ def main() -> int:
     )
 
     print_eval_results(results, args.tracking_uri)
-
     return 0
 
 
