@@ -82,7 +82,8 @@
       "Bash(mv scripts/dashboard.py scripts/viz/)",
       "Bash(mv scripts/run_visualizer.py scripts/viz/)",
       "Bash(mv scripts/visualize_analytics.py scripts/viz/)",
-      "Bash(mv scripts/extract_compound_refactorings.py scripts/viz/)"
+      "Bash(mv scripts/extract_compound_refactorings.py scripts/viz/)",
+      "Bash(xargs pylint:*)"
     ],
     "deny": []
   },

@@ -43,20 +43,20 @@ class TestCounts:
 
 
 @dataclass
-class TestRunSummary(TestCounts):
+class TestRunSummary:
     """Summary of test run."""
 
-    # kw_only because parent fields all have defaults
-    build_system: Literal["maven", "gradle"] = field(kw_only=True)
+    build_system: Literal["maven", "gradle"]
     exit_code: int = 0
     tests: list[TestResult] = field(default_factory=list)
     stdout: str = ""
     stderr: str = ""
+    counts: TestCounts = field(default_factory=TestCounts)
 
     @property
     def success(self) -> bool:
         """Check if all tests passed."""
-        return self.exit_code == 0 and self.failed == 0 and self.errors == 0
+        return self.exit_code == 0 and self.counts.failed == 0 and self.counts.errors == 0
 
 
 def detect_build_system(project_path: str) -> Optional[Literal["maven", "gradle"]]:
@@ -119,17 +119,17 @@ def run_cmd_and_parse(
             summary.tests = _parse_gradle_results(project)
 
         # Calculate summary statistics
-        summary.total = len(summary.tests)
+        summary.counts.total = len(summary.tests)
         for test in summary.tests:
             if test.status == "PASS":
-                summary.passed += 1
+                summary.counts.passed += 1
             elif test.status == "FAIL":
-                summary.failed += 1
+                summary.counts.failed += 1
             elif test.status == "ERROR":
-                summary.errors += 1
+                summary.counts.errors += 1
             elif test.status == "SKIPPED":
-                summary.skipped += 1
-            summary.duration += test.duration
+                summary.counts.skipped += 1
+            summary.counts.duration += test.duration
 
         return summary
 
@@ -301,7 +301,7 @@ def run_java_tests(project_path: str, clean: bool = True) -> dict:
     result = test_summary_to_dict(summary)
 
     # Add failed test details
-    if summary.failed > 0 or summary.errors > 0:
+    if summary.counts.failed > 0 or summary.counts.errors > 0:
         result["failed_tests"] = [
             {
                 "name": test.name,
@@ -340,12 +340,12 @@ def test_summary_to_dict(summary: TestRunSummary) -> dict:
     return {
         "build_system": summary.build_system,
         "success": summary.success,
-        "total": summary.total,
-        "passed": summary.passed,
-        "failed": summary.failed,
-        "errors": summary.errors,
-        "skipped": summary.skipped,
-        "duration": round(summary.duration, 2),
+        "total": summary.counts.total,
+        "passed": summary.counts.passed,
+        "failed": summary.counts.failed,
+        "errors": summary.counts.errors,
+        "skipped": summary.counts.skipped,
+        "duration": round(summary.counts.duration, 2),
         "exit_code": summary.exit_code,
     }
 

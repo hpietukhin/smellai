@@ -61,12 +61,12 @@ def test_test_counts_defaults():
     assert counts.duration == 0.0
 
 
-def test_test_run_summary_inherits_counts():
-    """TestRunSummary should inherit TestCounts fields."""
+def test_test_run_summary_has_counts():
+    """TestRunSummary should contain a TestCounts via composition."""
     summary = TestRunSummary(build_system="maven")
-    assert isinstance(summary, TestCounts)
-    assert summary.total == 0
-    assert summary.duration == 0.0
+    assert isinstance(summary.counts, TestCounts)
+    assert summary.counts.total == 0
+    assert summary.counts.duration == 0.0
 
 
 def test_test_result_dataclass():
@@ -89,11 +89,8 @@ def test_test_run_summary_success():
     """Test TestRunSummary success property."""
     summary = TestRunSummary(
         build_system="maven",
-        total=10,
-        passed=10,
-        failed=0,
-        errors=0,
         exit_code=0,
+        counts=TestCounts(total=10, passed=10, failed=0, errors=0),
     )
 
     assert summary.success is True
@@ -103,11 +100,8 @@ def test_test_run_summary_failure():
     """Test TestRunSummary failure detection."""
     summary = TestRunSummary(
         build_system="maven",
-        total=10,
-        passed=8,
-        failed=2,
-        errors=0,
         exit_code=1,
+        counts=TestCounts(total=10, passed=8, failed=2, errors=0),
     )
 
     assert summary.success is False
@@ -133,11 +127,8 @@ def test_test_run_summary_with_errors():
     """Test TestRunSummary with errors."""
     summary = TestRunSummary(
         build_system="gradle",
-        total=5,
-        passed=4,
-        failed=0,
-        errors=1,
         exit_code=1,
+        counts=TestCounts(total=5, passed=4, failed=0, errors=1),
     )
 
     assert summary.success is False
