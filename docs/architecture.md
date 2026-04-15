@@ -14,8 +14,7 @@
 >
 > Datasets are interchangeable through unified adapter interface. This document describes the multi-agent architecture that works with all supported datasets.
 >
-> **Source of truth**: For current implementation details and up-to-date technical specifications, see [TECHNICAL_SPECIFICATION.md](../TECHNICAL_SPECIFICATION.md) (v1.1, 2026-01-12)
-
+> 
 ## 1. System Overview
 
 ### 1.1 Purpose
@@ -313,7 +312,7 @@ is_design_smell: bit(1)
 
 #### 2.2.4 Git Operations
 **Purpose**: Source code retrieval at specific commits
-**Implementation**: Full repository cloning (sparse checkout removed from design - see TECHNICAL_SPECIFICATION.md:1024)
+**Implementation**: Full repository cloning (sparse checkout removed from design)
 **Location**: `repo_utils/operations.py`
 
 ```bash
@@ -788,10 +787,6 @@ project/
 ├── eval_results/                   # Evaluation outputs (git-ignored)
 ├── docs/                           # Documentation
 │   ├── architecture.md
-│   ├── TECHNICAL_SPECIFICATION.md  # Authoritative technical reference (includes tech stack)
-│   ├── SYSTEM_DESIGN_SUMMARY.md
-│   ├── java_test_agent.md
-│   ├── sonarqube_smells.md
 │   └── README_RMINER.md
 ├── .env                            # Environment variables (git-ignored)
 ├── .env.example                    # Template for secrets

@@ -1,6 +1,5 @@
 SmellAI - Multi-Agent Refactoring System
 
-> **📋 Documentation**: [TECHNICAL_SPECIFICATION.md](TECHNICAL_SPECIFICATION.md) is the authoritative source for system architecture and design. This README covers quick start and usage.
 
 ## What is this?
 
@@ -121,7 +120,6 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db
 # Open http://localhost:5000
 ```
 
-See [docs/README_RMINER.md](docs/README_RMINER.md) for detailed RefactoringMiner workflow documentation.
 
 ### SWE-Refactor (Alternative)
 
@@ -143,7 +141,6 @@ Auto-detects Maven/Gradle, runs tests, provides LLM-powered failure analysis.
 uv run workflows/java_test_workflow.py --project /path/to/java/project
 ```
 
-See [docs/java_test_agent.md](docs/java_test_agent.md) for detailed documentation.
 
 ### A1: SonarQube smell detection
 
@@ -157,7 +154,6 @@ docker compose -f sonarqube/docker-compose.yml up -d
 uv run sonarqube/commit_scan.py --repo-url https://github.com/user/repo --commit abc123
 ```
 
-See [docs/sonarqube_smells.md](docs/sonarqube_smells.md) for smell types and configuration.
 
 ### A3: Dependency-aware prioritization
 
@@ -187,7 +183,6 @@ uv run python tools/visualize_smell_prioritization.py
 - 💡 Decision rationale (PZ scores, dependencies)
 - 📚 Real-world composite refactoring examples
 
-See [VISUALIZATION_USAGE.md](VISUALIZATION_USAGE.md) for complete guide.
 
 ### A5: Refactoring execution
 
@@ -195,13 +190,6 @@ LLM-based refactoring mapping and execution (see RefactoringMiner workflow above
 
 ## Working example
 
-For a complete end-to-end tutorial with all agents, see [docs/react_agent_mlflow.md](docs/react_agent_mlflow.md).
-
-This guide covers:
-- Setting up SonarQube and MLflow
-- Running complete evaluation workflow
-- Analyzing results and metrics
-- Troubleshooting common issues
 
 ## Advanced usage
 
@@ -213,13 +201,7 @@ This guide covers:
 
 ### Jupyter notebook integration
 
-See detailed Jupyter setup in [TECHNICAL_SPECIFICATION.md](TECHNICAL_SPECIFICATION.md) section 3.5.
 
 ## Documentation
 
-- **[TECHNICAL_SPECIFICATION.md](TECHNICAL_SPECIFICATION.md)** - Complete system architecture and design
-- **[docs/SYSTEM_DESIGN_SUMMARY.md](docs/SYSTEM_DESIGN_SUMMARY.md)** - Multi-agent architecture overview
 - **[docs/architecture.md](docs/architecture.md)** - Detailed component descriptions
-- **[docs/java_test_agent.md](docs/java_test_agent.md)** - Java test analysis agent
-- **[docs/README_RMINER.md](docs/README_RMINER.md)** - RefactoringMiner workflow
-- **[docs/sonarqube_smells.md](docs/sonarqube_smells.md)** - SonarQube integration and smell types

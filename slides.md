@@ -629,6 +629,5 @@ Multi-agent system for code smell detection, prioritization, and refactoring
 * Comprehensive evaluation framework
 * Integration of LLMs with static analysis
 
-**Documentation:** docs/SYSTEM_DESIGN_SUMMARY.md
 
 **Workflow scripts:** workflows/

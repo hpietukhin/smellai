@@ -288,13 +288,7 @@ The visualizer runs on port 8080. If port is in use, kill existing process or ch
 
 ## Documentation
 
-- `TECHNICAL_SPECIFICATION.md` - Complete system architecture and design
 - `README.md` - Quick start and usage guide
-- `VISUALIZATION_USAGE.md` - Visualizer guide with examples
-- `docs/README_RMINER.md` - RefactoringMiner workflow details
-- `docs/java_test_agent.md` - Java test analysis agent docs
-- `docs/sonarqube_smells.md` - SonarQube integration and smell types
-- `docs/SYSTEM_DESIGN_SUMMARY.md` - Multi-agent architecture overview
 
 
 General rules for code contributions and modifications:

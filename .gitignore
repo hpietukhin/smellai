@@ -61,6 +61,7 @@ test_visualizations/
 swe_refactor/*.pdf
 rminer_data/
 data/
+conf_paper/
 
 # MLflow tracking
 mlruns/
@@ -97,3 +98,4 @@ pnpm-lock.yaml
 # Nightshift plan artifacts (keep out of version control)
 .nightshift-plan
 .env
+docs/drafts/
