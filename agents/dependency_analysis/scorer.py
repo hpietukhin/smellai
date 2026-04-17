@@ -46,11 +46,6 @@ def neg_out_fn(smell, ctx: ScoringContext, *, w_neg: float) -> float:
     return -w_neg * ctx.neg_out
 
 
-def files_affected_fn(smell, ctx: ScoringContext, *, delta: float) -> float:
-    """δ · files_affected  — scope-aware extension (Discussion section)."""
-    return delta * ctx.files_affected
-
-
 # ---------------------------------------------------------------------------
 # Composers
 # ---------------------------------------------------------------------------

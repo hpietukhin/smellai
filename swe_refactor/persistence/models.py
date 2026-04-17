@@ -6,11 +6,16 @@ Tables store structured events for MLFlow export, visualization, and analysis.
 # pylint: disable=duplicate-code  # _TestCountsBase mirrors TestCounts (agents/tools/java_test_tools.py).
 # They serve different framework requirements (SQLModel vs dataclass) and cannot share a base.
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Optional
 
 from sqlmodel import Field, SQLModel
+
+
+def _utc_now() -> datetime:
+    """Return a timezone-aware UTC timestamp."""
+    return datetime.now(UTC)
 
 
 class SmellAction(str, Enum):
@@ -38,7 +43,7 @@ class ToolCall(SQLModel, table=True):
     arguments: str  # JSON-serialized dict
     result: Optional[str] = None  # JSON-serialized result
     duration_ms: float
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utc_now)
 
 
 class SmellEvent(SQLModel, table=True):
@@ -60,7 +65,7 @@ class SmellEvent(SQLModel, table=True):
     file_path: str
     line_number: int = Field(default=0)
     action: SmellAction = Field(default=SmellAction.DETECTED)
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utc_now)
 
     @property
     def location(self) -> str:
@@ -93,7 +98,7 @@ class SmellDependency(SQLModel, table=True):
     source_smell: str  # smell_id of the source smell
     target_smell: str  # smell_id of the dependent smell
     relationship: str  # "positive" | "negative"
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utc_now)
 
 
 class RefactoringAttempt(SQLModel, table=True):
@@ -115,7 +120,7 @@ class RefactoringAttempt(SQLModel, table=True):
     smells_resolved: int = 0  # Count of smells removed
     smells_created: int = 0  # Count of new smells introduced
     code_diff: Optional[str] = None  # Git diff showing code changes
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utc_now)
 
 
 class TokenUsage(SQLModel, table=True):
@@ -134,7 +139,7 @@ class TokenUsage(SQLModel, table=True):
     completion_tokens: int
     total_tokens: int
     model: str  # e.g., "gpt-4o-mini"
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utc_now)
 
 
 # These fields mirror TestCounts in agents/tools/java_test_tools.py.
@@ -164,4 +169,4 @@ class TestRun(_TestCountsBase, table=True):
     success: bool = True
     failed_tests: Optional[str] = None  # JSON list of failed test info
     test_names: Optional[str] = None  # JSON list of all test names
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utc_now)

@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmellAI Python Repo Analysis</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121933;
+      --panel-2: #192246;
+      --text: #e8ecff;
+      --muted: #aab4d6;
+      --accent: #77d0ff;
+      --accent-2: #9cffb0;
+      --warn: #ffd166;
+      --danger: #ff7b7b;
+      --border: #2a3669;
+      --code: #0f1530;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #09101f 0%, #0f1530 100%);
+      color: var(--text);
+    }
+    .deck {
+      width: min(1400px, 100vw);
+      margin: 0 auto;
+      padding: 16px 16px 80px;
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(10px);
+      background: rgba(11,16,32,.78);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 0;
+      margin-bottom: 16px;
+    }
+    .topbar-inner {
+      width: min(1400px, 100vw);
+      margin: 0 auto;
+      padding: 0 16px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .chip, a.chip {
+      display: inline-block;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      background: var(--panel);
+      text-decoration: none;
+      border-radius: 999px;
+      font-size: 13px;
+    }
+    .slide {
+      min-height: 88vh;
+      padding: 28px 8px 24px;
+      border-bottom: 1px dashed rgba(170,180,214,.18);
+    }
+    h1, h2, h3 { margin: 0 0 12px; line-height: 1.15; }
+    h1 { font-size: 48px; }
+    h2 { font-size: 34px; margin-bottom: 18px; }
+    h3 { font-size: 20px; color: var(--accent); }
+    p, li { color: var(--text); font-size: 18px; line-height: 1.5; }
+    .muted { color: var(--muted); }
+    .small { font-size: 14px; }
+    .grid { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    @media (max-width: 1000px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } h1 { font-size: 34px; } }
+    .card {
+      background: linear-gradient(180deg, rgba(25,34,70,.95), rgba(18,25,51,.95));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.22);
+    }
+    .stat {
+      font-size: 34px;
+      font-weight: 800;
+      color: var(--accent-2);
+      display: block;
+      margin-bottom: 8px;
+    }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    pre {
+      margin: 0;
+      padding: 14px;
+      border-radius: 12px;
+      overflow: auto;
+      white-space: pre-wrap;
+      background: var(--code);
+      border: 1px solid var(--border);
+      color: #dfe7ff;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .tree pre { max-height: 70vh; }
+    .kpi { font-size: 15px; color: var(--muted); }
+    .callout {
+      border-left: 4px solid var(--accent);
+      padding: 10px 14px;
+      background: rgba(119,208,255,.08);
+      border-radius: 10px;
+    }
+    .warn { border-left-color: var(--warn); background: rgba(255,209,102,.09); }
+    .danger { border-left-color: var(--danger); background: rgba(255,123,123,.09); }
+    .list-tight li { margin: 6px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+    th, td {
+      border-bottom: 1px solid rgba(170,180,214,.18);
+      padding: 10px 8px;
+      vertical-align: top;
+      text-align: left;
+    }
+    th { color: var(--accent); font-weight: 700; }
+    .evidence { color: var(--muted); font-size: 13px; margin-top: 8px; }
+    .svg-wrap {
+      background: #0e1430;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px;
+      overflow: auto;
+    }
+    .legend { display:flex; gap:10px; flex-wrap:wrap; font-size:13px; color:var(--muted); margin-top:8px; }
+    .legend span { padding:4px 8px; border-radius:999px; border:1px solid var(--border); }
+    details { border: 1px solid var(--border); border-radius: 14px; background: rgba(18,25,51,.72); padding: 10px 12px; }
+    summary { cursor: pointer; color: var(--accent); font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <span class="chip">HTML presentation</span>
+      <span class="chip">Scope: Python only</span>
+      <span class="chip">Spec-first</span>
+      <a class="chip" href="#title">Start</a>
+      <a class="chip" href="#entrypoints">Entry points</a>
+      <a class="chip" href="#tree">File tree</a>
+      <a class="chip" href="#graphs">LangGraph</a>
+      <a class="chip" href="#deadcode">Vulture</a>
+      <a class="chip" href="#appendix">Appendix</a>
+    </div>
+  </div>
+
+  <div class="deck">
+    <section class="slide" id="title">
+      <h1>SmellAI: Python codebase analysis</h1>
+      <p class="muted">Repo-focused presentation generated from Python reflection/AST inspection, <code>tree</code>, <code>jq</code>, <code>cs</code>, <code>ast-grep</code>, and the thesis PDF spec.</p>
+      <div class="grid grid-3" style="margin-top:18px;">
+        <div class="card"><span class="stat">87</span><div class="kpi">Python files under project code roots</div></div>
+        <div class="card"><span class="stat">22</span><div class="kpi">CLI files with <code>if __name__ == "__main__"</code></div></div>
+        <div class="card"><span class="stat">3</span><div class="kpi">LangGraph workflows surfaced in code: RMiner, SWE basic, SWE composite</div></div>
+      </div>
+      <div class="grid grid-2" style="margin-top:18px;">
+        <div class="card">
+          <h3>Bottom line</h3>
+          <ul class="list-tight">
+            <li>This repo is a <b>research system for dependency-aware code smell refactoring</b>, centered on <b>Java code</b> analysis/refactoring, but implemented primarily in <b>Python orchestration</b>.</li>
+            <li>The strongest current Python core is: <b>dataset loading → smell detection → planning/prioritization → LangGraph agents → MLflow evaluation → analytics visualization</b>.</li>
+            <li>The <b>PDF spec</b> describes a broader A–J pipeline; the code implements a substantial subset plus evaluation tooling.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Evidence sources used</h3>
+          <ul class="list-tight">
+            <li><code>docs/conf_Pietukhin_10_3_rev2-2.pdf</code> via <code>pdftotext</code></li>
+            <li><code>cs -h</code> to inspect code spelunker and then rank repo intent</li>
+            <li><code>ast-grep</code> to locate main guards and LangGraph node registration</li>
+            <li>Python AST/reflection over repo files</li>
+            <li><code>tree -h</code> and <code>jq</code> for structure + <code>pyproject.toml</code> entrypoints</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="method">
+      <h2>Method used to build this analysis</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Static inspection path</h3>
+          <ol class="list-tight">
+            <li>Read <code>pyproject.toml</code>, <code>README.md</code>, and core agent/workflow modules.</li>
+            <li>Extract spec text from <code>docs/conf_Pietukhin_10_3_rev2-2.pdf</code>.</li>
+            <li>Run <code>cs</code> to rank high-signal Python files by repo intent.</li>
+            <li>Run <code>ast-grep</code> to find Python main guards and LangGraph <code>add_node</code> calls.</li>
+            <li>Use Python AST to enumerate files, top-level functions/classes, and entry points.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3>What <code>cs</code> says this repo is about</h3>
+          <pre>/Users/havriil.pietukhin/uni/masterThesis/code/smellai/agents/swe_eval/agent.py
+/Users/havriil.pietukhin/uni/masterThesis/code/smellai/agents/rminer_eval/agent.py
+/Users/havriil.pietukhin/uni/masterThesis/code/smellai/rminer/create_rminer_dataset.py
+/Users/havriil.pietukhin/uni/masterThesis/code/smellai/tools/visualize_smell_prioritization.py
+/Users/havriil.pietukhin/uni/masterThesis/code/smellai/agents/dependency_analysis/agent.py</pre>
+          <div class="evidence">From <code>cs --type Python --only-code 'LangGraph OR StateGraph OR SonarQube OR refactor OR smell OR mlflow OR LiteLLM'</code>. The highest-ranked files are exactly the orchestration, dependency, dataset, and analytics layers.</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <h3>What <code>cs -h</code> is</h3>
+        <p><code>cs</code> is <b>code spelunker</b>: a recursive code search engine with boolean logic, fuzzy search, regex, structural ranking, code/comment/string filters, TUI mode, and an HTTP mode. It is useful here because it ranks repo intent, not just exact string matches.</p>
+      </div>
+    </section>
+
+    <section class="slide" id="spec">
+      <h2>Spec-first reading: what the thesis says this system is</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Spec summary</h3>
+          <ul class="list-tight">
+            <li>A <b>multi-agent system</b> for <b>dependency-aware code smell refactoring</b>.</li>
+            <li>Combines <b>SonarQube smell detection</b>, a <b>Best-First Search planner</b>, and <b>LLM refactoring agents</b>.</li>
+            <li>Targets Java code smells and evaluates with <b>RefactoringMiner 2.0</b> and <b>SWE-Refactor</b>.</li>
+            <li>Logs intermediate states, LLM responses, and metrics to <b>MLflow</b>.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Direct PDF evidence</h3>
+          <pre>"This paper proposes a multi-agent system combining
+SonarQube-based code smell detection with a dependency-aware
+Best-First Search planner and LLM-driven refactoring agents..."
+
+"The pipeline comprises ten stages (A–J), executed by six
+specialised agents..."
+
+"Agent I executes each step of the ordered plan within a
+LangGraph stateful workflow."</pre>
+          <div class="evidence">Source: <code>docs/conf_Pietukhin_10_3_rev2-2.pdf</code>, extracted via <code>pdftotext</code>.</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <h3>Most important spec/code interpretation</h3>
+        <div class="callout">The PDF is broader than the current code. The repo already has strong implementations for smell detection, prioritization, dataset/eval plumbing, and LangGraph execution, but the exact A–J stage decomposition in the paper is only partially realized in Python today.</div>
+      </div>
+    </section>
+
+    <section class="slide" id="repo-about">
+      <h2>What this repository is about, precisely</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Primary research concern</h3>
+          <p>Evaluate whether AI agents can <b>map or generate refactorings</b> while respecting <b>code smell dependencies</b> and preserving behavior.</p>
+          <ul class="list-tight">
+            <li><b>RMiner track</b>: map known refactorings to diff hunks.</li>
+            <li><b>SWE track</b>: generate refactored Java code and verify compile/tests.</li>
+            <li><b>Composite track</b>: iteratively detect smells, prioritize them, select the next one, refactor, verify, and re-scan.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Primary runtime building blocks</h3>
+          <table>
+            <tr><th>Concern</th><th>Python area</th></tr>
+            <tr><td>LangGraph orchestration</td><td><code>agents/swe_eval/agent.py</code>, <code>agents/rminer_eval/agent.py</code></td></tr>
+            <tr><td>Smell detection</td><td><code>sonarqube/commit_scan.py</code>, <code>sonarqube/tool.py</code></td></tr>
+            <tr><td>Dependency rules / prioritization</td><td><code>agents/dependency_analysis/agent.py</code>, <code>scripts/prioritize_smells.py</code></td></tr>
+            <tr><td>Datasets</td><td><code>smellai_datasets/</code>, <code>swe_refactor/dataset.py</code>, <code>rminer/</code></td></tr>
+            <tr><td>Experiment tracking</td><td><code>mlflow_utils/</code>, workflow CLIs</td></tr>
+            <tr><td>Analytics / visualization</td><td><code>swe_refactor/persistence/</code>, <code>scripts/viz/</code>, <code>tools/visualize_smell_prioritization.py</code></td></tr>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="entrypoints">
+      <h2>Python entry points</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Packaging entry point</h3>
+          <pre>{
+  "smellai-mlflow": "mlflow_utils.cli:main"
+}</pre>
+          <div class="evidence">From <code>pyproject.toml</code> parsed with <code>jq</code>.</div>
+        </div>
+        <div class="card">
+          <h3>Main CLI files found with ast-grep</h3>
+          <pre>mlflow_utils/cli.py
+sonarqube/commit_scan.py
+workflows/eval_workflow.py
+workflows/swe_eval_workflow.py
+workflows/rminer_eval_workflow.py
+workflows/java_test_workflow.py
+workflows/baseline_eval_workflow.py
+workflows/composite_analysis_workflow.py
+workflows/smell_cooccurrence_workflow.py
+scripts/prioritize_smells.py
+scripts/run_demo_eval.py
+scripts/datasets/*.py
+scripts/rminer/*.py
+scripts/viz/*.py
+rminer/create_rminer_dataset.py
+tools/visualize_smell_prioritization.py</pre>
+          <div class="evidence">Located with <code>ast-grep</code> rule for <code>if __name__ == "__main__":</code>.</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <h3>Most important operational entry points</h3>
+        <table>
+          <tr><th>Entry point</th><th>Why it matters</th></tr>
+          <tr><td><code>workflows/eval_workflow.py</code></td><td>Unified top-level evaluation driver for RMiner and SWE, with graph rendering support.</td></tr>
+          <tr><td><code>workflows/swe_eval_workflow.py</code></td><td>Dedicated SWE-Refactor workflow; can run in basic or composite mode.</td></tr>
+          <tr><td><code>workflows/rminer_eval_workflow.py</code></td><td>Dedicated RMiner refactoring-to-hunk mapping workflow.</td></tr>
+          <tr><td><code>sonarqube/commit_scan.py</code></td><td>Standalone smell scan CLI for repo+commit via SonarQube.</td></tr>
+          <tr><td><code>scripts/prioritize_smells.py</code></td><td>Planner-side smell graph / priority sequence computation.</td></tr>
+          <tr><td><code>tools/visualize_smell_prioritization.py</code></td><td>Large interactive visualizer for agent execution analytics.</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="slide" id="tree">
+      <h2>Python file tree</h2>
+      <div class="grid grid-2 tree">
+        <div class="card">
+          <h3>Top-level Python tree</h3>
+          <pre>agents
+├── baseline/
+├── dependency_analysis/
+├── java_test/
+├── rminer_eval/
+├── swe_eval/
+└── tools/
+workflows/
+smellai_datasets/
+sonarqube/
+mlflow_utils/
+swe_refactor/
+repo_utils/
+rminer/
+scripts/
+tools/
+models/
+evals/</pre>
+          <div class="evidence">From <code>tree -h -P '*.py'</code>: 29 directories, 87 Python files in project code roots.</div>
+        </div>
+        <div class="card">
+          <h3>How to read this structure</h3>
+          <ul class="list-tight">
+            <li><code>agents/</code> = orchestrated intelligence units and supporting tools.</li>
+            <li><code>workflows/</code> = CLI-facing evaluation and analysis compositions.</li>
+            <li><code>smellai_datasets/</code> = unifying schema + adapters into EvalSamples.</li>
+            <li><code>sonarqube/</code> = external smell detection integration.</li>
+            <li><code>swe_refactor/</code> = dataset model + analytics persistence + project utilities.</li>
+            <li><code>scripts/</code> and <code>tools/</code> = research analysis, preprocessing, and visualization utilities.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="grid grid-3" style="margin-top:16px;">
+        <div class="card"><h3>Largest Python hotspots</h3><ul class="list-tight"><li><code>tools/visualize_smell_prioritization.py</code> ~44K</li><li><code>agents/swe_eval/agent.py</code> ~29K</li><li><code>rminer/rminer_utils.py</code> ~19K</li><li><code>scripts/prioritize_smells.py</code> ~17K</li></ul></div>
+        <div class="card"><h3>Interpretation</h3><p>The repo is not a library-first package. It is a <b>research orchestration repo</b> with a few dense centers: the composite agent, RMiner processing, prioritization logic, and visualization.</p></div>
+        <div class="card"><h3>Reflection result</h3><p>Most core modules have meaningful module docstrings and clear separations. The runtime shape is more workflow-centric than framework-centric.</p></div>
+      </div>
+    </section>
+
+    <section class="slide" id="map">
+      <h2>Directory-by-directory explanation</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3><code>agents/</code></h3>
+          <ul class="list-tight">
+            <li><code>swe_eval/agent.py</code>: main LangGraph code-generation/refactoring agent.</li>
+            <li><code>rminer_eval/agent.py</code>: LangGraph mapping agent for refactoring ↔ diff hunk alignment.</li>
+            <li><code>dependency_analysis/agent.py</code>: smell dependency rule catalog.</li>
+            <li><code>java_test/agent.py</code>: deterministic build-system detection and test execution.</li>
+            <li><code>baseline/agent.py</code>: simpler non-LangGraph baseline.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3><code>workflows/</code></h3>
+          <ul class="list-tight">
+            <li>Primary human-facing CLIs.</li>
+            <li>Bridge <code>EvalSample</code> records into MLflow <code>predict_fn</code> evaluation calls.</li>
+            <li>Can render LangGraph graphs and launch evaluation runs.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3><code>smellai_datasets/</code></h3>
+          <ul class="list-tight">
+            <li>Defines the cross-source normalized model: <code>EvalSample</code>.</li>
+            <li>Loads raw RMiner/SWE sources into a single evaluation shape.</li>
+            <li>Bridges to MLflow GenAI records.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3><code>swe_refactor/</code></h3>
+          <ul class="list-tight">
+            <li>Holds benchmark record model.</li>
+            <li>Persists analytics in SQLModel tables: smells, attempts, tool calls, token usage, tests.</li>
+            <li>Provides git/build/JDK/project utilities used by the agent.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3><code>sonarqube/</code></h3>
+          <ul class="list-tight">
+            <li>Runs external static analysis over a checkout or local project.</li>
+            <li>Normalizes issue severity and smell types.</li>
+            <li>Acts as the smell acquisition layer.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3><code>scripts/</code> + <code>tools/</code></h3>
+          <ul class="list-tight">
+            <li>Research utilities for exploration, plotting, dashboarding, and preprocessing.</li>
+            <li>These are essential to thesis work even if they are not core runtime agents.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="graphs">
+      <h2>LangGraph workflows in code</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>ast-grep evidence</h3>
+          <pre>agents/rminer_eval/agent.py:210 add_node(...)
+agents/swe_eval/agent.py:570 add_node("a0_setup", a0_setup)
+agents/swe_eval/agent.py:571 add_node("a5_generate", a5_generate)
+agents/swe_eval/agent.py:572 add_node("a6_verify", a6_verify)
+agents/swe_eval/agent.py:576 add_node("a1_detect_smells", ...)
+agents/swe_eval/agent.py:577 add_node("a2_prioritize_smells", ...)
+agents/swe_eval/agent.py:578 add_node("a3_select_next_smell", ...)
+agents/swe_eval/agent.py:579 add_node("a4_map_smell_to_refactoring", ...)
+agents/swe_eval/agent.py:580 add_node("increment_iteration", ...)</pre>
+        </div>
+        <div class="card">
+          <h3>Interpretation</h3>
+          <ul class="list-tight">
+            <li><b>RMiner</b> has a one-node graph.</li>
+            <li><b>SWE basic</b> is a short retrying pipeline.</li>
+            <li><b>SWE composite</b> is the closest in code to the paper’s iterative planner/executor loop.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="rminer-graph">
+      <h2>LangGraph 1: RMiner mapping agent</h2>
+      <div class="svg-wrap">
+        <svg width="1100" height="240" viewBox="0 0 1100 240" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#77d0ff"/></marker>
+          </defs>
+          <rect x="40" y="80" rx="18" ry="18" width="140" height="70" fill="#1c2a58" stroke="#77d0ff"/>
+          <text x="110" y="123" text-anchor="middle" fill="#fff" font-size="22">START</text>
+          <rect x="330" y="55" rx="18" ry="18" width="420" height="120" fill="#1b3350" stroke="#9cffb0"/>
+          <text x="540" y="95" text-anchor="middle" fill="#fff" font-size="24">map_refactorings</text>
+          <text x="540" y="125" text-anchor="middle" fill="#cfe3ff" font-size="16">before_code + hunks + metadata + sonar_issues</text>
+          <text x="540" y="148" text-anchor="middle" fill="#cfe3ff" font-size="16">→ LLM structured output → predictions[]</text>
+          <rect x="900" y="80" rx="18" ry="18" width="140" height="70" fill="#3f2133" stroke="#ff7b7b"/>
+          <text x="970" y="123" text-anchor="middle" fill="#fff" font-size="22">END</text>
+          <line x1="180" y1="115" x2="330" y2="115" stroke="#77d0ff" stroke-width="4" marker-end="url(#arrow)"/>
+          <line x1="750" y1="115" x2="900" y2="115" stroke="#77d0ff" stroke-width="4" marker-end="url(#arrow)"/>
+        </svg>
+      </div>
+      <div class="grid grid-2" style="margin-top:16px;">
+        <div class="card">
+          <h3>Input state</h3>
+          <pre>RMinerEvalState = {
+  before_code,
+  filename,
+  refactoring_types,
+  refactoring_descriptions,
+  diff_hunks,
+  sonar_issues,
+  dependency_analysis,
+  predictions,
+  messages
+}</pre>
+        </div>
+        <div class="card">
+          <h3>Transformation</h3>
+          <ul class="list-tight">
+            <li>Formats refactoring list + diff hunk ranges into a prompt.</li>
+            <li>Optionally enriches prompt with SonarQube issues and dependency analysis.</li>
+            <li>Calls LiteLLM via <code>ChatLiteLLM</code>.</li>
+            <li>Parses structured or JSON output into <code>predictions</code>.</li>
+          </ul>
+          <div class="evidence"><code>agents/rminer_eval/agent.py</code>: <code>create_rminer_eval_agent</code>, <code>map_refactorings</code>, <code>invoke_agent</code>.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="swe-basic-graph">
+      <h2>LangGraph 2: SWE agent, basic mode</h2>
+      <div class="svg-wrap">
+        <svg width="1320" height="280" viewBox="0 0 1320 280" xmlns="http://www.w3.org/2000/svg">
+          <defs><marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#77d0ff"/></marker></defs>
+          <g>
+            <rect x="30" y="100" rx="16" ry="16" width="120" height="60" fill="#1c2a58" stroke="#77d0ff"/>
+            <text x="90" y="137" text-anchor="middle" fill="#fff" font-size="20">START</text>
+            <rect x="220" y="82" rx="16" ry="16" width="180" height="96" fill="#20355f" stroke="#77d0ff"/>
+            <text x="310" y="118" text-anchor="middle" fill="#fff" font-size="22">a0_setup</text>
+            <text x="310" y="145" text-anchor="middle" fill="#cfe3ff" font-size="14">clone / checkout / JDK</text>
+            <rect x="470" y="82" rx="16" ry="16" width="190" height="96" fill="#1b3350" stroke="#9cffb0"/>
+            <text x="565" y="118" text-anchor="middle" fill="#fff" font-size="22">a5_generate</text>
+            <text x="565" y="145" text-anchor="middle" fill="#cfe3ff" font-size="14">prompt → LLM → code</text>
+            <rect x="730" y="82" rx="16" ry="16" width="190" height="96" fill="#3a315a" stroke="#ffd166"/>
+            <text x="825" y="118" text-anchor="middle" fill="#fff" font-size="22">a6_verify</text>
+            <text x="825" y="145" text-anchor="middle" fill="#cfe3ff" font-size="14">write / compile / test</text>
+            <rect x="1160" y="100" rx="16" ry="16" width="120" height="60" fill="#3f2133" stroke="#ff7b7b"/>
+            <text x="1220" y="137" text-anchor="middle" fill="#fff" font-size="20">END</text>
+            <line x1="150" y1="130" x2="220" y2="130" stroke="#77d0ff" stroke-width="4" marker-end="url(#arrow2)"/>
+            <line x1="400" y1="130" x2="470" y2="130" stroke="#77d0ff" stroke-width="4" marker-end="url(#arrow2)"/>
+            <line x1="660" y1="130" x2="730" y2="130" stroke="#77d0ff" stroke-width="4" marker-end="url(#arrow2)"/>
+            <line x1="920" y1="130" x2="1160" y2="130" stroke="#77d0ff" stroke-width="4" marker-end="url(#arrow2)"/>
+            <path d="M825 178 C 825 240, 565 240, 565 178" fill="none" stroke="#ffd166" stroke-width="4" marker-end="url(#arrow2)"/>
+            <text x="695" y="242" text-anchor="middle" fill="#ffd166" font-size="16">retry on failed compile until max retries</text>
+          </g>
+        </svg>
+      </div>
+      <div class="grid grid-3" style="margin-top:16px;">
+        <div class="card"><h3>a0_setup</h3><p>Builds runtime context from a SWE record: repo URL lookup, clone if missing, checkout parent commit, switch Java version.</p></div>
+        <div class="card"><h3>a5_generate</h3><p>Creates a refactoring prompt by refactoring type and source/target file relation, invokes LiteLLM, extracts Java code blocks.</p></div>
+        <div class="card"><h3>a6_verify</h3><p>Writes candidate code into the checkout, compiles, optionally runs tests, and reports success/failure for retry logic.</p></div>
+      </div>
+    </section>
+
+    <section class="slide" id="swe-composite-graph">
+      <h2>LangGraph 3: SWE agent, composite mode</h2>
+      <div class="svg-wrap">
+        <svg width="1500" height="520" viewBox="0 0 1500 520" xmlns="http://www.w3.org/2000/svg">
+          <defs><marker id="arrow3" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#77d0ff"/></marker></defs>
+          <rect x="40" y="210" rx="16" ry="16" width="110" height="56" fill="#1c2a58" stroke="#77d0ff"/>
+          <text x="95" y="244" text-anchor="middle" fill="#fff" font-size="20">START</text>
+          <rect x="210" y="190" rx="16" ry="16" width="150" height="96" fill="#20355f" stroke="#77d0ff"/>
+          <text x="285" y="225" text-anchor="middle" fill="#fff" font-size="21">a0_setup</text>
+          <text x="285" y="252" text-anchor="middle" fill="#cfe3ff" font-size="14">repo workspace</text>
+          <rect x="420" y="190" rx="16" ry="16" width="170" height="96" fill="#2e3b63" stroke="#77d0ff"/>
+          <text x="505" y="225" text-anchor="middle" fill="#fff" font-size="20">a1_detect_smells</text>
+          <text x="505" y="252" text-anchor="middle" fill="#cfe3ff" font-size="14">SonarQube scan</text>
+          <rect x="650" y="190" rx="16" ry="16" width="180" height="96" fill="#28415d" stroke="#9cffb0"/>
+          <text x="740" y="225" text-anchor="middle" fill="#fff" font-size="20">a2_prioritize_smells</text>
+          <text x="740" y="252" text-anchor="middle" fill="#cfe3ff" font-size="14">PZ queue + graph</text>
+          <rect x="890" y="190" rx="16" ry="16" width="180" height="96" fill="#28415d" stroke="#9cffb0"/>
+          <text x="980" y="225" text-anchor="middle" fill="#fff" font-size="20">a3_select_next_smell</text>
+          <text x="980" y="252" text-anchor="middle" fill="#cfe3ff" font-size="14">pick smell_id</text>
+          <rect x="1130" y="190" rx="16" ry="16" width="200" height="96" fill="#28415d" stroke="#9cffb0"/>
+          <text x="1230" y="225" text-anchor="middle" fill="#fff" font-size="20">a4_map_smell_to_refactoring</text>
+          <text x="1230" y="252" text-anchor="middle" fill="#cfe3ff" font-size="14">smell → refactoring</text>
+          <rect x="1110" y="360" rx="16" ry="16" width="170" height="92" fill="#1b3350" stroke="#9cffb0"/>
+          <text x="1195" y="394" text-anchor="middle" fill="#fff" font-size="20">a5_generate</text>
+          <text x="1195" y="420" text-anchor="middle" fill="#cfe3ff" font-size="14">LLM refactoring</text>
+          <rect x="850" y="360" rx="16" ry="16" width="170" height="92" fill="#3a315a" stroke="#ffd166"/>
+          <text x="935" y="394" text-anchor="middle" fill="#fff" font-size="20">a6_verify</text>
+          <text x="935" y="420" text-anchor="middle" fill="#cfe3ff" font-size="14">compile / test / re-scan</text>
+          <rect x="610" y="360" rx="16" ry="16" width="170" height="92" fill="#2d365b" stroke="#77d0ff"/>
+          <text x="695" y="394" text-anchor="middle" fill="#fff" font-size="20">increment_iteration</text>
+          <text x="695" y="420" text-anchor="middle" fill="#cfe3ff" font-size="14">loop counter reset</text>
+          <rect x="1370" y="210" rx="16" ry="16" width="90" height="56" fill="#3f2133" stroke="#ff7b7b"/>
+          <text x="1415" y="244" text-anchor="middle" fill="#fff" font-size="20">END</text>
+          <line x1="150" y1="238" x2="210" y2="238" stroke="#77d0ff" stroke-width="4" marker-end="url(#arrow3)"/>
+          <line x1="360" y1="238" x2="420" y2="238" stroke="#77d0ff" stroke-width="4" marker-end="url(#arrow3)"/>
+          <line x1="590" y1="238" x2="650" y2="238" stroke="#77d0ff" stroke-width="4" marker-end="url(#arrow3)"/>
+          <line x1="830" y1="238" x2="890" y2="238" stroke="#77d0ff" stroke-width="4" marker-end="url(#arrow3)"/>
+          <line x1="1070" y1="238" x2="1130" y2="238" stroke="#77d0ff" stroke-width="4" marker-end="url(#arrow3)"/>
+          <line x1="1230" y1="286" x2="1195" y2="360" stroke="#77d0ff" stroke-width="4" marker-end="url(#arrow3)"/>
+          <line x1="1110" y1="406" x2="1020" y2="406" stroke="#77d0ff" stroke-width="4" marker-end="url(#arrow3)"/>
+          <line x1="850" y1="406" x2="780" y2="406" stroke="#77d0ff" stroke-width="4" marker-end="url(#arrow3)"/>
+          <path d="M695 360 C 600 280, 560 280, 505 286" fill="none" stroke="#77d0ff" stroke-width="4" marker-end="url(#arrow3)"/>
+          <text x="585" y="312" text-anchor="middle" fill="#77d0ff" font-size="16">next iteration</text>
+          <path d="M935 360 C 935 320, 1195 320, 1195 360" fill="none" stroke="#ffd166" stroke-width="4" marker-end="url(#arrow3)"/>
+          <text x="1065" y="332" text-anchor="middle" fill="#ffd166" font-size="16">retry</text>
+          <line x1="1070" y1="238" x2="1370" y2="238" stroke="#ff7b7b" stroke-width="4" stroke-dasharray="8 7" marker-end="url(#arrow3)"/>
+          <text x="1215" y="218" text-anchor="middle" fill="#ff9d9d" font-size="15">no smell / max iterations → end</text>
+        </svg>
+      </div>
+      <div class="legend">
+        <span>Blue = setup / control</span>
+        <span>Green = planning / generation</span>
+        <span>Yellow = verification / retry</span>
+        <span>Dashed red = terminate</span>
+      </div>
+    </section>
+
+    <section class="slide" id="dataflow">
+      <h2>Where data lives, and how it is transformed</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Cross-cutting data model</h3>
+          <pre>smellai_datasets/schema.py
+
+class EvalSample(BaseModel):
+  source: Literal["rminer", "swe", "tdd"]
+  sample_id: str
+  inputs: dict[str, Any]
+  expectations: dict[str, Any]
+  tags: dict[str, Any]</pre>
+          <p>This is the normalization boundary. Raw dataset formats differ; workflows consume the generalized <code>EvalSample</code>.</p>
+        </div>
+        <div class="card">
+          <h3>Persistent analytics data</h3>
+          <pre>swe_refactor/persistence/models.py
+
+ToolCall
+SmellEvent
+SmellDependency
+RefactoringAttempt
+TokenUsage
+TestRun</pre>
+          <p>These tables capture the runtime history that the paper says should be logged: smells, attempts, token use, tests, and tool activity.</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <h3>Principal transformations</h3>
+        <table>
+          <tr><th>Stage</th><th>Input</th><th>Output</th></tr>
+          <tr><td>Dataset load</td><td>RMiner manifest / SWE JSON</td><td><code>EvalSample</code> objects</td></tr>
+          <tr><td>Workflow predict_fn</td><td>MLflow row kwargs</td><td>Reconstructed <code>EvalSample</code></td></tr>
+          <tr><td>Agent invoke</td><td><code>EvalSample</code></td><td>LangGraph initial state dict</td></tr>
+          <tr><td>Detection</td><td>Project checkout</td><td><code>SmellEvent[]</code></td></tr>
+          <tr><td>Prioritization</td><td><code>SmellEvent[]</code></td><td>priority queue + dependency graph</td></tr>
+          <tr><td>Generation</td><td>state + source code + prompt</td><td>candidate refactored Java code</td></tr>
+          <tr><td>Verification</td><td>candidate code + checkout</td><td>compile/test outcome + smell delta</td></tr>
+          <tr><td>Evaluation</td><td>outputs</td><td>MLflow feedback metrics</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="slide" id="spec-vs-code">
+      <h2>Spec pipeline (A–J) vs current code</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Spec A–J from PDF</h3>
+          <ol class="list-tight">
+            <li>A: load source, detect build system</li>
+            <li>B: check if every function has tests</li>
+            <li>C: generate missing tests</li>
+            <li>D: run full baseline tests</li>
+            <li>E: construct inter-smell dependency graph</li>
+            <li>F: SonarQube smell scan</li>
+            <li>G: developer selects target smells</li>
+            <li>H: BeFS planner produces ordered plan</li>
+            <li>I: LLM executes planned refactoring</li>
+            <li>J: tests after refactor, rollback/replan</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3>What code currently realizes</h3>
+          <table>
+            <tr><th>Spec</th><th>Code realization</th><th>Status</th></tr>
+            <tr><td>A / D / J</td><td><code>agents/java_test/agent.py</code>, SWE <code>a0_setup</code>, <code>a6_verify</code></td><td>partial/implemented</td></tr>
+            <tr><td>F</td><td><code>sonarqube/commit_scan.py</code>, composite <code>a1_detect_smells</code></td><td>implemented</td></tr>
+            <tr><td>E / H</td><td><code>scripts/prioritize_smells.py</code>, dependency rules, queueing</td><td>partially implemented; paper says BeFS, code mostly greedy/PZ prioritization</td></tr>
+            <tr><td>I</td><td>SWE <code>a5_generate</code>, RMiner <code>map_refactorings</code></td><td>implemented</td></tr>
+            <tr><td>B / C / G</td><td>little/no direct end-to-end implementation</td><td>gap</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="callout warn" style="margin-top:16px;">Important mismatch: the spec emphasizes a BeFS planner and developer-selection stage. The current composite code uses <b>detect → prioritize → select next smell</b> inside the agent, with a heuristic queue, not a full explicit BeFS search engine.</div>
+    </section>
+
+    <section class="slide" id="agent-steps">
+      <h2>Every coding-agent step, described as data movement</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>RMiner agent</h3>
+          <ul class="list-tight">
+            <li><b>State source</b>: workflow reconstructs an RMiner <code>EvalSample</code>.</li>
+            <li><b>Prompt assembly</b>: code file, refactoring descriptions, diff hunk spans, optional smell context.</li>
+            <li><b>Model step</b>: LLM predicts mapping JSON.</li>
+            <li><b>State sink</b>: predictions emitted to MLflow scorers.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>SWE basic agent</h3>
+          <ul class="list-tight">
+            <li><b>a0_setup</b>: dataset record → checked out local repo state.</li>
+            <li><b>a5_generate</b>: repo state + record → prompt → candidate Java code.</li>
+            <li><b>a6_verify</b>: candidate code → filesystem mutation → compile/test result.</li>
+            <li><b>retry loop</b>: compile errors are fed back into the next prompt.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>SWE composite planning side</h3>
+          <ul class="list-tight">
+            <li><b>a1_detect_smells</b>: local project → <code>SmellEvent[]</code>.</li>
+            <li><b>a2_prioritize_smells</b>: smell events → dependency graph + ordered queue.</li>
+            <li><b>a3_select_next_smell</b>: queue → current <code>smell_id</code>.</li>
+            <li><b>a4_map_smell_to_refactoring</b>: smell type → refactoring type heuristic.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>SWE composite execution side</h3>
+          <ul class="list-tight">
+            <li><b>a5_generate</b>: current smell context appended to prompt.</li>
+            <li><b>a6_verify</b>: code applied; if compile succeeds, re-scan smells.</li>
+            <li><b>diffing</b>: before-smells vs after-smells → resolved/created/persistent.</li>
+            <li><b>analytics</b>: attempt, token usage, smell events, and git diff persisted.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="models">
+      <h2>Important Python models and contracts</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Normalized sample contract</h3>
+          <p><code>EvalSample</code> is the repo’s lingua franca. It lets the workflows treat RMiner and SWE similarly even though their raw schemas differ.</p>
+        </div>
+        <div class="card">
+          <h3>Composite runtime contract</h3>
+          <p><code>SWEEvalState</code> is the richest state object in the repo: source record, workspace paths, refactoring artifacts, smell graph/queue, counters, Sonar config, persistence handle, and token tracking.</p>
+        </div>
+        <div class="card">
+          <h3>RMiner runtime contract</h3>
+          <p><code>RMinerEvalState</code> is intentionally smaller: this agent is a single-step mapper, not an iterative planner/executor.</p>
+        </div>
+        <div class="card">
+          <h3>Persistence contract</h3>
+          <p>SQLModel tables in <code>swe_refactor/persistence/models.py</code> provide the replayable execution memory that powers visualization and analysis.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="entrypoint-details">
+      <h2>Entry point families, by usage</h2>
+      <div class="grid grid-3">
+        <div class="card">
+          <h3>Evaluation</h3>
+          <ul class="list-tight">
+            <li><code>workflows/eval_workflow.py</code></li>
+            <li><code>workflows/swe_eval_workflow.py</code></li>
+            <li><code>workflows/rminer_eval_workflow.py</code></li>
+            <li><code>workflows/baseline_eval_workflow.py</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Data preparation</h3>
+          <ul class="list-tight">
+            <li><code>rminer/create_rminer_dataset.py</code></li>
+            <li><code>scripts/rminer/extract_rminer_data.py</code></li>
+            <li><code>scripts/datasets/preprocess.py</code></li>
+            <li><code>scripts/datasets/analyze.py</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Analysis / visualization</h3>
+          <ul class="list-tight">
+            <li><code>scripts/prioritize_smells.py</code></li>
+            <li><code>scripts/viz/dashboard.py</code></li>
+            <li><code>scripts/viz/visualize_analytics.py</code></li>
+            <li><code>tools/visualize_smell_prioritization.py</code></li>
+          </ul>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <h3>Library-style entry points</h3>
+        <table>
+          <tr><th>Import path</th><th>Role</th></tr>
+          <tr><td><code>agents.swe_eval.create_swe_eval_agent</code></td><td>Compiled LangGraph builder for SWE agent.</td></tr>
+          <tr><td><code>agents.swe_eval.invoke_agent</code></td><td>State bootstrapper for a single SWE sample.</td></tr>
+          <tr><td><code>agents.rminer_eval.create_rminer_eval_agent</code></td><td>Compiled LangGraph builder for RMiner mapping agent.</td></tr>
+          <tr><td><code>agents.rminer_eval.invoke_agent</code></td><td>State bootstrapper for a single RMiner sample.</td></tr>
+          <tr><td><code>agents.java_test.run_java_test_analysis</code></td><td>Deterministic testing utility corresponding to spec stages A/D/J.</td></tr>
+          <tr><td><code>sonarqube.tool.scan_commit_smells</code></td><td>Toolified smell scan integration.</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="slide" id="gaps">
+      <h2>Notable findings, mismatches, and risks</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Spec alignment gaps</h3>
+          <ul class="list-tight">
+            <li>The PDF says BeFS planner; code visibly centers on heuristic prioritization and iterative selection.</li>
+            <li>Developer selection stage from the paper is not a clear first-class runtime component in current Python.</li>
+            <li>Test generation stages B/C are described in the paper but are not a strong implemented path in this repo snapshot.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Code-level practical gaps</h3>
+          <ul class="list-tight">
+            <li><code>swe_refactor/smell_detection/</code> is almost empty in the tree, but composite agent imports utilities from it; either generated elsewhere or incomplete in this checkout.</li>
+            <li>The repo mixes research prototype code, evaluation flows, and dashboards; some paths look more mature than others.</li>
+            <li>The largest agent file (<code>agents/swe_eval/agent.py</code>) is doing many responsibilities at once.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout danger" style="margin-top:16px;">If you want a “source of truth” runtime narrative, prefer: <b>PDF theory for intended architecture</b> + <b><code>workflows/eval_workflow.py</code></b> and the two LangGraph agent files for actual implemented execution.</div>
+    </section>
+
+    <section class="slide" id="deadcode">
+      <h2>Dead-code scan with Vulture</h2>
+      <div class="grid grid-3">
+        <div class="card"><span class="stat">68</span><div class="kpi">dead-code candidates reported by <code>uvx vulture</code></div></div>
+        <div class="card"><span class="stat">45</span><div class="kpi">reported as unused variables</div></div>
+        <div class="card"><span class="stat">23</span><div class="kpi">functions / methods / imports / attributes</div></div>
+      </div>
+      <div class="grid grid-2" style="margin-top:16px;">
+        <div class="card">
+          <h3>Important caveat</h3>
+          <p>Many Vulture hits here are expected <b>false positives</b> because this repo uses <b>Pydantic/SQLModel fields</b>, TypedDict state keys, and framework-driven attributes. So the signal is useful, but it is not a deletion list.</p>
+          <pre>Examples likely false-positive-heavy:
+- SQLModel fields in swe_refactor/persistence/models.py
+- TypedDict state fields in agents/swe_eval/agent.py
+- Pydantic model fields in rminer/diff_hunk.py and dataset models</pre>
+        </div>
+        <div class="card">
+          <h3>Most credible dead-code candidates</h3>
+          <pre>agents/dependency_analysis/scorer.py:49  files_affected_fn
+agents/tools/java_test_tools.py:382      get_java_test_tools
+rminer/rminer_utils.py:535               rminer_jar_path
+rminer/rminer_utils.py:617               calculate_line_overlap
+scripts/rminer/extract_rminer_data.py:47 ensure_rate_limit
+tools/visualize_smell_prioritization.py:19 globlib import
+tools/visualize_smell_prioritization.py:884 main_page</pre>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <h3>Interpretation</h3>
+        <ul class="list-tight">
+          <li>The repo probably has a <b>small amount of real dead helper code</b>.</li>
+          <li>The persistence/model layers inflate the Vulture report because their fields are used reflectively.</li>
+          <li>The best cleanup targets are the explicit helper functions/imports above, not the model fields.</li>
+        </ul>
+        <div class="evidence">Scan command: <code>uvx vulture agents workflows smellai_datasets sonarqube mlflow_utils swe_refactor repo_utils rminer scripts tools models evals</code></div>
+      </div>
+      <div class="grid grid-2" style="margin-top:16px;">
+        <div class="card">
+          <h3>Duplicate-code check near dead-code candidates</h3>
+          <pre>Tool: uvx pylint --enable=similarities
+Thresholds tested:
+- targeted scan: min-similarity-lines=4
+- repo scan:     min-similarity-lines=5
+Result: no duplicate-code findings emitted</pre>
+          <p>This suggests the likely dead helpers are mostly <b>isolated leftovers</b>, not symptoms of copy-pasted logic clusters.</p>
+        </div>
+        <div class="card">
+          <h3>Targeted Ruff findings in the same area</h3>
+          <pre>tools/visualize_smell_prioritization.py
+- unused import: datetime
+- unused import: glob as globlib
+- unused import: TokenUsage
+- two bare excepts
+- two one-line except: pass statements</pre>
+          <p>So the strongest cleanup signal is in <code>tools/visualize_smell_prioritization.py</code>, but it is more <b>lint/dead import</b> cleanup than duplicate-code cleanup.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="recommendation">
+      <h2>If you want to continue this analysis</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Best code-reading path</h3>
+          <ol class="list-tight">
+            <li><code>workflows/eval_workflow.py</code></li>
+            <li><code>agents/swe_eval/agent.py</code></li>
+            <li><code>agents/rminer_eval/agent.py</code></li>
+            <li><code>smellai_datasets/schema.py</code> + <code>loaders.py</code></li>
+            <li><code>scripts/prioritize_smells.py</code></li>
+            <li><code>swe_refactor/persistence/models.py</code></li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3>Best code-running path</h3>
+          <ol class="list-tight">
+            <li>Inspect datasets / entry points.</li>
+            <li>Run SonarQube scan CLI.</li>
+            <li>Run RMiner workflow first; it is smaller and easier to trace.</li>
+            <li>Then run SWE workflow in basic mode, then composite mode.</li>
+            <li>Use analytics dashboard / visualizer to inspect loop behavior.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="appendix">
+      <h2>Appendix</h2>
+      <details open>
+        <summary>Full detected CLI entry points</summary>
+        <pre>mlflow_utils/cli.py
+rminer/create_rminer_dataset.py
+scripts/datasets/analyze.py
+scripts/datasets/inspect_rminer.py
+scripts/datasets/preprocess.py
+scripts/prioritize_smells.py
+scripts/rminer/explore_rminer.py
+scripts/rminer/extract_rminer_data.py
+scripts/run_demo_eval.py
+scripts/viz/dashboard.py
+scripts/viz/extract_compound_refactorings.py
+scripts/viz/run_visualizer.py
+scripts/viz/visualize_analytics.py
+sonarqube/commit_scan.py
+tools/visualize_smell_prioritization.py
+workflows/baseline_eval_workflow.py
+workflows/composite_analysis_workflow.py
+workflows/eval_workflow.py
+workflows/java_test_workflow.py
+workflows/rminer_eval_workflow.py
+workflows/smell_cooccurrence_workflow.py
+workflows/swe_eval_workflow.py</pre>
+      </details>
+      <details style="margin-top:12px;">
+        <summary>Top-level Python tree snapshot</summary>
+        <pre>agents
+├── baseline/
+├── dependency_analysis/
+├── java_test/
+├── rminer_eval/
+├── swe_eval/
+└── tools/
+workflows/
+smellai_datasets/
+sonarqube/
+mlflow_utils/
+swe_refactor/
+repo_utils/
+rminer/
+scripts/
+tools/
+models/
+evals/</pre>
+      </details>
+      <details style="margin-top:12px;">
+        <summary>Key files to trust most</summary>
+        <pre>docs/conf_Pietukhin_10_3_rev2-2.pdf
+workflows/eval_workflow.py
+agents/swe_eval/agent.py
+agents/rminer_eval/agent.py
+scripts/prioritize_smells.py
+smellai_datasets/schema.py
+swe_refactor/persistence/models.py
+sonarqube/commit_scan.py</pre>
+      </details>
+    </section>
+  </div>
+</body>
+</html>

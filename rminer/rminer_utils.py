@@ -614,18 +614,3 @@ def parse_refactoring_info(pair: dict) -> tuple[List[str], List[str]]:
     return types, descriptions
 
 
-def calculate_line_overlap(start1: int, end1: int, start2: int, end2: int) -> int:
-    """Calculate overlapping lines between two ranges.
-
-    Args:
-        start1: Start line of first range
-        end1: End line of first range
-        start2: Start line of second range
-        end2: End line of second range
-
-    Returns:
-        Number of overlapping lines (0 if no overlap)
-    """
-    overlap_start = max(start1, start2)
-    overlap_end = min(end1, end2)
-    return max(0, overlap_end - overlap_start + 1)

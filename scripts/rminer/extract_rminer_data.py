@@ -10,7 +10,6 @@ import hashlib
 import json
 import os
 import sys
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from pathlib import Path
@@ -42,12 +41,6 @@ def get_repo(repo_name: str) -> Optional[Repository]:
 
 def repo_from_url(url: str) -> str:
     return url.replace("https://github.com/", "").replace(".git", "").strip("/")
-
-
-def ensure_rate_limit(flag: list[bool]):
-    if flag[0]:
-        time.sleep(60)
-        flag[0] = False
 
 
 def fetch_commit(repo: Repository, sha: str, rate_flag: list[bool]):

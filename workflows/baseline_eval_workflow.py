@@ -10,7 +10,7 @@ Usage:
 
 from __future__ import annotations
 
-import argparse
+from types import SimpleNamespace
 
 from dotenv import load_dotenv
 
@@ -25,14 +25,20 @@ from workflows.common import (
 load_dotenv()
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Baseline evaluation (single LLM call)")
-    parser.add_argument("--manifest", required=True, help="Path to manifest.json")
-    parser.add_argument("--experiment", default="baseline-evaluation")
-    parser.add_argument("--tracking-uri", default="http://localhost:5000")
-    parser.add_argument("--model", default="gpt-4o-mini")
-    parser.add_argument("--limit", type=int, help="Limit number of pairs")
-    args = parser.parse_args()
+def main(
+    manifest: str,
+    experiment: str = "baseline-evaluation",
+    tracking_uri: str = "http://localhost:5000",
+    model: str = "gpt-4o-mini",
+    limit: int | None = None,
+) -> int:
+    args = SimpleNamespace(
+        manifest=manifest,
+        experiment=experiment,
+        tracking_uri=tracking_uri,
+        model=model,
+        limit=limit,
+    )
 
     records, err = load_rminer_records(args)
     if records is None:
@@ -60,4 +66,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    import fire
+
+    raise SystemExit(fire.Fire(main))

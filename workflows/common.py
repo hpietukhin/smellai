@@ -60,15 +60,20 @@ def make_swe_eval_sample(
 
 def _get_rminer_scorers():
     """Return the standard RMiner scorer triple."""
-    from agents.rminer_eval import mapping_accuracy, hunk_coverage, prediction_completeness
+    from agents.rminer_eval import (
+        mapping_accuracy,
+        hunk_coverage,
+        prediction_completeness,
+    )
+
     return [mapping_accuracy, hunk_coverage, prediction_completeness]
 
 
 def run_rminer_evaluation(records, predict_fn, scorers, tracking_uri: str) -> int:
     """Run mlflow.genai.evaluate with rminer scorers, print results, and return 0."""
-    import mlflow
+    from mlflow.genai import evaluate as genai_evaluate
 
-    results = mlflow.genai.evaluate(
+    results = genai_evaluate(
         data=records,
         predict_fn=predict_fn,
         scorers=scorers,
@@ -144,7 +149,9 @@ def save_agent_graph(agent, output_path: str) -> None:
         print(f"Graph saved to {output_path}")
     except Exception as e:
         print(f"Failed to draw graph: {e}")
-        print("Ensure langgraph is installed. `pip install grandalf` may be needed for visualization.")
+        print(
+            "Ensure langgraph is installed. `pip install grandalf` may be needed for visualization."
+        )
 
 
 def print_eval_results(results, tracking_uri: str | None = None) -> None:

@@ -1,0 +1,912 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.23.1",
+    "script_metadata_hash": null
+  },
+  "cells": [
+    {
+      "id": "Hbol",
+      "code_hash": "1aa29fcf39a8d58fb2aa61ac80439172",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"data-preparation-smellai-stage-1\">Data preparation \u2014 SmellAI (stage 1)</h1>\n<span class=\"paragraph\">Three research datasets feed the SmellAI pipeline:</span>\n<table>\n<thead>\n<tr>\n<th>Source</th>\n<th>What it is</th>\n<th>Unit of a row</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><strong>rminer</strong></td>\n<td>RMiner 2.0 oracle of mined refactorings</td>\n<td>one refactoring occurrence</td>\n</tr>\n<tr>\n<td><strong>swe</strong></td>\n<td>SWE-Refactor benchmark (before/after Java source)</td>\n<td>one refactoring pair</td>\n</tr>\n<tr>\n<td><strong>tdd</strong></td>\n<td>Technical Debt Dataset v2 (SonarQube issues)</td>\n<td>one code-smell event</td>\n</tr>\n</tbody>\n</table>\n<span class=\"paragraph\">The notebook is organised so <strong>every single conversion step is a\nseparate, labelled cell</strong> \u2014 load \u2192 peek \u2192 explode \u2192 filter \u2192 rename \u2192\ncoerce \u2192 project to <code>inputs</code> / <code>expectations</code> / <code>tags</code> \u2192 assemble\n<code>sample_id</code> \u2192 wrap in <code>EvalSample</code> \u2192 validate \u2192 unify.</span>\n<span class=\"paragraph\">Read top-to-bottom; each cell does one small thing and hands its\nresult to the next.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "742df1f8024d6457d76d8e02a098592b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"setup-imports-paths-schema\">Setup \u2014 imports, paths, schema</h2></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "7012911d25b1bdd8357040b229dc5bcf",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "imports ok\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "9c898c206f62094b542039fc4129fd13",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "raw sources ok\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "faabf4ff94b41fca1d475144eedd199d",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"group-a-raw-frames\">Group A \u2014 raw frames</h2>\n<span class=\"paragraph\">Load each source into a <em>flat</em> pandas DataFrame with source-specific\ncolumns. No harmonisation, no pydantic. Every atomic operation\n(load, peek, explode, filter, rename, coerce, build DataFrame) gets\nits own cell so nothing is hidden inside a one-shot list-comprehension.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "d918f417ef7a478305de3fb06956bdf7",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"a1-rminer-oracle\">A.1 \u00b7 RMiner oracle</h3></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Xref",
+      "code_hash": "10ebf79702ea8418bfbf907b30f132fa",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "rminer: 549 commits loaded\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "b1885a128d9e7c0317d0fc0b2d8bb697",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "application/json": "{\"type\": \"Extract Method\", \"description\": \"Extract Method private showStatus(txt String) : void extracted from private showStatus(realm Realm) : void in class io.realm.examples.realmmigrationexample.MigrationExampleActivity\", \"comment\": null, \"validation\": \"TP\", \"detectionTools\": \"RefactoringMiner, RefDiff, RD-1x, RMiner-1x\", \"validators\": null}"
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "top-level keys: ['id', 'repository', 'sha1', 'url', 'author', 'time', 'refactorings', 'refDiffExecutionTime']\nrefactorings on first commit: 9\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "BYtC",
+      "code_hash": "d55db4182fd2a9b909b4cc37498d3c35",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "exploded: 15666 (commit, refactoring) pairs\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "RGSE",
+      "code_hash": "a0217f9ab1bc4fe0a07b361480cbc2af",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "filter TP: 11616 / 15666 rows kept (74.1%)\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "Kclp",
+      "code_hash": "48c3d562c8619a17b13193446daf21db",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "flat rows: 11616, 8 columns each\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "emfo",
+      "code_hash": "b376599f51c259a31f9bc67b163c7a1e",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='emfo-0' random-id='29d8d5ad-312f-d549-fe4d-8fdef7e2a9ce'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;repository&#92;&quot;:&#92;&quot;https://github.com/realm/realm-java.git&#92;&quot;,&#92;&quot;commit_sha&#92;&quot;:&#92;&quot;6cf596df183b3c3a38ed5dd9bb3b0100c6548ebb&#92;&quot;,&#92;&quot;author&#92;&quot;:&#92;&quot;Christian Melchior&#92;&quot;,&#92;&quot;time&#92;&quot;:&#92;&quot;6/8/15 7:26 AM&#92;&quot;,&#92;&quot;refactoring_type&#92;&quot;:&#92;&quot;Extract Method&#92;&quot;,&#92;&quot;description&#92;&quot;:&#92;&quot;Extract Method private showStatus(txt String) : void extracted from private showStatus(realm Realm) : void in class io.realm.examples.realmmigrationexample.MigrationExampleActivity&#92;&quot;,&#92;&quot;validation&#92;&quot;:&#92;&quot;TP&#92;&quot;,&#92;&quot;detection_tools&#92;&quot;:&#92;&quot;RefactoringMiner, RefDiff, RD-1x, RMiner-1x&#92;&quot;},{&#92;&quot;repository&#92;&quot;:&#92;&quot;https://github.com/realm/realm-java.git&#92;&quot;,&#92;&quot;commit_sha&#92;&quot;:&#92;&quot;6cf596df183b3c3a38ed5dd9bb3b0100c6548ebb&#92;&quot;,&#92;&quot;author&#92;&quot;:&#92;&quot;Christian Melchior&#92;&quot;,&#92;&quot;time&#92;&quot;:&#92;&quot;6/8/15 7:26 AM&#92;&quot;,&#92;&quot;refactoring_type&#92;&quot;:&#92;&quot;Extract Variable&#92;&quot;,&#92;&quot;description&#92;&quot;:&#92;&quot;Extract Variable realmMigration : RealmMigration in method public migrateRealm(configuration RealmConfiguration, migration RealmMigration) : void from class io.realm.Realm&#92;&quot;,&#92;&quot;validation&#92;&quot;:&#92;&quot;TP&#92;&quot;,&#92;&quot;detection_tools&#92;&quot;:&#92;&quot;RefactoringMiner&#92;&quot;},{&#92;&quot;repository&#92;&quot;:&#92;&quot;https://github.com/realm/realm-java.git&#92;&quot;,&#92;&quot;commit_sha&#92;&quot;:&#92;&quot;6cf596df183b3c3a38ed5dd9bb3b0100c6548ebb&#92;&quot;,&#92;&quot;author&#92;&quot;:&#92;&quot;Christian Melchior&#92;&quot;,&#92;&quot;time&#92;&quot;:&#92;&quot;6/8/15 7:26 AM&#92;&quot;,&#92;&quot;refactoring_type&#92;&quot;:&#92;&quot;Extract Variable&#92;&quot;,&#92;&quot;description&#92;&quot;:&#92;&quot;Extract Variable config0 : RealmConfiguration in method protected onCreate(savedInstanceState Bundle) : void from class io.realm.examples.realmmigrationexample.MigrationExampleActivity&#92;&quot;,&#92;&quot;validation&#92;&quot;:&#92;&quot;TP&#92;&quot;,&#92;&quot;detection_tools&#92;&quot;:&#92;&quot;RefactoringMiner&#92;&quot;}]&quot;' data-total-rows='3' data-total-columns='8' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;repository&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;commit_sha&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;author&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;time&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;refactoring_type&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;description&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;validation&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;detection_tools&quot;,[&quot;string&quot;,&quot;object&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "df_rminer_raw: 11616 rows x 8 cols\n{'repository': dtype('O'), 'commit_sha': dtype('O'), 'author': dtype('O'), 'time': dtype('O'), 'refactoring_type': dtype('O'), 'description': dtype('O'), 'validation': dtype('O'), 'detection_tools': dtype('O')}\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "Hstk",
+      "code_hash": "69bc929193fa3dd697b7e9a40760c452",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"a2-swe-refactor-pure-refactorings\">A.2 \u00b7 SWE-Refactor pure refactorings</h3></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nWHF",
+      "code_hash": "584620bca91ed30ac1bc46432670cc8a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "swe: 1099 records loaded\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "iLit",
+      "code_hash": "a8d838e92fb68d227061ddb4a1c4f642",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "keys on first record:\n  callInfo\n  classNameBefore\n  classNameBeforeSet\n  classSignatureBefore\n  classSignatureBeforeSet\n  commitId\n  compileCommand\n  compileJDK\n  compileResultBefore\n  compileResultCurrent\n  coverageInfo\n  description\n  diffLocations\n  diffSourceCode\n  diffSourceCodeSet\n  filePathAfter\n  filePathBefore\n  hasTestC\n  invokedMethodSet\n  isPureRefactoring\n  methodNameBefore\n  methodNameBeforeSet\n  moveFileExist\n  packageNameBefore\n  projectName\n  purityCheckResultList\n  sourceCodeAfterForWhole\n  sourceCodeAfterRefactoring\n  sourceCodeBeforeForWhole\n  sourceCodeBeforeRefactoring\n  type\n  uniqueId\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "ZHCJ",
+      "code_hash": "f3f8691b02008c0fba77f2d2f338fad0",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "coerce_jdk ok\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "ROlb",
+      "code_hash": "df6bd07818c7d2c2013031469ecc69e2",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "renamed: 1099 rows, 14 cols\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "qnkX",
+      "code_hash": "debf116172e07e34d5eee4e01354a61b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "coerced: is_pure=1099, is_compound=0\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "TqIu",
+      "code_hash": "0c71d0f10e16aa3ad23f0335224caffe",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='TqIu-0' random-id='739f0cc9-943d-7c8a-d7a1-66ced49fb033'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;pair_id&#92;&quot;:&#92;&quot;67b98ab96e15fba231ca494c7ce3752cce0a9654_57_71__61_75_86_91&#92;&quot;,&#92;&quot;project_name&#92;&quot;:&#92;&quot;checkstyle&#92;&quot;,&#92;&quot;commit_id&#92;&quot;:&#92;&quot;67b98ab96e15fba231ca494c7ce3752cce0a9654&#92;&quot;,&#92;&quot;refactoring_type&#92;&quot;:&#92;&quot;Inline Method&#92;&quot;,&#92;&quot;file_path_before&#92;&quot;:&#92;&quot;src/main/java/com/puppycrawl/tools/checkstyle/checks/regexp/SinglelineDetector.java&#92;&quot;,&#92;&quot;file_path_after&#92;&quot;:&#92;&quot;src/main/java/com/puppycrawl/tools/checkstyle/checks/regexp/SinglelineDetector.java&#92;&quot;,&#92;&quot;class_before&#92;&quot;:&#92;&quot;///////////////////////////////////////////////////////////////////////////////////////////////&#92;&#92;n// checkstyle: Checks Java source code and other text files for adherence to a set of rules.&#92;&#92;n// Copyright (C) 2001-2024 the original author or authors.&#92;&#92;n//&#92;&#92;n// This library is free software; you can redistribute it and/or&#92;&#92;n// modify it under the terms of the GNU Lesser General Public&#92;&#92;n// License as published by the Free Software Foundation; either&#92;&#92;n// version 2.1 of the License, or (at your option) any later version.&#92;&#92;n//&#92;&#92;n// This library is distributed in the hope that it will be useful,&#92;&#92;n// but WITHOUT ANY WARRANTY; without even the implied warranty of&#92;&#92;n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU&#92;&#92;n// Lesser General Public License for more details.&#92;&#92;n//&#92;&#92;n// You should have received a copy of the GNU Lesser General Public&#92;&#92;n// License along with this library; if not, write to the Free Software&#92;&#92;n// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA&#92;&#92;n///////////////////////////////////////////////////////////////////////////////////////////////&#92;&#92;n&#92;&#92;npackage com.puppycrawl.tools.checkstyle.checks.regexp;&#92;&#92;n&#92;&#92;nimport java.util.regex.Matcher;&#92;&#92;n&#92;&#92;nimport com.puppycrawl.tools.checkstyle.api.FileText;&#92;&#92;n&#92;&#92;n/**&#92;&#92;n * A detector that matches individual lines.&#92;&#92;n */&#92;&#92;nclass SinglelineDetector {&#92;&#92;n&#92;&#92;n    /**&#92;&#92;n     * A key is pointing to the warning message text in &#92;&#92;&#92;&quot;messages.properties&#92;&#92;&#92;&quot;&#92;&#92;n     * file.&#92;&#92;n     */&#92;&#92;n    public static final String MSG_REGEXP_EXCEEDED = &#92;&#92;&#92;&quot;regexp.exceeded&#92;&#92;&#92;&quot;;&#92;&#92;n&#92;&#92;n    /**&#92;&#92;n     * A key is pointing to the warning message text in &#92;&#92;&#92;&quot;messages.properties&#92;&#92;&#92;&quot;&#92;&#92;n     * file.&#92;&#92;n     */&#92;&#92;n    public static final String MSG_REGEXP_MINIMUM = &#92;&#92;&#92;&quot;regexp.minimum&#92;&#92;&#92;&quot;;&#92;&#92;n&#92;&#92;n    /** The detection options to use. */&#92;&#92;n    private final DetectorOptions options;&#92;&#92;n    /** Tracks the number of matches. */&#92;&#92;n    private int currentMatches;&#92;&#92;n&#92;&#92;n    /**&#92;&#92;n     * Creates an instance.&#92;&#92;n     *&#92;&#92;n     * @param options the options to use.&#92;&#92;n     */&#92;&#92;n    /* package */ SinglelineDetector(DetectorOptions options) {&#92;&#92;n        this.options = options;&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    /**&#92;&#92;n     * Processes a set of lines looking for matches.&#92;&#92;n     *&#92;&#92;n     * @param fileText {@link FileText} object contains the lines to process.&#92;&#92;n     */&#92;&#92;n    public void processLines(FileText fileText) {&#92;&#92;n        resetState();&#92;&#92;n        int lineNo = 0;&#92;&#92;n        for (int index = 0; index &lt; fileText.size(); index++) {&#92;&#92;n            final String line = fileText.get(index);&#92;&#92;n            lineNo++;&#92;&#92;n            checkLine(lineNo, line, options.getPattern().matcher(line), 0);&#92;&#92;n        }&#92;&#92;n        finish();&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    /** Perform processing at the end of a set of lines. */&#92;&#92;n    private void finish() {&#92;&#92;n        if (currentMatches &lt; options.getMinimum()) {&#92;&#92;n            if (options.getMessage().isEmpty()) {&#92;&#92;n                options.getReporter().log(1, MSG_REGEXP_MINIMUM,&#92;&#92;n                        options.getMinimum(), options.getFormat());&#92;&#92;n            }&#92;&#92;n            else {&#92;&#92;n                options.getReporter().log(1, options.getMessage());&#92;&#92;n            }&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    /**&#92;&#92;n     * Reset the state of the detector.&#92;&#92;n     */&#92;&#92;n    private void resetState() {&#92;&#92;n        currentMatches = 0;&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    /**&#92;&#92;n     * Check a line for matches.&#92;&#92;n     *&#92;&#92;n     * @param lineNo the line number of the line to check&#92;&#92;n     * @param line the line to check&#92;&#92;n     * @param matcher the matcher to use&#92;&#92;n     * @param startPosition the position to start searching from.&#92;&#92;n     * @noinspection TailRecursion&#92;&#92;n     * @noinspectionreason TailRecursion - until issue #14814&#92;&#92;n     */&#92;&#92;n    private void checkLine(int lineNo, String line, Matcher matcher,&#92;&#92;n            int startPosition) {&#92;&#92;n        final boolean foundMatch = matcher.find(startPosition);&#92;&#92;n        if (foundMatch) {&#92;&#92;n            // match is found, check for intersection with comment&#92;&#92;n            final int startCol = matcher.start(0);&#92;&#92;n            final int endCol = matcher.end(0);&#92;&#92;n            // Note that Matcher.end(int) returns the offset AFTER the&#92;&#92;n            // last matched character, but shouldSuppress()&#92;&#92;n            // needs column number of the last character.&#92;&#92;n            // So we need to use (endCol - 1) here.&#92;&#92;n            if (options.getSuppressor()&#92;&#92;n                    .shouldSuppress(lineNo, startCol, lineNo, endCol - 1)) {&#92;&#92;n                checkLine(lineNo, line, matcher, endCol);&#92;&#92;n            }&#92;&#92;n            else {&#92;&#92;n                currentMatches++;&#92;&#92;n                if (currentMatches &gt; options.getMaximum()) {&#92;&#92;n                    if (options.getMessage().isEmpty()) {&#92;&#92;n                        options.getReporter().log(lineNo, MSG_REGEXP_EXCEEDED,&#92;&#92;n                                matcher.pattern().toString());&#92;&#92;n                    }&#92;&#92;n                    else {&#92;&#92;n                        options.getReporter().log(lineNo, options.getMessage());&#92;&#92;n                    }&#92;&#92;n                }&#92;&#92;n            }&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n}&#92;&#92;n&#92;&quot;,&#92;&quot;class_after&#92;&quot;:&#92;&quot;///////////////////////////////////////////////////////////////////////////////////////////////&#92;&#92;n// checkstyle: Checks Java source code and other text files for adherence to a set of rules.&#92;&#92;n// Copyright (C) 2001-2024 the original author or authors.&#92;&#92;n//&#92;&#92;n// This library is free software; you can redistribute it and/or&#92;&#92;n// modify it under the terms of the GNU Lesser General Public&#92;&#92;n// License as published by the Free Software Foundation; either&#92;&#92;n// version 2.1 of the License, or (at your option) any later version.&#92;&#92;n//&#92;&#92;n// This library is distributed in the hope that it will be useful,&#92;&#92;n// but WITHOUT ANY WARRANTY; without even the implied warranty of&#92;&#92;n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU&#92;&#92;n// Lesser General Public License for more details.&#92;&#92;n//&#92;&#92;n// You should have received a copy of the GNU Lesser General Public&#92;&#92;n// License along with this library; if not, write to the Free Software&#92;&#92;n// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA&#92;&#92;n///////////////////////////////////////////////////////////////////////////////////////////////&#92;&#92;n&#92;&#92;npackage com.puppycrawl.tools.checkstyle.checks.regexp;&#92;&#92;n&#92;&#92;nimport java.util.regex.Matcher;&#92;&#92;n&#92;&#92;nimport com.puppycrawl.tools.checkstyle.api.FileText;&#92;&#92;n&#92;&#92;n/**&#92;&#92;n * A detector that matches individual lines.&#92;&#92;n */&#92;&#92;nclass SinglelineDetector {&#92;&#92;n&#92;&#92;n    /**&#92;&#92;n     * A key is pointing to the warning message text in &#92;&#92;&#92;&quot;messages.properties&#92;&#92;&#92;&quot;&#92;&#92;n     * file.&#92;&#92;n     */&#92;&#92;n    public static final String MSG_REGEXP_EXCEEDED = &#92;&#92;&#92;&quot;regexp.exceeded&#92;&#92;&#92;&quot;;&#92;&#92;n&#92;&#92;n    /**&#92;&#92;n     * A key is pointing to the warning message text in &#92;&#92;&#92;&quot;messages.properties&#92;&#92;&#92;&quot;&#92;&#92;n     * file.&#92;&#92;n     */&#92;&#92;n    public static final String MSG_REGEXP_MINIMUM = &#92;&#92;&#92;&quot;regexp.minimum&#92;&#92;&#92;&quot;;&#92;&#92;n&#92;&#92;n    /**&#92;&#92;n     * The detection options to use.&#92;&#92;n     */&#92;&#92;n    private final DetectorOptions options;&#92;&#92;n    /**&#92;&#92;n     * Tracks the number of matches.&#92;&#92;n     */&#92;&#92;n    private int currentMatches;&#92;&#92;n&#92;&#92;n    /**&#92;&#92;n     * Creates an instance.&#92;&#92;n     *&#92;&#92;n     * @param options the options to use.&#92;&#92;n     */&#92;&#92;n    /* package */ SinglelineDetector(DetectorOptions options) {&#92;&#92;n        this.options = options;&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    /**&#92;&#92;n     * Processes a set of lines looking for matches.&#92;&#92;n     *&#92;&#92;n     * @param fileText {@link FileText} object contains the lines to process.&#92;&#92;n     */&#92;&#92;n    public void processLines(FileText fileText) {&#92;&#92;n        currentMatches = 0;&#92;&#92;n        int lineNo = 0;&#92;&#92;n        for (int index = 0; index &lt; fileText.size(); index++) {&#92;&#92;n            final String line = fileText.get(index);&#92;&#92;n            lineNo++;&#92;&#92;n            checkLine(lineNo, options.getPattern().matcher(line));&#92;&#92;n        }&#92;&#92;n        finish();&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    /**&#92;&#92;n     * Perform processing at the end of a set of lines.&#92;&#92;n     */&#92;&#92;n    private void finish() {&#92;&#92;n        if (currentMatches &lt; options.getMinimum()) {&#92;&#92;n            if (options.getMessage().isEmpty()) {&#92;&#92;n                options.getReporter().log(1, MSG_REGEXP_MINIMUM,&#92;&#92;n                        options.getMinimum(), options.getFormat());&#92;&#92;n            }&#92;&#92;n            else {&#92;&#92;n                options.getReporter().log(1, options.getMessage());&#92;&#92;n            }&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    /**&#92;&#92;n     * Check a line for matches.&#92;&#92;n     *&#92;&#92;n     * @param lineNo        the line number of the line to check&#92;&#92;n     * @param matcher       the matcher to use&#92;&#92;n     */&#92;&#92;n    private void checkLine(int lineNo, Matcher matcher) {&#92;&#92;n        int startPosition = 0;&#92;&#92;n        while (matcher.find(startPosition)) {&#92;&#92;n            // match is found, check for intersection with comment&#92;&#92;n            final int startCol = matcher.start(0);&#92;&#92;n            final int endCol = matcher.end(0);&#92;&#92;n            // Note that Matcher.end(int) returns the offset AFTER the&#92;&#92;n            // last matched character, but shouldSuppress()&#92;&#92;n            // needs column number of the last character.&#92;&#92;n            // So we need to use (endCol - 1) here.&#92;&#92;n&#92;&#92;n            if (options.getSuppressor()&#92;&#92;n                    .shouldSuppress(lineNo, startCol, lineNo, endCol - 1)) {&#92;&#92;n                startPosition = endCol;&#92;&#92;n            }&#92;&#92;n            else {&#92;&#92;n                currentMatches++;&#92;&#92;n                if (currentMatches &gt; options.getMaximum()) {&#92;&#92;n                    if (options.getMessage().isEmpty()) {&#92;&#92;n                        options.getReporter().log(lineNo, MSG_REGEXP_EXCEEDED,&#92;&#92;n                                matcher.pattern().toString());&#92;&#92;n                    }&#92;&#92;n                    else {&#92;&#92;n                        options.getReporter().log(lineNo, options.getMessage());&#92;&#92;n                    }&#92;&#92;n                }&#92;&#92;n                break;&#92;&#92;n            }&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n}&#92;&#92;n&#92;&quot;,&#92;&quot;source_before&#92;&quot;:&#92;&quot;/**&#92;&#92;n     * Reset the state of the detector.&#92;&#92;n     */&#92;&#92;n    private void resetState() {&#92;&#92;n        currentMatches = 0;&#92;&#92;n    }&#92;&quot;,&#92;&quot;source_after&#92;&quot;:&#92;&quot;/**&#92;&#92;n     * Processes a set of lines looking for matches.&#92;&#92;n     *&#92;&#92;n     * @param fileText {@link FileText} object contains the lines to process.&#92;&#92;n     */&#92;&#92;n    public void processLines(FileText fileText) {&#92;&#92;n        currentMatches = 0;&#92;&#92;n        int lineNo = 0;&#92;&#92;n        for (int index = 0; index &lt; fileText.size(); index++) {&#92;&#92;n            final String line = fileText.get(index);&#92;&#92;n            lineNo++;&#92;&#92;n            checkLine(lineNo, options.getPattern().matcher(line));&#92;&#92;n        }&#92;&#92;n        finish();&#92;&#92;n    }&#92;&quot;,&#92;&quot;compile_command&#92;&quot;:&#92;&quot;mvn clean package -Drat.skip=true -Dmaven.javadoc.skip=true -Dtest=&#x27;!TestMessageReporter,!XpathRegressionTest,!XdocsPagesTest&#x27;&#92;&quot;,&#92;&quot;is_compound&#92;&quot;:false,&#92;&quot;is_pure&#92;&quot;:true,&#92;&quot;has_tests&#92;&quot;:true,&#92;&quot;jdk_version&#92;&quot;:11},{&#92;&quot;pair_id&#92;&quot;:&#92;&quot;bfb3e5f5e416211bc95799426edba4581b442d0d_98_106_399_409_98_106&#92;&quot;,&#92;&quot;project_name&#92;&quot;:&#92;&quot;checkstyle&#92;&quot;,&#92;&quot;commit_id&#92;&quot;:&#92;&quot;bfb3e5f5e416211bc95799426edba4581b442d0d&#92;&quot;,&#92;&quot;refactoring_type&#92;&quot;:&#92;&quot;Extract And Move Method&#92;&quot;,&#92;&quot;file_path_before&#92;&quot;:&#92;&quot;src/test/java/com/puppycrawl/tools/checkstyle/xpath/AttributeNodeTest.java&#92;&quot;,&#92;&quot;file_path_after&#92;&quot;:&#92;&quot;src/test/java/com/puppycrawl/tools/checkstyle/xpath/AttributeNodeTest.java&#92;&quot;,&#92;&quot;class_before&#92;&quot;:&#92;&quot;///////////////////////////////////////////////////////////////////////////////////////////////&#92;&#92;n// checkstyle: Checks Java source code and other text files for adherence to a set of rules.&#92;&#92;n// Copyright (C) 2001-2024 the original author or authors.&#92;&#92;n//&#92;&#92;n// This library is free software; you can redistribute it and/or&#92;&#92;n// modify it under the terms of the GNU Lesser General Public&#92;&#92;n// License as published by the Free Software Foundation; either&#92;&#92;n// version 2.1 of the License, or (at your option) any later version.&#92;&#92;n//&#92;&#92;n// This library is distributed in the hope that it will be useful,&#92;&#92;n// but WITHOUT ANY WARRANTY; without even the implied warranty of&#92;&#92;n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU&#92;&#92;n// Lesser General Public License for more details.&#92;&#92;n//&#92;&#92;n// You should have received a copy of the GNU Lesser General Public&#92;&#92;n// License along with this library; if not, write to the Free Software&#92;&#92;n// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA&#92;&#92;n///////////////////////////////////////////////////////////////////////////////////////////////&#92;&#92;n&#92;&#92;npackage com.puppycrawl.tools.checkstyle.xpath;&#92;&#92;n&#92;&#92;nimport static com.google.common.truth.Truth.assertWithMessage;&#92;&#92;nimport static org.junit.jupiter.api.Assertions.assertThrows;&#92;&#92;n&#92;&#92;nimport org.junit.jupiter.api.BeforeEach;&#92;&#92;nimport org.junit.jupiter.api.Test;&#92;&#92;n&#92;&#92;nimport net.sf.saxon.om.AxisInfo;&#92;&#92;nimport net.sf.saxon.om.NamespaceUri;&#92;&#92;nimport net.sf.saxon.tree.iter.AxisIterator;&#92;&#92;n&#92;&#92;npublic class AttributeNodeTest {&#92;&#92;n&#92;&#92;n    private static AttributeNode attributeNode;&#92;&#92;n&#92;&#92;n    @BeforeEach&#92;&#92;n    public void init() {&#92;&#92;n        attributeNode = new AttributeNode(&#92;&#92;&#92;&quot;name&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;value&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetNamespaceUri() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Attribute node should have default namespace URI&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.getNamespaceUri())&#92;&#92;n            .isEqualTo(NamespaceUri.NULL);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetUri() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Attribute node should have blank URI&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.getURI())&#92;&#92;n            .isEqualTo(&#92;&#92;&#92;&quot;&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testCompareOrder() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.compareOrder(null);&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetDepth() {&#92;&#92;n        final UnsupportedOperationException exception =&#92;&#92;n            assertThrows(UnsupportedOperationException.class, attributeNode::getDepth);&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(exception)&#92;&#92;n            .hasMessageThat()&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testHasChildNodes() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Attribute node shouldn&#x27;t have children&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.hasChildNodes())&#92;&#92;n            .isFalse();&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetAttributeValue() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getAttributeValue(&#92;&#92;&#92;&quot;&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;&#92;&#92;&#92;&quot;);&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetChildren() {&#92;&#92;n        final UnsupportedOperationException exception =&#92;&#92;n            assertThrows(UnsupportedOperationException.class, attributeNode::getChildren);&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(exception)&#92;&#92;n            .hasMessageThat()&#92;&#92;n            .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetParent() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getParent();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetRoot() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getRoot();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetStringValue() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid string value&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.getStringValue())&#92;&#92;n            .isEqualTo(&#92;&#92;&#92;&quot;value&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testIterate() {&#92;&#92;n        try (AxisIterator ignored = attributeNode.iterateAxis(AxisInfo.SELF)) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetLineNumber() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getLineNumber();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetColumnNumber() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getColumnNumber();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetTokenType() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getTokenType();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetUnderlyingNode() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getUnderlyingNode();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetAllNamespaces() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getAllNamespaces();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n}&#92;&#92;n&#92;&quot;,&#92;&quot;class_after&#92;&quot;:&#92;&quot;///////////////////////////////////////////////////////////////////////////////////////////////&#92;&#92;n// checkstyle: Checks Java source code and other text files for adherence to a set of rules.&#92;&#92;n// Copyright (C) 2001-2024 the original author or authors.&#92;&#92;n//&#92;&#92;n// This library is free software; you can redistribute it and/or&#92;&#92;n// modify it under the terms of the GNU Lesser General Public&#92;&#92;n// License as published by the Free Software Foundation; either&#92;&#92;n// version 2.1 of the License, or (at your option) any later version.&#92;&#92;n//&#92;&#92;n// This library is distributed in the hope that it will be useful,&#92;&#92;n// but WITHOUT ANY WARRANTY; without even the implied warranty of&#92;&#92;n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU&#92;&#92;n// Lesser General Public License for more details.&#92;&#92;n//&#92;&#92;n// You should have received a copy of the GNU Lesser General Public&#92;&#92;n// License along with this library; if not, write to the Free Software&#92;&#92;n// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA&#92;&#92;n///////////////////////////////////////////////////////////////////////////////////////////////&#92;&#92;n&#92;&#92;npackage com.puppycrawl.tools.checkstyle.xpath;&#92;&#92;n&#92;&#92;nimport static com.google.common.truth.Truth.assertWithMessage;&#92;&#92;nimport static com.puppycrawl.tools.checkstyle.internal.utils.TestUtil.getExpectedThrowable;&#92;&#92;n&#92;&#92;nimport org.junit.jupiter.api.BeforeEach;&#92;&#92;nimport org.junit.jupiter.api.Test;&#92;&#92;n&#92;&#92;nimport net.sf.saxon.om.AxisInfo;&#92;&#92;nimport net.sf.saxon.om.NamespaceUri;&#92;&#92;nimport net.sf.saxon.tree.iter.AxisIterator;&#92;&#92;n&#92;&#92;npublic class AttributeNodeTest {&#92;&#92;n&#92;&#92;n    private static AttributeNode attributeNode;&#92;&#92;n&#92;&#92;n    @BeforeEach&#92;&#92;n    public void init() {&#92;&#92;n        attributeNode = new AttributeNode(&#92;&#92;&#92;&quot;name&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;value&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetNamespaceUri() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Attribute node should have default namespace URI&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.getNamespaceUri())&#92;&#92;n            .isEqualTo(NamespaceUri.NULL);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetUri() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Attribute node should have blank URI&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.getURI())&#92;&#92;n            .isEqualTo(&#92;&#92;&#92;&quot;&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testCompareOrder() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.compareOrder(null);&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetDepth() {&#92;&#92;n        final UnsupportedOperationException exception =&#92;&#92;n            getExpectedThrowable(UnsupportedOperationException.class, attributeNode::getDepth);&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(exception)&#92;&#92;n            .hasMessageThat()&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testHasChildNodes() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Attribute node shouldn&#x27;t have children&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.hasChildNodes())&#92;&#92;n            .isFalse();&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetAttributeValue() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getAttributeValue(&#92;&#92;&#92;&quot;&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;&#92;&#92;&#92;&quot;);&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetChildren() {&#92;&#92;n        final UnsupportedOperationException exception =&#92;&#92;n            getExpectedThrowable(UnsupportedOperationException.class, attributeNode::getChildren);&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(exception)&#92;&#92;n            .hasMessageThat()&#92;&#92;n            .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetParent() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getParent();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetRoot() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getRoot();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetStringValue() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid string value&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.getStringValue())&#92;&#92;n            .isEqualTo(&#92;&#92;&#92;&quot;value&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testIterate() {&#92;&#92;n        try (AxisIterator ignored = attributeNode.iterateAxis(AxisInfo.SELF)) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetLineNumber() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getLineNumber();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetColumnNumber() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getColumnNumber();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetTokenType() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getTokenType();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetUnderlyingNode() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getUnderlyingNode();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetAllNamespaces() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getAllNamespaces();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n}&#92;&#92;n&#92;&quot;,&#92;&quot;source_before&#92;&quot;:&#92;&quot;@Test&#92;&#92;n    public void testGetChildren() {&#92;&#92;n        final UnsupportedOperationException exception =&#92;&#92;n            assertThrows(UnsupportedOperationException.class, attributeNode::getChildren);&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(exception)&#92;&#92;n            .hasMessageThat()&#92;&#92;n            .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&quot;,&#92;&quot;source_after&#92;&quot;:&#92;&quot;@Test&#92;&#92;n    public void testGetChildren() {&#92;&#92;n        final UnsupportedOperationException exception =&#92;&#92;n            getExpectedThrowable(UnsupportedOperationException.class, attributeNode::getChildren);&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(exception)&#92;&#92;n            .hasMessageThat()&#92;&#92;n            .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&quot;,&#92;&quot;compile_command&#92;&quot;:&#92;&quot;mvn clean package -Drat.skip=true -Dmaven.javadoc.skip=true -Dtest=&#x27;!TestMessageReporter,!XpathRegressionTest,!XdocsPagesTest&#x27;&#92;&quot;,&#92;&quot;is_compound&#92;&quot;:false,&#92;&quot;is_pure&#92;&quot;:true,&#92;&quot;has_tests&#92;&quot;:false,&#92;&quot;jdk_version&#92;&quot;:11},{&#92;&quot;pair_id&#92;&quot;:&#92;&quot;bfb3e5f5e416211bc95799426edba4581b442d0d_68_76_399_409_68_76&#92;&quot;,&#92;&quot;project_name&#92;&quot;:&#92;&quot;checkstyle&#92;&quot;,&#92;&quot;commit_id&#92;&quot;:&#92;&quot;bfb3e5f5e416211bc95799426edba4581b442d0d&#92;&quot;,&#92;&quot;refactoring_type&#92;&quot;:&#92;&quot;Extract And Move Method&#92;&quot;,&#92;&quot;file_path_before&#92;&quot;:&#92;&quot;src/test/java/com/puppycrawl/tools/checkstyle/xpath/AttributeNodeTest.java&#92;&quot;,&#92;&quot;file_path_after&#92;&quot;:&#92;&quot;src/test/java/com/puppycrawl/tools/checkstyle/xpath/AttributeNodeTest.java&#92;&quot;,&#92;&quot;class_before&#92;&quot;:&#92;&quot;///////////////////////////////////////////////////////////////////////////////////////////////&#92;&#92;n// checkstyle: Checks Java source code and other text files for adherence to a set of rules.&#92;&#92;n// Copyright (C) 2001-2024 the original author or authors.&#92;&#92;n//&#92;&#92;n// This library is free software; you can redistribute it and/or&#92;&#92;n// modify it under the terms of the GNU Lesser General Public&#92;&#92;n// License as published by the Free Software Foundation; either&#92;&#92;n// version 2.1 of the License, or (at your option) any later version.&#92;&#92;n//&#92;&#92;n// This library is distributed in the hope that it will be useful,&#92;&#92;n// but WITHOUT ANY WARRANTY; without even the implied warranty of&#92;&#92;n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU&#92;&#92;n// Lesser General Public License for more details.&#92;&#92;n//&#92;&#92;n// You should have received a copy of the GNU Lesser General Public&#92;&#92;n// License along with this library; if not, write to the Free Software&#92;&#92;n// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA&#92;&#92;n///////////////////////////////////////////////////////////////////////////////////////////////&#92;&#92;n&#92;&#92;npackage com.puppycrawl.tools.checkstyle.xpath;&#92;&#92;n&#92;&#92;nimport static com.google.common.truth.Truth.assertWithMessage;&#92;&#92;nimport static org.junit.jupiter.api.Assertions.assertThrows;&#92;&#92;n&#92;&#92;nimport org.junit.jupiter.api.BeforeEach;&#92;&#92;nimport org.junit.jupiter.api.Test;&#92;&#92;n&#92;&#92;nimport net.sf.saxon.om.AxisInfo;&#92;&#92;nimport net.sf.saxon.om.NamespaceUri;&#92;&#92;nimport net.sf.saxon.tree.iter.AxisIterator;&#92;&#92;n&#92;&#92;npublic class AttributeNodeTest {&#92;&#92;n&#92;&#92;n    private static AttributeNode attributeNode;&#92;&#92;n&#92;&#92;n    @BeforeEach&#92;&#92;n    public void init() {&#92;&#92;n        attributeNode = new AttributeNode(&#92;&#92;&#92;&quot;name&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;value&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetNamespaceUri() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Attribute node should have default namespace URI&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.getNamespaceUri())&#92;&#92;n            .isEqualTo(NamespaceUri.NULL);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetUri() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Attribute node should have blank URI&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.getURI())&#92;&#92;n            .isEqualTo(&#92;&#92;&#92;&quot;&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testCompareOrder() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.compareOrder(null);&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetDepth() {&#92;&#92;n        final UnsupportedOperationException exception =&#92;&#92;n            assertThrows(UnsupportedOperationException.class, attributeNode::getDepth);&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(exception)&#92;&#92;n            .hasMessageThat()&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testHasChildNodes() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Attribute node shouldn&#x27;t have children&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.hasChildNodes())&#92;&#92;n            .isFalse();&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetAttributeValue() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getAttributeValue(&#92;&#92;&#92;&quot;&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;&#92;&#92;&#92;&quot;);&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetChildren() {&#92;&#92;n        final UnsupportedOperationException exception =&#92;&#92;n            assertThrows(UnsupportedOperationException.class, attributeNode::getChildren);&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(exception)&#92;&#92;n            .hasMessageThat()&#92;&#92;n            .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetParent() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getParent();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetRoot() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getRoot();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetStringValue() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid string value&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.getStringValue())&#92;&#92;n            .isEqualTo(&#92;&#92;&#92;&quot;value&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testIterate() {&#92;&#92;n        try (AxisIterator ignored = attributeNode.iterateAxis(AxisInfo.SELF)) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetLineNumber() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getLineNumber();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetColumnNumber() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getColumnNumber();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetTokenType() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getTokenType();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetUnderlyingNode() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getUnderlyingNode();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetAllNamespaces() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getAllNamespaces();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n}&#92;&#92;n&#92;&quot;,&#92;&quot;class_after&#92;&quot;:&#92;&quot;///////////////////////////////////////////////////////////////////////////////////////////////&#92;&#92;n// checkstyle: Checks Java source code and other text files for adherence to a set of rules.&#92;&#92;n// Copyright (C) 2001-2024 the original author or authors.&#92;&#92;n//&#92;&#92;n// This library is free software; you can redistribute it and/or&#92;&#92;n// modify it under the terms of the GNU Lesser General Public&#92;&#92;n// License as published by the Free Software Foundation; either&#92;&#92;n// version 2.1 of the License, or (at your option) any later version.&#92;&#92;n//&#92;&#92;n// This library is distributed in the hope that it will be useful,&#92;&#92;n// but WITHOUT ANY WARRANTY; without even the implied warranty of&#92;&#92;n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU&#92;&#92;n// Lesser General Public License for more details.&#92;&#92;n//&#92;&#92;n// You should have received a copy of the GNU Lesser General Public&#92;&#92;n// License along with this library; if not, write to the Free Software&#92;&#92;n// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA&#92;&#92;n///////////////////////////////////////////////////////////////////////////////////////////////&#92;&#92;n&#92;&#92;npackage com.puppycrawl.tools.checkstyle.xpath;&#92;&#92;n&#92;&#92;nimport static com.google.common.truth.Truth.assertWithMessage;&#92;&#92;nimport static com.puppycrawl.tools.checkstyle.internal.utils.TestUtil.getExpectedThrowable;&#92;&#92;n&#92;&#92;nimport org.junit.jupiter.api.BeforeEach;&#92;&#92;nimport org.junit.jupiter.api.Test;&#92;&#92;n&#92;&#92;nimport net.sf.saxon.om.AxisInfo;&#92;&#92;nimport net.sf.saxon.om.NamespaceUri;&#92;&#92;nimport net.sf.saxon.tree.iter.AxisIterator;&#92;&#92;n&#92;&#92;npublic class AttributeNodeTest {&#92;&#92;n&#92;&#92;n    private static AttributeNode attributeNode;&#92;&#92;n&#92;&#92;n    @BeforeEach&#92;&#92;n    public void init() {&#92;&#92;n        attributeNode = new AttributeNode(&#92;&#92;&#92;&quot;name&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;value&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetNamespaceUri() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Attribute node should have default namespace URI&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.getNamespaceUri())&#92;&#92;n            .isEqualTo(NamespaceUri.NULL);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetUri() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Attribute node should have blank URI&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.getURI())&#92;&#92;n            .isEqualTo(&#92;&#92;&#92;&quot;&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testCompareOrder() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.compareOrder(null);&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetDepth() {&#92;&#92;n        final UnsupportedOperationException exception =&#92;&#92;n            getExpectedThrowable(UnsupportedOperationException.class, attributeNode::getDepth);&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(exception)&#92;&#92;n            .hasMessageThat()&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testHasChildNodes() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Attribute node shouldn&#x27;t have children&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.hasChildNodes())&#92;&#92;n            .isFalse();&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetAttributeValue() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getAttributeValue(&#92;&#92;&#92;&quot;&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;&#92;&#92;&#92;&quot;);&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetChildren() {&#92;&#92;n        final UnsupportedOperationException exception =&#92;&#92;n            getExpectedThrowable(UnsupportedOperationException.class, attributeNode::getChildren);&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(exception)&#92;&#92;n            .hasMessageThat()&#92;&#92;n            .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetParent() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getParent();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetRoot() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getRoot();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetStringValue() {&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid string value&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(attributeNode.getStringValue())&#92;&#92;n            .isEqualTo(&#92;&#92;&#92;&quot;value&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testIterate() {&#92;&#92;n        try (AxisIterator ignored = attributeNode.iterateAxis(AxisInfo.SELF)) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetLineNumber() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getLineNumber();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetColumnNumber() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getColumnNumber();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetTokenType() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getTokenType();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetUnderlyingNode() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getUnderlyingNode();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n&#92;&#92;n    @Test&#92;&#92;n    public void testGetAllNamespaces() {&#92;&#92;n        try {&#92;&#92;n            attributeNode.getAllNamespaces();&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Exception is excepted&#92;&#92;&#92;&quot;).fail();&#92;&#92;n        }&#92;&#92;n        catch (UnsupportedOperationException ex) {&#92;&#92;n            assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n                .that(ex.getMessage())&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n        }&#92;&#92;n    }&#92;&#92;n}&#92;&#92;n&#92;&quot;,&#92;&quot;source_before&#92;&quot;:&#92;&quot;@Test&#92;&#92;n    public void testGetDepth() {&#92;&#92;n        final UnsupportedOperationException exception =&#92;&#92;n            assertThrows(UnsupportedOperationException.class, attributeNode::getDepth);&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(exception)&#92;&#92;n            .hasMessageThat()&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&quot;,&#92;&quot;source_after&#92;&quot;:&#92;&quot;@Test&#92;&#92;n    public void testGetDepth() {&#92;&#92;n        final UnsupportedOperationException exception =&#92;&#92;n            getExpectedThrowable(UnsupportedOperationException.class, attributeNode::getDepth);&#92;&#92;n        assertWithMessage(&#92;&#92;&#92;&quot;Invalid exception message&#92;&#92;&#92;&quot;)&#92;&#92;n            .that(exception)&#92;&#92;n            .hasMessageThat()&#92;&#92;n                .isEqualTo(&#92;&#92;&#92;&quot;Operation is not supported&#92;&#92;&#92;&quot;);&#92;&#92;n    }&#92;&#92;n&#92;&quot;,&#92;&quot;compile_command&#92;&quot;:&#92;&quot;mvn clean package -Drat.skip=true -Dmaven.javadoc.skip=true -Dtest=&#x27;!TestMessageReporter,!XpathRegressionTest,!XdocsPagesTest&#x27;&#92;&quot;,&#92;&quot;is_compound&#92;&quot;:false,&#92;&quot;is_pure&#92;&quot;:true,&#92;&quot;has_tests&#92;&quot;:false,&#92;&quot;jdk_version&#92;&quot;:11}]&quot;' data-total-rows='3' data-total-columns='15' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;pair_id&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;project_name&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;commit_id&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;refactoring_type&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;file_path_before&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;file_path_after&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;class_before&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;class_after&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;source_before&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;source_after&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;compile_command&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;is_compound&quot;,[&quot;boolean&quot;,&quot;bool&quot;]],[&quot;is_pure&quot;,[&quot;boolean&quot;,&quot;bool&quot;]],[&quot;has_tests&quot;,[&quot;boolean&quot;,&quot;bool&quot;]],[&quot;jdk_version&quot;,[&quot;integer&quot;,&quot;int64&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "df_swe_raw: 1099 rows x 15 cols\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "Vxnm",
+      "code_hash": "b4d39ee055ef4a7fb4af1e98820eb5e1",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"a3-technical-debt-dataset-v2-sonarqube-issues\">A.3 \u00b7 Technical Debt Dataset v2 (SonarQube issues)</h3></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "DnEU",
+      "code_hash": "c20b9b922a7440d6f0cbd3b929ed5fed",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "tdd_sql: 25 lines\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "ulZA",
+      "code_hash": "bc6457ca0625346c0c1e816256f6319d",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "df_tdd_raw_untyped: 5000 rows x 16 cols (LIMIT 5000)\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "ecfG",
+      "code_hash": "13318c30ccc60f7ea5690a519da5456d",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='ecfG-0' random-id='6ab1c46f-ef50-a49d-a465-7f7c07131503'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;project&#92;&quot;:&#92;&quot;org.apache:cayenne&#92;&quot;,&#92;&quot;creation_commit&#92;&quot;:&#92;&quot;fc186f50392bf8c804b1d314971c92efa5f52fc3&#92;&quot;,&#92;&quot;close_commit&#92;&quot;:null,&#92;&quot;issue_type&#92;&quot;:&#92;&quot;CODE_SMELL&#92;&quot;,&#92;&quot;rule&#92;&quot;:&#92;&quot;squid:S1133&#92;&quot;,&#92;&quot;severity&#92;&quot;:&#92;&quot;INFO&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;OPEN&#92;&quot;,&#92;&quot;resolution&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;component&#92;&quot;:&#92;&quot;Apache_Cayenne:framework/cayenne-jdk1.5-unpublished/src/main/java/org/apache/cayenne/Fault.java&#92;&quot;,&#92;&quot;message&#92;&quot;:&#92;&quot;Do not forget to remove this deprecated code someday.&#92;&quot;,&#92;&quot;start_line&#92;&quot;:39.0,&#92;&quot;end_line&#92;&quot;:39.0,&#92;&quot;creation_date&#92;&quot;:&#92;&quot;2007-01-21 11:11:02&#92;&quot;,&#92;&quot;close_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;effort&#92;&quot;:&#92;&quot;10.0&#92;&quot;,&#92;&quot;debt&#92;&quot;:&#92;&quot;10.0&#92;&quot;},{&#92;&quot;project&#92;&quot;:&#92;&quot;org.apache:cayenne&#92;&quot;,&#92;&quot;creation_commit&#92;&quot;:&#92;&quot;fc186f50392bf8c804b1d314971c92efa5f52fc3&#92;&quot;,&#92;&quot;close_commit&#92;&quot;:null,&#92;&quot;issue_type&#92;&quot;:&#92;&quot;CODE_SMELL&#92;&quot;,&#92;&quot;rule&#92;&quot;:&#92;&quot;squid:S1133&#92;&quot;,&#92;&quot;severity&#92;&quot;:&#92;&quot;INFO&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;OPEN&#92;&quot;,&#92;&quot;resolution&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;component&#92;&quot;:&#92;&quot;Apache_Cayenne:framework/cayenne-jdk1.5-unpublished/src/main/java/org/apache/cayenne/Fault.java&#92;&quot;,&#92;&quot;message&#92;&quot;:&#92;&quot;Do not forget to remove this deprecated code someday.&#92;&quot;,&#92;&quot;start_line&#92;&quot;:45.0,&#92;&quot;end_line&#92;&quot;:45.0,&#92;&quot;creation_date&#92;&quot;:&#92;&quot;2007-01-21 11:11:02&#92;&quot;,&#92;&quot;close_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;effort&#92;&quot;:&#92;&quot;10.0&#92;&quot;,&#92;&quot;debt&#92;&quot;:&#92;&quot;10.0&#92;&quot;},{&#92;&quot;project&#92;&quot;:&#92;&quot;org.apache:cayenne&#92;&quot;,&#92;&quot;creation_commit&#92;&quot;:&#92;&quot;fc186f50392bf8c804b1d314971c92efa5f52fc3&#92;&quot;,&#92;&quot;close_commit&#92;&quot;:null,&#92;&quot;issue_type&#92;&quot;:&#92;&quot;CODE_SMELL&#92;&quot;,&#92;&quot;rule&#92;&quot;:&#92;&quot;squid:S1133&#92;&quot;,&#92;&quot;severity&#92;&quot;:&#92;&quot;INFO&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;OPEN&#92;&quot;,&#92;&quot;resolution&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;component&#92;&quot;:&#92;&quot;Apache_Cayenne:framework/cayenne-jdk1.5-unpublished/src/main/java/org/apache/cayenne/Fault.java&#92;&quot;,&#92;&quot;message&#92;&quot;:&#92;&quot;Do not forget to remove this deprecated code someday.&#92;&quot;,&#92;&quot;start_line&#92;&quot;:51.0,&#92;&quot;end_line&#92;&quot;:51.0,&#92;&quot;creation_date&#92;&quot;:&#92;&quot;2007-01-21 11:11:02&#92;&quot;,&#92;&quot;close_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;effort&#92;&quot;:&#92;&quot;10.0&#92;&quot;,&#92;&quot;debt&#92;&quot;:&#92;&quot;10.0&#92;&quot;}]&quot;' data-total-rows='3' data-total-columns='16' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;project&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;creation_commit&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;close_commit&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;issue_type&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;rule&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;severity&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;status&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;resolution&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;component&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;message&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;start_line&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;end_line&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;creation_date&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;close_date&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;effort&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;debt&quot;,[&quot;string&quot;,&quot;object&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "{'project': dtype('O'), 'creation_commit': dtype('O'), 'close_commit': dtype('O'), 'issue_type': dtype('O'), 'rule': dtype('O'), 'severity': dtype('O'), 'status': dtype('O'), 'resolution': dtype('O'), 'component': dtype('O'), 'message': dtype('O'), 'start_line': dtype('O'), 'end_line': dtype('O'), 'creation_date': dtype('O'), 'close_date': dtype('O'), 'effort': dtype('O'), 'debt': dtype('O')}\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "Pvdt",
+      "code_hash": "d45958ef7ce6bbeed9e2cfbe98614c87",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "as_int_or_none ok\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "ZBYS",
+      "code_hash": "3aeca2e776729cd29d72bbd4931e92c1",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='ZBYS-0' random-id='2bace1ec-5832-cb1d-fa47-4a6cb10c2bb5'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;project&#92;&quot;:&#92;&quot;org.apache:cayenne&#92;&quot;,&#92;&quot;creation_commit&#92;&quot;:&#92;&quot;fc186f50392bf8c804b1d314971c92efa5f52fc3&#92;&quot;,&#92;&quot;close_commit&#92;&quot;:null,&#92;&quot;issue_type&#92;&quot;:&#92;&quot;CODE_SMELL&#92;&quot;,&#92;&quot;rule&#92;&quot;:&#92;&quot;squid:S1133&#92;&quot;,&#92;&quot;severity&#92;&quot;:&#92;&quot;INFO&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;OPEN&#92;&quot;,&#92;&quot;resolution&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;component&#92;&quot;:&#92;&quot;Apache_Cayenne:framework/cayenne-jdk1.5-unpublished/src/main/java/org/apache/cayenne/Fault.java&#92;&quot;,&#92;&quot;message&#92;&quot;:&#92;&quot;Do not forget to remove this deprecated code someday.&#92;&quot;,&#92;&quot;start_line&#92;&quot;:39.0,&#92;&quot;end_line&#92;&quot;:39.0,&#92;&quot;creation_date&#92;&quot;:&#92;&quot;2007-01-21 11:11:02&#92;&quot;,&#92;&quot;close_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;effort&#92;&quot;:&#92;&quot;10.0&#92;&quot;,&#92;&quot;debt&#92;&quot;:&#92;&quot;10.0&#92;&quot;},{&#92;&quot;project&#92;&quot;:&#92;&quot;org.apache:cayenne&#92;&quot;,&#92;&quot;creation_commit&#92;&quot;:&#92;&quot;fc186f50392bf8c804b1d314971c92efa5f52fc3&#92;&quot;,&#92;&quot;close_commit&#92;&quot;:null,&#92;&quot;issue_type&#92;&quot;:&#92;&quot;CODE_SMELL&#92;&quot;,&#92;&quot;rule&#92;&quot;:&#92;&quot;squid:S1133&#92;&quot;,&#92;&quot;severity&#92;&quot;:&#92;&quot;INFO&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;OPEN&#92;&quot;,&#92;&quot;resolution&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;component&#92;&quot;:&#92;&quot;Apache_Cayenne:framework/cayenne-jdk1.5-unpublished/src/main/java/org/apache/cayenne/Fault.java&#92;&quot;,&#92;&quot;message&#92;&quot;:&#92;&quot;Do not forget to remove this deprecated code someday.&#92;&quot;,&#92;&quot;start_line&#92;&quot;:45.0,&#92;&quot;end_line&#92;&quot;:45.0,&#92;&quot;creation_date&#92;&quot;:&#92;&quot;2007-01-21 11:11:02&#92;&quot;,&#92;&quot;close_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;effort&#92;&quot;:&#92;&quot;10.0&#92;&quot;,&#92;&quot;debt&#92;&quot;:&#92;&quot;10.0&#92;&quot;},{&#92;&quot;project&#92;&quot;:&#92;&quot;org.apache:cayenne&#92;&quot;,&#92;&quot;creation_commit&#92;&quot;:&#92;&quot;fc186f50392bf8c804b1d314971c92efa5f52fc3&#92;&quot;,&#92;&quot;close_commit&#92;&quot;:null,&#92;&quot;issue_type&#92;&quot;:&#92;&quot;CODE_SMELL&#92;&quot;,&#92;&quot;rule&#92;&quot;:&#92;&quot;squid:S1133&#92;&quot;,&#92;&quot;severity&#92;&quot;:&#92;&quot;INFO&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;OPEN&#92;&quot;,&#92;&quot;resolution&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;component&#92;&quot;:&#92;&quot;Apache_Cayenne:framework/cayenne-jdk1.5-unpublished/src/main/java/org/apache/cayenne/Fault.java&#92;&quot;,&#92;&quot;message&#92;&quot;:&#92;&quot;Do not forget to remove this deprecated code someday.&#92;&quot;,&#92;&quot;start_line&#92;&quot;:51.0,&#92;&quot;end_line&#92;&quot;:51.0,&#92;&quot;creation_date&#92;&quot;:&#92;&quot;2007-01-21 11:11:02&#92;&quot;,&#92;&quot;close_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;effort&#92;&quot;:&#92;&quot;10.0&#92;&quot;,&#92;&quot;debt&#92;&quot;:&#92;&quot;10.0&#92;&quot;}]&quot;' data-total-rows='3' data-total-columns='16' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;project&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;creation_commit&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;close_commit&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;issue_type&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;rule&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;severity&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;status&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;resolution&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;component&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;message&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;start_line&quot;,[&quot;number&quot;,&quot;float64&quot;]],[&quot;end_line&quot;,[&quot;number&quot;,&quot;float64&quot;]],[&quot;creation_date&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;close_date&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;effort&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;debt&quot;,[&quot;string&quot;,&quot;object&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "df_tdd_raw: 5000 rows; null start_line = 100\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "aLJB",
+      "code_hash": "79b4345efa35560826048647e47b1ff1",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"group-b-conforming-operations\">Group B \u2014 conforming operations</h2>\n<span class=\"paragraph\">Every source is projected into the <em>generalised</em> shape:</span>\n<div class=\"language-scdoc codehilite\"><pre><span></span><code>EvalSample(source, sample_id, inputs: dict, expectations: dict, tags: dict)\n</code></pre></div>\n<span class=\"paragraph\">The three dicts mirror MLflow GenAI's <code>evaluate()</code> contract:\n<code>inputs</code> is what the agent sees, <code>expectations</code> is ground truth for\nscorers, <code>tags</code> is metadata for filtering &amp; stratification.</span>\n<span class=\"paragraph\">Per source, <strong>every projection is a separate cell</strong>: build <code>inputs</code>,\nbuild <code>expectations</code>, build <code>tags</code>, compose <code>sample_id</code>, then zip\nthem into <code>EvalSample</code> objects. Each intermediate step is inspectable.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nHfw",
+      "code_hash": "fcb84c2e0ea3d2abf41108d9a0312429",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"b1-rminer-evalsample\">B.1 \u00b7 RMiner \u2192 <code>EvalSample</code></h3>\n<span class=\"paragraph\">RMiner is a <strong>detection</strong> oracle \u2014 there is no post-refactoring source\ncode. <code>expectations</code> is therefore empty; the generative scorer will\nneed a separate oracle-to-diff join later (see TODO stage 2 caveat).</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "xXTn",
+      "code_hash": "8c5ae82b65c9af660736e3aba7ed729b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "application/json": "{\"repository\": \"https://github.com/realm/realm-java.git\", \"commit_sha\": \"6cf596df183b3c3a38ed5dd9bb3b0100c6548ebb\", \"refactoring_type\": \"Extract Method\", \"description\": \"Extract Method private showStatus(txt String) : void extracted from private showStatus(realm Realm) : void in class io.realm.examples.realmmigrationexample.MigrationExampleActivity\"}"
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "rminer inputs: 11616\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "AjVT",
+      "code_hash": "cfa7ccaf97686aa20495d3590dda938f",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "rminer expectations: 11616 (all empty)\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "pHFh",
+      "code_hash": "cd4500ac1bddf69dd953626c948a13fd",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "application/json": "{\"validation\": \"TP\", \"detection_tools\": \"RefactoringMiner, RefDiff, RD-1x, RMiner-1x\", \"author\": \"Christian Melchior\", \"time\": \"6/8/15 7:26 AM\"}"
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "rminer tags: 11616\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "NCOB",
+      "code_hash": "870e313ba870ac75c3a56fa30d82752b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "rminer sample_ids: 11616 (unique: 11616)\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "aqbW",
+      "code_hash": "c355fe3e21a0acd4fda1765cb9754596",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<pre class='text-xs'>EvalSample(source=&#x27;rminer&#x27;, sample_id=&#x27;rminer:6cf596df183b3c3a38ed5dd9bb3b0100c6548ebb:0&#x27;, inputs={&#x27;repository&#x27;: &#x27;https://github.com/realm/realm-java.git&#x27;, &#x27;commit_sha&#x27;: &#x27;6cf596df183b3c3a38ed5dd9bb3b0100c6548ebb&#x27;, &#x27;refactoring_type&#x27;: &#x27;Extract Method&#x27;, &#x27;description&#x27;: &#x27;Extract Method private showStatus(txt String) : void extracted from private showStatus(realm Realm) : void in class io.realm.examples.realmmigrationexample.MigrationExampleActivity&#x27;}, expectations={}, tags={&#x27;validation&#x27;: &#x27;TP&#x27;, &#x27;detection_tools&#x27;: &#x27;RefactoringMiner, RefDiff, RD-1x, RMiner-1x&#x27;, &#x27;author&#x27;: &#x27;Christian Melchior&#x27;, &#x27;time&#x27;: &#x27;6/8/15 7:26 AM&#x27;})</pre>"
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "samples_rminer: 11616\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "TRpd",
+      "code_hash": "94608a69df6a492d38f0cac8e64cdd84",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"b2-swe-refactor-evalsample\">B.2 \u00b7 SWE-Refactor \u2192 <code>EvalSample</code></h3>\n<span class=\"paragraph\">SWE-Refactor is the only source with real post-refactoring source\ncode, so <code>expectations</code> carries <code>class_after</code> / <code>source_after</code> \u2014\neverything a compile-and-test scorer needs.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "TXez",
+      "code_hash": "50a9521edc0abc000a36e01c604c6279",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "swe inputs: 1099\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "dNNg",
+      "code_hash": "68a5072a1742586268c09fd3fe461ba0",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "swe expectations: 1099\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "yCnT",
+      "code_hash": "533f1b3c74b14e52025be5523a62a45b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "swe tags: 1099\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "wlCL",
+      "code_hash": "86c6027aaae8ee4506758edf626f847b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "swe sample_ids: 1099 (unique: 1099)\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "kqZH",
+      "code_hash": "9b3cc0b92350daa954f64edaf8ae0ab4",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<pre class='text-xs'>EvalSample(source=&#x27;swe&#x27;, sample_id=&#x27;swe:67b98ab96e15fba231ca494c7ce3752cce0a9654_57_71__61_75_86_91&#x27;, inputs={&#x27;project_name&#x27;: &#x27;checkstyle&#x27;, &#x27;commit_id&#x27;: &#x27;67b98ab96e15fba231ca494c7ce3752cce0a9654&#x27;, &#x27;refactoring_type&#x27;: &#x27;Inline Method&#x27;, &#x27;file_path_before&#x27;: &#x27;src/main/java/com/puppycrawl/tools/checkstyle/checks/regexp/SinglelineDetector.java&#x27;, &#x27;file_path_after&#x27;: &#x27;src/main/java/com/puppycrawl/tools/checkstyle/checks/regexp/SinglelineDetector.java&#x27;, &#x27;class_before&#x27;: &#x27;///////////////////////////////////////////////////////////////////////////////////////////////\\n// checkstyle: Checks Java source code and other text files for adherence to a set of rules.\\n// Copyright (C) 2001-2024 the original author or authors.\\n//\\n// This library is free software; you can redistribute it and/or\\n// modify it under the terms of the GNU Lesser General Public\\n// License as published by the Free Software Foundation; either\\n// version 2.1 of the License, or (at your option) any later version.\\n//\\n// This library is distributed in the hope that it will be useful,\\n// but WITHOUT ANY WARRANTY; without even the implied warranty of\\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU\\n// Lesser General Public License for more details.\\n//\\n// You should have received a copy of the GNU Lesser General Public\\n// License along with this library; if not, write to the Free Software\\n// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA\\n///////////////////////////////////////////////////////////////////////////////////////////////\\n\\npackage com.puppycrawl.tools.checkstyle.checks.regexp;\\n\\nimport java.util.regex.Matcher;\\n\\nimport com.puppycrawl.tools.checkstyle.api.FileText;\\n\\n/**\\n * A detector that matches individual lines.\\n */\\nclass SinglelineDetector {\\n\\n    /**\\n     * A key is pointing to the warning message text in &quot;messages.properties&quot;\\n     * file.\\n     */\\n    public static final String MSG_REGEXP_EXCEEDED = &quot;regexp.exceeded&quot;;\\n\\n    /**\\n     * A key is pointing to the warning message text in &quot;messages.properties&quot;\\n     * file.\\n     */\\n    public static final String MSG_REGEXP_MINIMUM = &quot;regexp.minimum&quot;;\\n\\n    /** The detection options to use. */\\n    private final DetectorOptions options;\\n    /** Tracks the number of matches. */\\n    private int currentMatches;\\n\\n    /**\\n     * Creates an instance.\\n     *\\n     * @param options the options to use.\\n     */\\n    /* package */ SinglelineDetector(DetectorOptions options) {\\n        this.options = options;\\n    }\\n\\n    /**\\n     * Processes a set of lines looking for matches.\\n     *\\n     * @param fileText {@link FileText} object contains the lines to process.\\n     */\\n    public void processLines(FileText fileText) {\\n        resetState();\\n        int lineNo = 0;\\n        for (int index = 0; index &lt; fileText.size(); index++) {\\n            final String line = fileText.get(index);\\n            lineNo++;\\n            checkLine(lineNo, line, options.getPattern().matcher(line), 0);\\n        }\\n        finish();\\n    }\\n\\n    /** Perform processing at the end of a set of lines. */\\n    private void finish() {\\n        if (currentMatches &lt; options.getMinimum()) {\\n            if (options.getMessage().isEmpty()) {\\n                options.getReporter().log(1, MSG_REGEXP_MINIMUM,\\n                        options.getMinimum(), options.getFormat());\\n            }\\n            else {\\n                options.getReporter().log(1, options.getMessage());\\n            }\\n        }\\n    }\\n\\n    /**\\n     * Reset the state of the detector.\\n     */\\n    private void resetState() {\\n        currentMatches = 0;\\n    }\\n\\n    /**\\n     * Check a line for matches.\\n     *\\n     * @param lineNo the line number of the line to check\\n     * @param line the line to check\\n     * @param matcher the matcher to use\\n     * @param startPosition the position to start searching from.\\n     * @noinspection TailRecursion\\n     * @noinspectionreason TailRecursion - until issue #14814\\n     */\\n    private void checkLine(int lineNo, String line, Matcher matcher,\\n            int startPosition) {\\n        final boolean foundMatch = matcher.find(startPosition);\\n        if (foundMatch) {\\n            // match is found, check for intersection with comment\\n            final int startCol = matcher.start(0);\\n            final int endCol = matcher.end(0);\\n            // Note that Matcher.end(int) returns the offset AFTER the\\n            // last matched character, but shouldSuppress()\\n            // needs column number of the last character.\\n            // So we need to use (endCol - 1) here.\\n            if (options.getSuppressor()\\n                    .shouldSuppress(lineNo, startCol, lineNo, endCol - 1)) {\\n                checkLine(lineNo, line, matcher, endCol);\\n            }\\n            else {\\n                currentMatches++;\\n                if (currentMatches &gt; options.getMaximum()) {\\n                    if (options.getMessage().isEmpty()) {\\n                        options.getReporter().log(lineNo, MSG_REGEXP_EXCEEDED,\\n                                matcher.pattern().toString());\\n                    }\\n                    else {\\n                        options.getReporter().log(lineNo, options.getMessage());\\n                    }\\n                }\\n            }\\n        }\\n    }\\n\\n}\\n&#x27;, &#x27;source_before&#x27;: &#x27;/**\\n     * Reset the state of the detector.\\n     */\\n    private void resetState() {\\n        currentMatches = 0;\\n    }&#x27;, &#x27;jdk_version&#x27;: 11, &#x27;compile_command&#x27;: &quot;mvn clean package -Drat.skip=true -Dmaven.javadoc.skip=true -Dtest=&#x27;!TestMessageReporter,!XpathRegressionTest,!XdocsPagesTest&#x27;&quot;}, expectations={&#x27;class_after&#x27;: &#x27;///////////////////////////////////////////////////////////////////////////////////////////////\\n// checkstyle: Checks Java source code and other text files for adherence to a set of rules.\\n// Copyright (C) 2001-2024 the original author or authors.\\n//\\n// This library is free software; you can redistribute it and/or\\n// modify it under the terms of the GNU Lesser General Public\\n// License as published by the Free Software Foundation; either\\n// version 2.1 of the License, or (at your option) any later version.\\n//\\n// This library is distributed in the hope that it will be useful,\\n// but WITHOUT ANY WARRANTY; without even the implied warranty of\\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU\\n// Lesser General Public License for more details.\\n//\\n// You should have received a copy of the GNU Lesser General Public\\n// License along with this library; if not, write to the Free Software\\n// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA\\n///////////////////////////////////////////////////////////////////////////////////////////////\\n\\npackage com.puppycrawl.tools.checkstyle.checks.regexp;\\n\\nimport java.util.regex.Matcher;\\n\\nimport com.puppycrawl.tools.checkstyle.api.FileText;\\n\\n/**\\n * A detector that matches individual lines.\\n */\\nclass SinglelineDetector {\\n\\n    /**\\n     * A key is pointing to the warning message text in &quot;messages.properties&quot;\\n     * file.\\n     */\\n    public static final String MSG_REGEXP_EXCEEDED = &quot;regexp.exceeded&quot;;\\n\\n    /**\\n     * A key is pointing to the warning message text in &quot;messages.properties&quot;\\n     * file.\\n     */\\n    public static final String MSG_REGEXP_MINIMUM = &quot;regexp.minimum&quot;;\\n\\n    /**\\n     * The detection options to use.\\n     */\\n    private final DetectorOptions options;\\n    /**\\n     * Tracks the number of matches.\\n     */\\n    private int currentMatches;\\n\\n    /**\\n     * Creates an instance.\\n     *\\n     * @param options the options to use.\\n     */\\n    /* package */ SinglelineDetector(DetectorOptions options) {\\n        this.options = options;\\n    }\\n\\n    /**\\n     * Processes a set of lines looking for matches.\\n     *\\n     * @param fileText {@link FileText} object contains the lines to process.\\n     */\\n    public void processLines(FileText fileText) {\\n        currentMatches = 0;\\n        int lineNo = 0;\\n        for (int index = 0; index &lt; fileText.size(); index++) {\\n            final String line = fileText.get(index);\\n            lineNo++;\\n            checkLine(lineNo, options.getPattern().matcher(line));\\n        }\\n        finish();\\n    }\\n\\n    /**\\n     * Perform processing at the end of a set of lines.\\n     */\\n    private void finish() {\\n        if (currentMatches &lt; options.getMinimum()) {\\n            if (options.getMessage().isEmpty()) {\\n                options.getReporter().log(1, MSG_REGEXP_MINIMUM,\\n                        options.getMinimum(), options.getFormat());\\n            }\\n            else {\\n                options.getReporter().log(1, options.getMessage());\\n            }\\n        }\\n    }\\n\\n    /**\\n     * Check a line for matches.\\n     *\\n     * @param lineNo        the line number of the line to check\\n     * @param matcher       the matcher to use\\n     */\\n    private void checkLine(int lineNo, Matcher matcher) {\\n        int startPosition = 0;\\n        while (matcher.find(startPosition)) {\\n            // match is found, check for intersection with comment\\n            final int startCol = matcher.start(0);\\n            final int endCol = matcher.end(0);\\n            // Note that Matcher.end(int) returns the offset AFTER the\\n            // last matched character, but shouldSuppress()\\n            // needs column number of the last character.\\n            // So we need to use (endCol - 1) here.\\n\\n            if (options.getSuppressor()\\n                    .shouldSuppress(lineNo, startCol, lineNo, endCol - 1)) {\\n                startPosition = endCol;\\n            }\\n            else {\\n                currentMatches++;\\n                if (currentMatches &gt; options.getMaximum()) {\\n                    if (options.getMessage().isEmpty()) {\\n                        options.getReporter().log(lineNo, MSG_REGEXP_EXCEEDED,\\n                                matcher.pattern().toString());\\n                    }\\n                    else {\\n                        options.getReporter().log(lineNo, options.getMessage());\\n                    }\\n                }\\n                break;\\n            }\\n        }\\n    }\\n}\\n&#x27;, &#x27;source_after&#x27;: &#x27;/**\\n     * Processes a set of lines looking for matches.\\n     *\\n     * @param fileText {@link FileText} object contains the lines to process.\\n     */\\n    public void processLines(FileText fileText) {\\n        currentMatches = 0;\\n        int lineNo = 0;\\n        for (int index = 0; index &lt; fileText.size(); index++) {\\n            final String line = fileText.get(index);\\n            lineNo++;\\n            checkLine(lineNo, options.getPattern().matcher(line));\\n        }\\n        finish();\\n    }&#x27;}, tags={&#x27;is_pure&#x27;: True, &#x27;is_compound&#x27;: False, &#x27;has_tests&#x27;: True})</pre>"
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "samples_swe: 1099\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "wAgl",
+      "code_hash": "502cd3208f6022b4c0aaacca6a3440eb",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"b3-technical-debt-dataset-evalsample\">B.3 \u00b7 Technical Debt Dataset \u2192 <code>EvalSample</code></h3>\n<span class=\"paragraph\">TDD rows are SonarQube issue events. <code>expectations</code> carries the\n<code>close_commit</code> (empty if still open); scorers that evaluate \"did the\nagent actually fix the smell?\" need to diff that commit.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "rEll",
+      "code_hash": "fa79984fda28c73c0415a798834f9f03",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "tdd inputs: 5000\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "dGlV",
+      "code_hash": "41c2dc8f0df8b58c57a5dd0d3472be10",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "tdd expectations: 5000 (1070 with a close_commit)\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "SdmI",
+      "code_hash": "df429191a00edbe09a5096520438c878",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "tdd tags: 5000\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "lgWD",
+      "code_hash": "b0e072aee481baf04a11bc4c3691aff5",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "tdd sample_ids: 5000 (unique: 4229)\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "yOPj",
+      "code_hash": "c8c1cbc4295b3dfb6d8cb04175ac05cf",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<pre class='text-xs'>EvalSample(source=&#x27;tdd&#x27;, sample_id=&#x27;tdd:org.apache:cayenne:fc186f50392bf8c804b1d314971c92efa5f52fc3:squid:S1133:Apache_Cayenne:framework/cayenne-jdk1.5-unpublished/src/main/java/org/apache/cayenne/Fault.java:39.0&#x27;, inputs={&#x27;project&#x27;: &#x27;org.apache:cayenne&#x27;, &#x27;creation_commit&#x27;: &#x27;fc186f50392bf8c804b1d314971c92efa5f52fc3&#x27;, &#x27;rule&#x27;: &#x27;squid:S1133&#x27;, &#x27;component&#x27;: &#x27;Apache_Cayenne:framework/cayenne-jdk1.5-unpublished/src/main/java/org/apache/cayenne/Fault.java&#x27;, &#x27;message&#x27;: &#x27;Do not forget to remove this deprecated code someday.&#x27;, &#x27;start_line&#x27;: 39.0, &#x27;end_line&#x27;: 39.0, &#x27;issue_type&#x27;: &#x27;CODE_SMELL&#x27;}, expectations={&#x27;close_commit&#x27;: &#x27;&#x27;}, tags={&#x27;severity&#x27;: &#x27;INFO&#x27;, &#x27;status&#x27;: &#x27;OPEN&#x27;, &#x27;resolution&#x27;: &#x27;&#x27;, &#x27;effort&#x27;: &#x27;10.0&#x27;, &#x27;debt&#x27;: &#x27;10.0&#x27;})</pre>"
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "samples_tdd: 5000\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "fwwy",
+      "code_hash": "de0492e88735497fcc15f5ee34857565",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"final-unified-dataframeevalsample\">Final \u2014 unified <code>DataFrame[EvalSample]</code></h2>\n<span class=\"paragraph\">One long-format frame, one row per validated <code>EvalSample</code>. <code>source</code>\nis the discriminator; downstream code should branch on it and read\n<code>inputs</code> / <code>expectations</code> / <code>tags</code>.</span>\n<span class=\"paragraph\">Handed to a coding agent via <code>df_eval.to_dict(\"records\")</code> \u2014 each\nrecord is already a dict in MLflow-GenAI-ready shape.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "LJZf",
+      "code_hash": "e2989d899dc798c071cc3fd3834156ad",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "all_samples: 17715 (rminer=11616, swe=1099, tdd=5000)\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "urSm",
+      "code_hash": "10f14694465213e47695fec50a660878",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "validated: 17715 EvalSample rows\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "jxvo",
+      "code_hash": "5821a21fcd486213fbfc94ee7199b409",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='jxvo-0' random-id='0464f528-8c2e-1224-47a8-7d52b666a8db'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;source&#92;&quot;:&#92;&quot;rminer&#92;&quot;,&#92;&quot;sample_id&#92;&quot;:&#92;&quot;rminer:6cf596df183b3c3a38ed5dd9bb3b0100c6548ebb:0&#92;&quot;,&#92;&quot;inputs&#92;&quot;:{&#92;&quot;repository&#92;&quot;:&#92;&quot;https://github.com/realm/realm-java.git&#92;&quot;,&#92;&quot;commit_sha&#92;&quot;:&#92;&quot;6cf596df183b3c3a38ed5dd9bb3b0100c6548ebb&#92;&quot;,&#92;&quot;refactoring_type&#92;&quot;:&#92;&quot;Extract Method&#92;&quot;,&#92;&quot;description&#92;&quot;:&#92;&quot;Extract Method private showStatus(txt String) : void extracted from private showStatus(realm Realm) : void in class io.realm.examples.realmmigrationexample.MigrationExampleActivity&#92;&quot;},&#92;&quot;expectations&#92;&quot;:{},&#92;&quot;tags&#92;&quot;:{&#92;&quot;validation&#92;&quot;:&#92;&quot;TP&#92;&quot;,&#92;&quot;detection_tools&#92;&quot;:&#92;&quot;RefactoringMiner, RefDiff, RD-1x, RMiner-1x&#92;&quot;,&#92;&quot;author&#92;&quot;:&#92;&quot;Christian Melchior&#92;&quot;,&#92;&quot;time&#92;&quot;:&#92;&quot;6/8/15 7:26 AM&#92;&quot;}},{&#92;&quot;source&#92;&quot;:&#92;&quot;rminer&#92;&quot;,&#92;&quot;sample_id&#92;&quot;:&#92;&quot;rminer:6cf596df183b3c3a38ed5dd9bb3b0100c6548ebb:1&#92;&quot;,&#92;&quot;inputs&#92;&quot;:{&#92;&quot;repository&#92;&quot;:&#92;&quot;https://github.com/realm/realm-java.git&#92;&quot;,&#92;&quot;commit_sha&#92;&quot;:&#92;&quot;6cf596df183b3c3a38ed5dd9bb3b0100c6548ebb&#92;&quot;,&#92;&quot;refactoring_type&#92;&quot;:&#92;&quot;Extract Variable&#92;&quot;,&#92;&quot;description&#92;&quot;:&#92;&quot;Extract Variable realmMigration : RealmMigration in method public migrateRealm(configuration RealmConfiguration, migration RealmMigration) : void from class io.realm.Realm&#92;&quot;},&#92;&quot;expectations&#92;&quot;:{},&#92;&quot;tags&#92;&quot;:{&#92;&quot;validation&#92;&quot;:&#92;&quot;TP&#92;&quot;,&#92;&quot;detection_tools&#92;&quot;:&#92;&quot;RefactoringMiner&#92;&quot;,&#92;&quot;author&#92;&quot;:&#92;&quot;Christian Melchior&#92;&quot;,&#92;&quot;time&#92;&quot;:&#92;&quot;6/8/15 7:26 AM&#92;&quot;}},{&#92;&quot;source&#92;&quot;:&#92;&quot;rminer&#92;&quot;,&#92;&quot;sample_id&#92;&quot;:&#92;&quot;rminer:6cf596df183b3c3a38ed5dd9bb3b0100c6548ebb:2&#92;&quot;,&#92;&quot;inputs&#92;&quot;:{&#92;&quot;repository&#92;&quot;:&#92;&quot;https://github.com/realm/realm-java.git&#92;&quot;,&#92;&quot;commit_sha&#92;&quot;:&#92;&quot;6cf596df183b3c3a38ed5dd9bb3b0100c6548ebb&#92;&quot;,&#92;&quot;refactoring_type&#92;&quot;:&#92;&quot;Extract Variable&#92;&quot;,&#92;&quot;description&#92;&quot;:&#92;&quot;Extract Variable config0 : RealmConfiguration in method protected onCreate(savedInstanceState Bundle) : void from class io.realm.examples.realmmigrationexample.MigrationExampleActivity&#92;&quot;},&#92;&quot;expectations&#92;&quot;:{},&#92;&quot;tags&#92;&quot;:{&#92;&quot;validation&#92;&quot;:&#92;&quot;TP&#92;&quot;,&#92;&quot;detection_tools&#92;&quot;:&#92;&quot;RefactoringMiner&#92;&quot;,&#92;&quot;author&#92;&quot;:&#92;&quot;Christian Melchior&#92;&quot;,&#92;&quot;time&#92;&quot;:&#92;&quot;6/8/15 7:26 AM&#92;&quot;}}]&quot;' data-total-rows='3' data-total-columns='5' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;source&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;sample_id&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;inputs&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;expectations&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;tags&quot;,[&quot;string&quot;,&quot;object&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "df_eval: 17715 rows  |  sources: {'rminer': 11616, 'tdd': 5000, 'swe': 1099}\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "mWxS",
+      "code_hash": "42b625d0751d2bf03332958da9be0ee5",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "application/json": "{\"source\": \"swe\", \"sample_id\": \"swe:67b98ab96e15fba231ca494c7ce3752cce0a9654_57_71__61_75_86_91\", \"inputs\": {\"project_name\": \"checkstyle\", \"commit_id\": \"67b98ab96e15fba231ca494c7ce3752cce0a9654\", \"refactoring_type\": \"Inline Method\", \"file_path_before\": \"src/main/java/com/puppycrawl/tools/checkstyle/checks/regexp/SinglelineDetector.java\", \"file_path_after\": \"src/main/java/com/puppycrawl/tools/checkstyle/checks/regexp/SinglelineDetector.java\", \"class_before\": \"///////////////////////////////////////////////////////////////////////////////////////////////\\n// checkstyle: Checks Java source code and other text files for adherence to a set of rules.\\n// Copyright (C) 2001-2024 the original author or authors.\\n//\\n// This library is free software; you can redistribute it and/or\\n// modify it under the terms of the GNU Lesser General Public\\n// License as published by the Free Software Foundation; either\\n// version 2.1 of the License, or (at your option) any later version.\\n//\\n// This library is distributed in the hope that it will be useful,\\n// but WITHOUT ANY WARRANTY; without even the implied warranty of\\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU\\n// Lesser General Public License for more details.\\n//\\n// You should have received a copy of the GNU Lesser General Public\\n// License along with this library; if not, write to the Free Software\\n// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA\\n///////////////////////////////////////////////////////////////////////////////////////////////\\n\\npackage com.puppycrawl.tools.checkstyle.checks.regexp;\\n\\nimport java.util.regex.Matcher;\\n\\nimport com.puppycrawl.tools.checkstyle.api.FileText;\\n\\n/**\\n * A detector that matches individual lines.\\n */\\nclass SinglelineDetector {\\n\\n    /**\\n     * A key is pointing to the warning message text in \\\"messages.properties\\\"\\n     * file.\\n     */\\n    public static final String MSG_REGEXP_EXCEEDED = \\\"regexp.exceeded\\\";\\n\\n    /**\\n     * A key is pointing to the warning message text in \\\"messages.properties\\\"\\n     * file.\\n     */\\n    public static final String MSG_REGEXP_MINIMUM = \\\"regexp.minimum\\\";\\n\\n    /** The detection options to use. */\\n    private final DetectorOptions options;\\n    /** Tracks the number of matches. */\\n    private int currentMatches;\\n\\n    /**\\n     * Creates an instance.\\n     *\\n     * @param options the options to use.\\n     */\\n    /* package */ SinglelineDetector(DetectorOptions options) {\\n        this.options = options;\\n    }\\n\\n    /**\\n     * Processes a set of lines looking for matches.\\n     *\\n     * @param fileText {@link FileText} object contains the lines to process.\\n     */\\n    public void processLines(FileText fileText) {\\n        resetState();\\n        int lineNo = 0;\\n        for (int index = 0; index < fileText.size(); index++) {\\n            final String line = fileText.get(index);\\n            lineNo++;\\n            checkLine(lineNo, line, options.getPattern().matcher(line), 0);\\n        }\\n        finish();\\n    }\\n\\n    /** Perform processing at the end of a set of lines. */\\n    private void finish() {\\n        if (currentMatches < options.getMinimum()) {\\n            if (options.getMessage().isEmpty()) {\\n                options.getReporter().log(1, MSG_REGEXP_MINIMUM,\\n                        options.getMinimum(), options.getFormat());\\n            }\\n            else {\\n                options.getReporter().log(1, options.getMessage());\\n            }\\n        }\\n    }\\n\\n    /**\\n     * Reset the state of the detector.\\n     */\\n    private void resetState() {\\n        currentMatches = 0;\\n    }\\n\\n    /**\\n     * Check a line for matches.\\n     *\\n     * @param lineNo the line number of the line to check\\n     * @param line the line to check\\n     * @param matcher the matcher to use\\n     * @param startPosition the position to start searching from.\\n     * @noinspection TailRecursion\\n     * @noinspectionreason TailRecursion - until issue #14814\\n     */\\n    private void checkLine(int lineNo, String line, Matcher matcher,\\n            int startPosition) {\\n        final boolean foundMatch = matcher.find(startPosition);\\n        if (foundMatch) {\\n            // match is found, check for intersection with comment\\n            final int startCol = matcher.start(0);\\n            final int endCol = matcher.end(0);\\n            // Note that Matcher.end(int) returns the offset AFTER the\\n            // last matched character, but shouldSuppress()\\n            // needs column number of the last character.\\n            // So we need to use (endCol - 1) here.\\n            if (options.getSuppressor()\\n                    .shouldSuppress(lineNo, startCol, lineNo, endCol - 1)) {\\n                checkLine(lineNo, line, matcher, endCol);\\n            }\\n            else {\\n                currentMatches++;\\n                if (currentMatches > options.getMaximum()) {\\n                    if (options.getMessage().isEmpty()) {\\n                        options.getReporter().log(lineNo, MSG_REGEXP_EXCEEDED,\\n                                matcher.pattern().toString());\\n                    }\\n                    else {\\n                        options.getReporter().log(lineNo, options.getMessage());\\n                    }\\n                }\\n            }\\n        }\\n    }\\n\\n}\\n\", \"source_before\": \"/**\\n     * Reset the state of the detector.\\n     */\\n    private void resetState() {\\n        currentMatches = 0;\\n    }\", \"jdk_version\": 11, \"compile_command\": \"mvn clean package -Drat.skip=true -Dmaven.javadoc.skip=true -Dtest='!TestMessageReporter,!XpathRegressionTest,!XdocsPagesTest'\"}, \"expectations\": {\"class_after\": \"///////////////////////////////////////////////////////////////////////////////////////////////\\n// checkstyle: Checks Java source code and other text files for adherence to a set of rules.\\n// Copyright (C) 2001-2024 the original author or authors.\\n//\\n// This library is free software; you can redistribute it and/or\\n// modify it under the terms of the GNU Lesser General Public\\n// License as published by the Free Software Foundation; either\\n// version 2.1 of the License, or (at your option) any later version.\\n//\\n// This library is distributed in the hope that it will be useful,\\n// but WITHOUT ANY WARRANTY; without even the implied warranty of\\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU\\n// Lesser General Public License for more details.\\n//\\n// You should have received a copy of the GNU Lesser General Public\\n// License along with this library; if not, write to the Free Software\\n// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA\\n///////////////////////////////////////////////////////////////////////////////////////////////\\n\\npackage com.puppycrawl.tools.checkstyle.checks.regexp;\\n\\nimport java.util.regex.Matcher;\\n\\nimport com.puppycrawl.tools.checkstyle.api.FileText;\\n\\n/**\\n * A detector that matches individual lines.\\n */\\nclass SinglelineDetector {\\n\\n    /**\\n     * A key is pointing to the warning message text in \\\"messages.properties\\\"\\n     * file.\\n     */\\n    public static final String MSG_REGEXP_EXCEEDED = \\\"regexp.exceeded\\\";\\n\\n    /**\\n     * A key is pointing to the warning message text in \\\"messages.properties\\\"\\n     * file.\\n     */\\n    public static final String MSG_REGEXP_MINIMUM = \\\"regexp.minimum\\\";\\n\\n    /**\\n     * The detection options to use.\\n     */\\n    private final DetectorOptions options;\\n    /**\\n     * Tracks the number of matches.\\n     */\\n    private int currentMatches;\\n\\n    /**\\n     * Creates an instance.\\n     *\\n     * @param options the options to use.\\n     */\\n    /* package */ SinglelineDetector(DetectorOptions options) {\\n        this.options = options;\\n    }\\n\\n    /**\\n     * Processes a set of lines looking for matches.\\n     *\\n     * @param fileText {@link FileText} object contains the lines to process.\\n     */\\n    public void processLines(FileText fileText) {\\n        currentMatches = 0;\\n        int lineNo = 0;\\n        for (int index = 0; index < fileText.size(); index++) {\\n            final String line = fileText.get(index);\\n            lineNo++;\\n            checkLine(lineNo, options.getPattern().matcher(line));\\n        }\\n        finish();\\n    }\\n\\n    /**\\n     * Perform processing at the end of a set of lines.\\n     */\\n    private void finish() {\\n        if (currentMatches < options.getMinimum()) {\\n            if (options.getMessage().isEmpty()) {\\n                options.getReporter().log(1, MSG_REGEXP_MINIMUM,\\n                        options.getMinimum(), options.getFormat());\\n            }\\n            else {\\n                options.getReporter().log(1, options.getMessage());\\n            }\\n        }\\n    }\\n\\n    /**\\n     * Check a line for matches.\\n     *\\n     * @param lineNo        the line number of the line to check\\n     * @param matcher       the matcher to use\\n     */\\n    private void checkLine(int lineNo, Matcher matcher) {\\n        int startPosition = 0;\\n        while (matcher.find(startPosition)) {\\n            // match is found, check for intersection with comment\\n            final int startCol = matcher.start(0);\\n            final int endCol = matcher.end(0);\\n            // Note that Matcher.end(int) returns the offset AFTER the\\n            // last matched character, but shouldSuppress()\\n            // needs column number of the last character.\\n            // So we need to use (endCol - 1) here.\\n\\n            if (options.getSuppressor()\\n                    .shouldSuppress(lineNo, startCol, lineNo, endCol - 1)) {\\n                startPosition = endCol;\\n            }\\n            else {\\n                currentMatches++;\\n                if (currentMatches > options.getMaximum()) {\\n                    if (options.getMessage().isEmpty()) {\\n                        options.getReporter().log(lineNo, MSG_REGEXP_EXCEEDED,\\n                                matcher.pattern().toString());\\n                    }\\n                    else {\\n                        options.getReporter().log(lineNo, options.getMessage());\\n                    }\\n                }\\n                break;\\n            }\\n        }\\n    }\\n}\\n\", \"source_after\": \"/**\\n     * Processes a set of lines looking for matches.\\n     *\\n     * @param fileText {@link FileText} object contains the lines to process.\\n     */\\n    public void processLines(FileText fileText) {\\n        currentMatches = 0;\\n        int lineNo = 0;\\n        for (int index = 0; index < fileText.size(); index++) {\\n            final String line = fileText.get(index);\\n            lineNo++;\\n            checkLine(lineNo, options.getPattern().matcher(line));\\n        }\\n        finish();\\n    }\"}, \"tags\": {\"is_pure\": true, \"is_compound\": false, \"has_tests\": true}}"
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "keys per source:\n  rminer inputs=['commit_sha', 'description', 'refactoring_type', 'repository']... expectations=[] tags=['author', 'detection_tools', 'time']...\n  swe    inputs=['class_before', 'commit_id', 'compile_command', 'file_path_after']... expectations=['class_after', 'source_after'] tags=['has_tests', 'is_compound', 'is_pure']...\n  tdd    inputs=['component', 'creation_commit', 'end_line', 'issue_type']... expectations=['close_commit'] tags=['debt', 'effort', 'resolution']...\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    }
+  ]
+}

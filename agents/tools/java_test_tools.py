@@ -22,6 +22,8 @@ LOGGER = logging.getLogger(__name__)
 class TestResult:
     """Individual test result."""
 
+    __test__ = False
+
     name: str
     status: Literal["PASS", "FAIL", "ERROR", "SKIPPED"]
     duration: float = 0.0
@@ -34,6 +36,8 @@ class TestResult:
 class TestCounts:
     """Aggregated counts from a test run."""
 
+    __test__ = False
+
     total: int = 0
     passed: int = 0
     failed: int = 0
@@ -45,6 +49,8 @@ class TestCounts:
 @dataclass
 class TestRunSummary:
     """Summary of test run."""
+
+    __test__ = False
 
     build_system: Literal["maven", "gradle"]
     exit_code: int = 0
@@ -378,15 +384,3 @@ def get_test_output(project_path: str) -> str:
     return output
 
 
-# Helper function to get all tools
-def get_java_test_tools() -> list:
-    """Get all Java test tools for LangGraph agent.
-
-    Returns:
-        List of LangChain tools
-    """
-    return [
-        detect_java_build_system,
-        run_java_tests,
-        get_test_output,
-    ]

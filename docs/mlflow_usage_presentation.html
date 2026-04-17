@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MLflow in SmellAI</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121933;
+      --panel-2: #0f1530;
+      --text: #edf2ff;
+      --muted: #a9b4d0;
+      --accent: #7cc4ff;
+      --accent-2: #8ef0c7;
+      --warn: #ffd479;
+      --danger: #ff9a9a;
+      --border: rgba(255,255,255,0.10);
+      --shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top, #16224c 0%, var(--bg) 55%);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .deck {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 56px 72px 88px;
+      opacity: 0;
+      transform: translateX(30px) scale(.98);
+      transition: opacity .28s ease, transform .28s ease;
+      pointer-events: none;
+      overflow: auto;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .eyebrow {
+      color: var(--accent-2);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 18px;
+      line-height: 1.05;
+    }
+
+    h1 { font-size: 54px; }
+    h2 { font-size: 42px; }
+    h3 { font-size: 24px; color: var(--accent); }
+
+    p, li {
+      font-size: 22px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .muted, .muted li, .muted p { color: var(--muted); }
+
+    ul, ol { margin: 12px 0 0 24px; }
+    li + li { margin-top: 10px; }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 22px 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .card h3 { margin-bottom: 12px; }
+    .card p, .card li { font-size: 19px; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 28px;
+      align-items: center;
+      min-height: calc(100vh - 200px);
+    }
+
+    .big-stat {
+      font-size: 80px;
+      font-weight: 800;
+      color: var(--accent-2);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .pill-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .pill {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.04);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .code {
+      background: #0a0f20;
+      border: 1px solid var(--border);
+      color: #dbe8ff;
+      border-radius: 16px;
+      padding: 18px 20px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 17px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .flow {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    .node {
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .arrow {
+      font-size: 28px;
+      color: var(--accent-2);
+      font-weight: 800;
+    }
+
+    .footer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      background: rgba(7, 11, 24, 0.78);
+      border-top: 1px solid var(--border);
+      backdrop-filter: blur(14px);
+      z-index: 10;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: rgba(255,255,255,0.22); }
+
+    .progress {
+      width: 220px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    }
+
+    .small { font-size: 16px; color: var(--muted); }
+    .warn { color: var(--warn); }
+    .danger { color: var(--danger); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 18px;
+    }
+
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 12px;
+      vertical-align: top;
+    }
+
+    th { color: var(--accent-2); font-size: 16px; text-transform: uppercase; letter-spacing: .08em; }
+
+    @media (max-width: 1100px) {
+      .slide { padding: 34px 28px 90px; }
+      .hero, .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      h1 { font-size: 40px; }
+      h2 { font-size: 32px; }
+      p, li { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck">
+    <section class="slide active">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">Project presentation</div>
+          <h1>How MLflow is used in <span style="color: var(--accent-2)">SmellAI</span></h1>
+          <p class="muted">A repo-specific walkthrough of experiment tracking, GenAI datasets, evaluation workflows, scoring, and local MLflow infrastructure.</p>
+          <div class="pill-row">
+            <div class="pill">MLflow 3.x</div>
+            <div class="pill">GenAI evaluate()</div>
+            <div class="pill">GenAI datasets</div>
+            <div class="pill">SQLite backend</div>
+            <div class="pill">Local UI on :5000</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="big-stat">3</div>
+          <p><strong>Primary MLflow roles in this repo</strong></p>
+          <ol>
+            <li>Evaluation tracking</li>
+            <li>GenAI dataset registration</li>
+            <li>Local UI/server management</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">Big picture</div>
+      <h2>MLflow’s role in the system</h2>
+      <div class="grid grid-3">
+        <div class="card">
+          <h3>1. Evaluation tracking</h3>
+          <p>Workflows run <code>mlflow.genai.evaluate(...)</code> to execute agents over records and produce scored runs visible in MLflow.</p>
+        </div>
+        <div class="card">
+          <h3>2. Dataset management</h3>
+          <p>Unified <code>EvalSample</code> records are converted to MLflow GenAI format and stored as datasets.</p>
+        </div>
+        <div class="card">
+          <h3>3. Operational support</h3>
+          <p>Helpers start the MLflow UI, configure the tracking URI, and create experiments automatically.</p>
+        </div>
+      </div>
+      <div class="flow">
+        <div class="node">raw dataset</div>
+        <div class="arrow">→</div>
+        <div class="node">EvalSample</div>
+        <div class="arrow">→</div>
+        <div class="node">MLflow GenAI record</div>
+        <div class="arrow">→</div>
+        <div class="node">evaluate()</div>
+        <div class="arrow">→</div>
+        <div class="node">MLflow run + metrics</div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">Dependencies & configuration</div>
+      <h2>How MLflow is configured</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Package setup</h3>
+          <ul>
+            <li><code>pyproject.toml</code>: <code>mlflow[mcp]&gt;=3.5.1</code></li>
+            <li>CLI entrypoint: <code>smellai-mlflow = mlflow_utils.cli:main</code></li>
+            <li>Lockfile currently resolves MLflow 3.9.0</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Tracking defaults</h3>
+          <ul>
+            <li>Backend store: <code>sqlite:///mlflow.db</code></li>
+            <li>HTTP tracking URI often defaults to <code>http://localhost:5000</code></li>
+            <li><code>README.md</code> documents <code>MLFLOW_TRACKING_URI</code></li>
+          </ul>
+        </div>
+      </div>
+      <div class="code">Relevant files:
+pyproject.toml
+README.md
+mlflow.db
+mlflow_utils/auto_server.py
+mlflow_utils/server.py</div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">Data contract</div>
+      <h2>Everything centers on <code>EvalSample</code></h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Canonical shape</h3>
+          <div class="code">EvalSample(
+  source,
+  sample_id,
+  inputs,
+  expectations,
+  tags,
+)</div>
+          <p class="small">Defined in <code>smellai_datasets/schema.py</code></p>
+        </div>
+        <div class="card">
+          <h3>Why it exists</h3>
+          <ul>
+            <li><strong>inputs</strong>: what gets passed to the agent <code>predict_fn</code></li>
+            <li><strong>expectations</strong>: ground truth for scorers</li>
+            <li><strong>tags</strong>: metadata for filtering and grouping</li>
+            <li>Shape mirrors the MLflow GenAI evaluate contract</li>
+          </ul>
+        </div>
+      </div>
+      <div class="code">Bridge layer:
+smellai_datasets/mlflow_bridge.py
+- samples_to_mlflow_records(samples)
+- samples_to_mlflow_df(samples)</div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">Evaluation workflows</div>
+      <h2>Where MLflow runs happen</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Unified workflow</h3>
+          <p><code>workflows/eval_workflow.py</code></p>
+          <ul>
+            <li>Supports both <code>rminer</code> and <code>swe</code></li>
+            <li>Loads samples</li>
+            <li>Converts to MLflow records</li>
+            <li>Calls <code>mlflow.genai.evaluate(...)</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Specialized workflows</h3>
+          <ul>
+            <li><code>workflows/rminer_eval_workflow.py</code></li>
+            <li><code>workflows/swe_eval_workflow.py</code></li>
+            <li><code>workflows/common.py</code> contains shared MLflow setup + result printing</li>
+          </ul>
+        </div>
+      </div>
+      <div class="code">Core pattern:
+records = samples_to_mlflow_records(samples)
+setup_workflow_mlflow(tracking_uri, experiment)
+results = mlflow.genai.evaluate(
+  data=records,
+  predict_fn=predict_fn,
+  scorers=scorers,
+)</div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">RMiner path</div>
+      <h2>RMiner evaluation with MLflow</h2>
+      <div class="flow">
+        <div class="node">manifest.json</div>
+        <div class="arrow">→</div>
+        <div class="node">load_eval_samples(["rminer"])</div>
+        <div class="arrow">→</div>
+        <div class="node">samples_to_mlflow_records</div>
+        <div class="arrow">→</div>
+        <div class="node">predict_fn</div>
+        <div class="arrow">→</div>
+        <div class="node">RMiner scorers</div>
+      </div>
+      <div class="grid grid-3" style="margin-top: 22px;">
+        <div class="card">
+          <h3>Scorer 1</h3>
+          <p><code>mapping_accuracy</code></p>
+          <p class="muted">Do predicted hunks overlap ground-truth hunks?</p>
+        </div>
+        <div class="card">
+          <h3>Scorer 2</h3>
+          <p><code>hunk_coverage</code></p>
+          <p class="muted">How much of the ground truth was covered?</p>
+        </div>
+        <div class="card">
+          <h3>Scorer 3</h3>
+          <p><code>prediction_completeness</code></p>
+          <p class="muted">Did the agent make the expected number of predictions?</p>
+        </div>
+      </div>
+      <p class="small">Files: <code>workflows/rminer_eval_workflow.py</code>, <code>agents/rminer_eval/scorers.py</code></p>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">SWE path</div>
+      <h2>SWE-Refactor evaluation with MLflow</h2>
+      <div class="flow">
+        <div class="node">raw SWE data</div>
+        <div class="arrow">→</div>
+        <div class="node">load_eval_samples(["swe"])</div>
+        <div class="arrow">→</div>
+        <div class="node">optional Sonar enrichment</div>
+        <div class="arrow">→</div>
+        <div class="node">evaluate()</div>
+      </div>
+      <div class="grid grid-3" style="margin-top: 22px;">
+        <div class="card">
+          <h3>compile_success</h3>
+          <p>1.0 if generated code compiles.</p>
+        </div>
+        <div class="card">
+          <h3>test_pass</h3>
+          <p>1.0 if tests pass after successful compilation.</p>
+        </div>
+        <div class="card">
+          <h3>overall_success</h3>
+          <p>1.0 only when both compilation and tests succeed.</p>
+        </div>
+      </div>
+      <p class="small">File: <code>workflows/swe_eval_workflow.py</code></p>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">Ablation metrics</div>
+      <h2>Extra MLflow scorers for mini-swe-agent</h2>
+      <div class="grid grid-3">
+        <div class="card">
+          <h3>mini_cost_scorer</h3>
+          <p>Tracks LLM cost in USD for the task.</p>
+        </div>
+        <div class="card">
+          <h3>mini_step_count_scorer</h3>
+          <p>Tracks number of LLM calls / steps.</p>
+        </div>
+        <div class="card">
+          <h3>mini_exit_status_scorer</h3>
+          <p>Tracks whether the agent reached submitted exit status.</p>
+        </div>
+      </div>
+      <p class="small">File: <code>evals/ablation/mini_swe_agent/scorers.py</code></p>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">Datasets</div>
+      <h2>How datasets are stored in MLflow</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>DatasetManager</h3>
+          <ul>
+            <li><code>list_datasets()</code></li>
+            <li><code>get_dataset(name)</code></li>
+            <li><code>create_dataset_from_records(...)</code></li>
+          </ul>
+          <p class="small">File: <code>mlflow_utils/datasets/manager.py</code></p>
+        </div>
+        <div class="card">
+          <h3>Registration flow</h3>
+          <ol>
+            <li>Set tracking URI</li>
+            <li>Find or create experiment</li>
+            <li>Create dataset via <code>mlflow.genai.datasets.create_dataset</code></li>
+            <li>Call <code>dataset.merge_records(records)</code></li>
+          </ol>
+        </div>
+      </div>
+      <div class="code">MLflow dataset APIs used:
+- search_datasets
+- get_dataset
+- create_dataset</div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">RMiner dataset creation</div>
+      <h2>Dedicated dataset creation script</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3><code>rminer/create_rminer_dataset.py</code></h3>
+          <ul>
+            <li>Builds GenAI records from manifest data</li>
+            <li>Can enrich records with SonarQube issues</li>
+            <li>Creates an MLflow dataset and merges records</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Dataset-level tags</h3>
+          <ul>
+            <li><code>source</code></li>
+            <li><code>total_pairs</code></li>
+            <li><code>total_hunks</code></li>
+            <li><code>total_refactorings</code></li>
+          </ul>
+        </div>
+      </div>
+      <div class="code">Key calls:
+mlflow.set_tracking_uri(args.tracking_uri)
+mlflow.set_experiment(args.experiment)
+dataset = create_dataset(...)
+dataset.merge_records(records)</div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">Infrastructure</div>
+      <h2>Local MLflow server and UI management</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3><code>mlflow_utils/server.py</code></h3>
+          <ul>
+            <li>Checks if port is already in use</li>
+            <li>Starts <code>mlflow ui</code></li>
+            <li>Waits until HTTP endpoint is reachable</li>
+            <li>Writes logs to <code>mlflow_ui.log</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3><code>mlflow_utils/auto_server.py</code></h3>
+          <ul>
+            <li>Parses tracking URI</li>
+            <li>Auto-starts local server for <code>http://localhost:5000</code>-style URIs</li>
+            <li>Calls <code>mlflow.set_tracking_uri</code></li>
+            <li>Optionally sets experiment name</li>
+          </ul>
+        </div>
+      </div>
+      <div class="code">MLflow UI command used:
+mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000 --host 0.0.0.0</div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">CLI</div>
+      <h2>Repo-provided MLflow CLI</h2>
+      <div class="card">
+        <p><strong>Entrypoint:</strong> <code>smellai-mlflow</code></p>
+        <table>
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th>Commands</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>server</td>
+              <td>start / stop / status / restart</td>
+              <td>Manage local MLflow UI</td>
+            </tr>
+            <tr>
+              <td>datasets</td>
+              <td>list / get / create / delete</td>
+              <td>Manage MLflow datasets</td>
+            </tr>
+            <tr>
+              <td>evaluate</td>
+              <td>evaluation runner wrapper</td>
+              <td>Run evaluation pipeline</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small">File: <code>mlflow_utils/cli.py</code></p>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">Reality check</div>
+      <h2>What the code does vs what the docs say</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Implemented in code</h3>
+          <ul>
+            <li><code>mlflow.genai.evaluate(...)</code></li>
+            <li><code>mlflow.genai.datasets.*</code></li>
+            <li><code>mlflow.set_tracking_uri(...)</code></li>
+            <li><code>mlflow.set_experiment(...)</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Documented / aspirational</h3>
+          <ul>
+            <li><code>mlflow.langchain.autolog()</code></li>
+            <li><code>mlflow.log_metrics(...)</code></li>
+            <li>Automatic LangGraph tracing in architecture docs</li>
+          </ul>
+        </div>
+      </div>
+      <p class="warn">Important: I found the tracing/autolog pattern in docs, but not wired into active repo code.</p>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">Stale or mismatched pieces</div>
+      <h2>MLflow-related inconsistencies to know about</h2>
+      <div class="grid grid-3">
+        <div class="card">
+          <h3>README path drift</h3>
+          <p>README references <code>scripts/create_rminer_dataset.py</code>, while the actual script present is <code>rminer/create_rminer_dataset.py</code>.</p>
+        </div>
+        <div class="card">
+          <h3>CLI / runner drift</h3>
+          <p><code>mlflow_utils/runner.py</code> references methods and paths that appear stale relative to current code.</p>
+        </div>
+        <div class="card">
+          <h3>Old bridge references</h3>
+          <p>Some scripts refer to older bridge functions not matching current <code>samples_to_mlflow_records</code> APIs.</p>
+        </div>
+      </div>
+      <p class="danger">So: the core MLflow workflows are real, but some helper scripts look partially outdated.</p>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">Commands</div>
+      <h2>How you use MLflow in practice here</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Open the UI</h3>
+          <div class="code">mlflow ui --backend-store-uri sqlite:///mlflow.db</div>
+        </div>
+        <div class="card">
+          <h3>Run RMiner evaluation</h3>
+          <div class="code">uv run workflows/rminer_eval_workflow.py \
+  --manifest rminer_data/manifest.json \
+  --experiment rminer-evaluation</div>
+        </div>
+        <div class="card">
+          <h3>Run SWE evaluation</h3>
+          <div class="code">uv run workflows/swe_eval_workflow.py \
+  --dataset /path/to/pure_refactoring_data.json \
+  --experiment swe-refactor-evaluation</div>
+        </div>
+        <div class="card">
+          <h3>Create dataset</h3>
+          <div class="code">uv run rminer/create_rminer_dataset.py \
+  --manifest rminer_data/manifest.json \
+  --tracking-uri sqlite:///mlflow.db</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">Takeaways</div>
+      <h2>Bottom line</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Current state</h3>
+          <ul>
+            <li>MLflow is actively used for evaluation runs</li>
+            <li>MLflow GenAI datasets are part of the project’s data pipeline</li>
+            <li>The repo includes local UI/server helpers</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Most accurate summary</h3>
+          <p>SmellAI uses MLflow primarily as a <strong>GenAI evaluation and dataset backend</strong>, with custom scorers around refactoring quality, compilation/test success, and some local infrastructure to make the UI usable during experiments.</p>
+        </div>
+      </div>
+      <div class="pill-row">
+        <div class="pill">Evaluate agents</div>
+        <div class="pill">Store datasets</div>
+        <div class="pill">View runs in UI</div>
+        <div class="pill">Not yet full tracing in code</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="footer">
+    <div>
+      <strong id="slideTitle">MLflow in SmellAI</strong>
+      <div class="small">Use ← / → or buttons to navigate</div>
+    </div>
+    <div class="controls">
+      <button id="prevBtn">← Prev</button>
+      <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="small" id="counter">1 / 14</div>
+      <button id="nextBtn">Next →</button>
+    </div>
+  </div>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const progressBar = document.getElementById('progressBar');
+    const counter = document.getElementById('counter');
+    const title = document.getElementById('slideTitle');
+    const nextBtn = document.getElementById('nextBtn');
+    const prevBtn = document.getElementById('prevBtn');
+
+    let index = 0;
+
+    function update() {
+      slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+      counter.textContent = `${index + 1} / ${slides.length}`;
+      progressBar.style.width = `${((index + 1) / slides.length) * 100}%`;
+      const heading = slides[index].querySelector('h1, h2');
+      title.textContent = heading ? heading.textContent : 'Presentation';
+    }
+
+    function next() { if (index < slides.length - 1) { index++; update(); } }
+    function prev() { if (index > 0) { index--; update(); } }
+
+    nextBtn.addEventListener('click', next);
+    prevBtn.addEventListener('click', prev);
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') next();
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') prev();
+      if (e.key === 'Home') { index = 0; update(); }
+      if (e.key === 'End') { index = slides.length - 1; update(); }
+    });
+
+    update();
+  </script>
+</body>
+</html>

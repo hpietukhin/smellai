@@ -28,6 +28,7 @@ dependencies = [
     "langchain-litellm>=0.3.5",
     "sqlmodel>=0.0.22",
     "pyarrow>=15.0.0",
+    "fire>=0.7.1",
 ]
 
 [project.scripts]
@@ -47,21 +48,19 @@ dev = [
     "autopep8>=2.3.2",
     "isort>=7.0.0",
     "ipython>=8.20.0",
-    "jupyter>=1.0.0",
     "mypy>=1.10.0",
-    "nicegui>=1.4.0",
-    "openai>=2.3.0",
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
     "pytest-cov>=4.1.0",
     "ruff>=0.5.0",
-    "set-env-colab-kaggle-dotenv>=0.1.4",
-    "weave>=0.52.9",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+filterwarnings = [
+    'ignore:Support for class-based `config` is deprecated, use ConfigDict instead\.:pydantic.warnings.PydanticDeprecatedSince20',
+]
 
 [[tool.uv.index]]
 name = "pypi"

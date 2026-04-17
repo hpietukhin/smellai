@@ -9,8 +9,7 @@ Usage:
 
 from __future__ import annotations
 
-import argparse
-import json
+import json as json_lib
 import logging
 import sys
 from pathlib import Path
@@ -25,53 +24,42 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Run Java test analysis (detect build system + execute tests)",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__,
-    )
-    parser.add_argument("--project", type=str, required=True,
-                        help="Path to Java project directory")
-    parser.add_argument("--no-clean", action="store_true",
-                        help="Skip clean before tests")
-    parser.add_argument("--timeout", type=int, default=300,
-                        help="Test command timeout in seconds (default: 300)")
-    parser.add_argument("--verbose", action="store_true",
-                        help="Enable verbose output")
-    parser.add_argument("--json", action="store_true",
-                        help="Output results as JSON")
-    args = parser.parse_args()
-
-    if args.verbose:
+def main(
+    project: str,
+    no_clean: bool = False,
+    timeout: int = 300,
+    verbose: bool = False,
+    json: bool = False,
+) -> int:
+    if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    project_path = Path(args.project)
+    project_path = Path(project)
     if not project_path.exists() or not project_path.is_dir():
         logger.error("Project path is not a directory: %s", project_path)
-        sys.exit(1)
+        return 1
 
     logger.info("Analyzing Java tests in: %s", project_path)
 
     try:
         result = run_java_test_analysis(
             str(project_path),
-            clean=not args.no_clean,
-            timeout=args.timeout,
+            clean=not no_clean,
+            timeout=timeout,
         )
 
         if "error" in result:
             logger.error(result["error"])
-            sys.exit(1)
+            return 1
 
         summary = result["summary"]
 
-        if args.json:
+        if json:
             output = {
                 "project_path": result["project_path"],
                 **test_summary_to_dict(summary),
             }
-            print(json.dumps(output, indent=2))
+            print(json_lib.dumps(output, indent=2))
         else:
             print(f"\n{'=' * 80}")
             print("Java Test Analysis Results")
@@ -94,11 +82,14 @@ def main():
             print(f"\n{'=' * 80}\n")
 
         logger.info("Analysis completed successfully")
+        return 0
 
     except Exception as e:
-        logger.error("Error during analysis: %s", e, exc_info=args.verbose)
-        sys.exit(1)
+        logger.error("Error during analysis: %s", e, exc_info=verbose)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    import fire
+
+    sys.exit(fire.Fire(main))
