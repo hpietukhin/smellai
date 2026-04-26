@@ -1,0 +1,14 @@
+# Tree configuration for AI-friendly project structure visualization
+# Reference: tree(1) man page
+
+# Layout
+--dirsfirst          # directories first - easier hierarchy reading
+--charset ascii      # ASCII instead of unicode - more reliable in prompts
+-l                   # follow symlinks
+
+# Ignoring noise
+-I node_modules|.git|dist|__pycache__|*.pyc|*.lock|.DS_Store|.venv|venv|.ruff_cache|.pytest_cache|target|build
+
+# Display
+-h                   # human-readable file sizes
+-a                   # show hidden files (.env.example, .github/, etc.)

@@ -1,0 +1,2 @@
+#!/bin/bash
+eza --git-ignore --group-directories-first -a -h -T -L "${1:-2}" --icons=never .

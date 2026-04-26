@@ -379,7 +379,7 @@ Where:
 
 # Visualization: Priority graph
 
-<img src="/smell_priority_graph.png" class="h-120" />
+<img src="./smell_priority_graph.png" class="h-120" />
 
 **Nodes:** Smell instances sized by PZ score, different shapes for different smell types
 **Green edges:** Positive dependencies (solving relationships)
@@ -410,7 +410,7 @@ The dependency graph is designed to accept additional dimensions and attributes:
 
 # Visualization: File-level dependencies
 
-<img src="/smell_deps_OrderProcessor.png" class="h-110" />
+<img src="./smell_deps_OrderProcessor.png" class="h-110" />
 
 File-level view showing how refactoring one smell (e.g., Long Method) can cascade to resolve multiple related smells (Duplicated Code, Switch Statement, Complex Method).
 
@@ -419,7 +419,7 @@ File-level view showing how refactoring one smell (e.g., Long Method) can cascad
 
 # Visualization: ReportGenerator dependencies
 
-<img src="/smell_deps_ReportGenerator.png" class="h-110" />
+<img src="./smell_deps_ReportGenerator.png" class="h-110" />
 
 Example of God Class with multiple interconnected smells and complex dependency relationships.
 
