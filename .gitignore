@@ -99,3 +99,4 @@ pnpm-lock.yaml
 .nightshift-plan
 .env
 docs/drafts/
+sonar_cache/
