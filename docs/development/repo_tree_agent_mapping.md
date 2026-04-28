@@ -107,11 +107,13 @@ Based on `tree -L 2 --gitignore` and the stage definitions in `docs/conf_Pietukh
 | `smellai_datasets/schema.py` | meta, I | core `EvalSample` schema | code | low | Looks like the canonical shared schema. |
 | `sonarqube` | F | SonarQube smell-detection adapter | code+config | low | Clear ownership of scan logic. |
 | `sonarqube/__init__.py` | meta | package marker | code | low | Standard package file. |
-| `sonarqube/commit_scan.py` | F | main SonarQube scanning pipeline | code | low | Canonical smell-scan implementation. |
+| `sonarqube/commit_scan.py` | F | low-level SonarQube scanning pipeline | code | low | Infrastructure adapter used by `store/detector.py`. |
 | `sonarqube/constants.py` | F | rule/severity mappings | code | low | Dedicated mapping module. |
 | `sonarqube/docker-compose.yml` | F | SonarQube service config | data-for-code | low | Infra config for scanning. |
 | `sonarqube/sonarqube_server.sh` | F | SonarQube server helper | code | medium | Some overlap with docker-compose-based startup. |
 | `sonarqube/tool.py` | F | SonarQube tool wrapper | code | low | Support wrapper around scan system. |
+| `store` | E, F, H | smell graph/store + detector abstractions | code | medium | Central architectural boundary for graph persistence and detector backends. |
+| `store/detector.py` | F | canonical smell-detection abstraction + default SonarQube backend | code | low | High-level code should depend on this, not on `sonarqube.*` directly. |
 | `swe_refactor` | meta, I, J | SWE-Refactor dataset, execution infra, analytics | code+data | high | Several subareas overlap newer unified packages. |
 | `swe_refactor/analytics` | J, meta | analytics package | code | low | Dedicated analytics area. |
 | `swe_refactor/dataset.py` | meta, I | SWE dataset adapter | code | high | Same problem space as `smellai_datasets/loaders.py`. |

@@ -32,8 +32,17 @@ from swe_refactor.utils import (
 from agents.tools.java_test_tools import run_tests_if_present
 from agents.swe_eval.config import DEFAULT_CONFIG, SWEEvalAgentConfig
 from agents.swe_eval.prompts import SYSTEM_PROMPT, get_refactoring_prompt
+from store.detector import SmellDetectionError, SmellDetector, SonarQubeDetector
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _refactoring_outcome(compile_success: bool, test_success: bool) -> str:
+    if not compile_success:
+        return "compile_failed"
+    if not test_success:
+        return "test_failed"
+    return "success"
 
 
 class SWEEvalState(TypedDict):
@@ -82,7 +91,8 @@ class SWEEvalState(TypedDict):
     session_id: str  # thread_id from LangGraph
     analytics_db: Optional[AnalyticsDB]  # SQLModel database instance
 
-    # SonarQube config
+    # Smell detection backend config
+    smell_detector: SmellDetector
     sonar_url: str  # Default: "http://localhost:9000"
     sonar_cache_dir: Optional[str]  # Default: "./sonar_cache"
 
@@ -103,10 +113,15 @@ def create_swe_eval_agent(
     Returns:
         Compiled LangGraph StateGraph
     """
-    if model_name is None:
-        model_name = DEFAULT_CONFIG[SWEEvalAgentConfig.MODEL_NAME]
-
+    model_name = model_name or DEFAULT_CONFIG[SWEEvalAgentConfig.MODEL_NAME]
     model = ChatLiteLLM(model=model_name)
+
+    def get_smell_detector(state: SWEEvalState) -> SmellDetector:
+        """Return the injected detector or a default SonarQube backend."""
+        detector = state.get("smell_detector")
+        if detector is not None:
+            return detector
+        return SonarQubeDetector(sonar_url=state.get("sonar_url", "http://localhost:9000"))
 
     def a0_setup(state: SWEEvalState) -> dict:
         """A0: Setup - Clone repo, checkout parent commit, switch JDK."""
@@ -302,37 +317,30 @@ def create_swe_eval_agent(
 
         # Re-scan for smells after successful compilation (composite mode)
         after_smells = []
-        diff = {"resolved": [], "created": [], "persistent": []}
+        diff = {"resolved": [], "created": [], "persisted": []}
 
         if compile_result.success and state.get("analytics_db"):
-            from swe_refactor.smell_detection.utils import (
-                scan_local_project,
-                compare_smell_sets,
-            )
-
             iteration = state.get("refactoring_iteration", 0)
             session_id = state.get("session_id", "unknown")
+            detector = get_smell_detector(state)
 
             try:
-                after_smells = scan_local_project(
-                    project_path=str(project_path),
-                    project_key=f"{record.projectName}_after{iteration}_{session_id[:8]}",
-                    sonar_url=state.get("sonar_url", "http://localhost:9000"),
+                after_smells = detector.detect(
+                    project_path=Path(project_path),
                     session_id=session_id,
                     iteration=iteration,
-                    cache_dir=state.get("sonar_cache_dir"),
                 )
 
                 before_smells = state.get("detected_smells", [])
-                diff = compare_smell_sets(before_smells, after_smells)
+                diff = SmellDetector.compare(before_smells, after_smells)
 
                 LOGGER.info(
-                    "A6: Smell diff - resolved: %d, created: %d, persistent: %d",
+                    "A6: Smell diff - resolved: %d, created: %d, persisted: %d",
                     len(diff["resolved"]),
                     len(diff["created"]),
-                    len(diff["persistent"]),
+                    len(diff["persisted"]),
                 )
-            except Exception as e:
+            except SmellDetectionError as e:
                 LOGGER.warning("A6: Failed to re-scan smells: %s", e)
 
         # Log refactoring attempt (composite mode)
@@ -358,9 +366,7 @@ def create_swe_eval_agent(
                 iteration=state.get("refactoring_iteration", 0),
                 smell_id=state.get("current_smell", "unknown"),
                 refactoring_type=state.get("refactoring_type", "Extract Method"),
-                outcome="success"
-                if (compile_result.success and test_success)
-                else ("test_failed" if compile_result.success else "compile_failed"),
+                outcome=_refactoring_outcome(compile_result.success, test_success),
                 retries=state.get("retry_count", 0),
                 smells_resolved=len(diff["resolved"]),
                 smells_created=len(diff["created"]),
@@ -397,28 +403,23 @@ def create_swe_eval_agent(
     # ===== NEW: Composite refactoring nodes =====
 
     def a1_detect_smells(state: SWEEvalState) -> dict:
-        """A1: Detect code smells using SonarQube local scan."""
-        from swe_refactor.smell_detection.utils import scan_local_project
-
+        """A1: Detect code smells through the configured detector backend."""
         record = state["record"]
         project_path = state["project_path"]
         session_id = state.get("session_id", "unknown")
         iteration = state.get("refactoring_iteration", 0)
+        detector = get_smell_detector(state)
 
         LOGGER.info("A1: Detecting smells (iteration %d)", iteration)
-
-        project_key = f"{record.projectName}_iter{iteration}_{session_id[:8]}"
-        sonar_url = state.get("sonar_url", "http://localhost:9000")
+        LOGGER.debug("A1: Using smell detector %s for %s", detector.__class__.__name__, record.projectName)
 
         try:
-            detected_smells = scan_local_project(
-                project_path=project_path,
-                project_key=project_key,
-                sonar_url=sonar_url,
+            detected_smells = detector.detect(
+                project_path=Path(project_path),
                 session_id=session_id,
                 iteration=iteration,
             )
-        except Exception as e:
+        except SmellDetectionError as e:
             LOGGER.error("A1: Smell detection failed: %s", e)
             return {
                 "detected_smells": [],
@@ -686,9 +687,6 @@ def _sample_to_refactoring_record(sample: EvalSample) -> RefactoringRecord:
       used only by scorers.
     - ``compileResultBefore`` / ``compileResultCurrent`` default to True because
       SWE-Refactor guarantees both pre- and post-refactoring compilability.
-    - ``RefactoringRecord.type`` has a Literal constraint — a ValueError will be
-      raised at Pydantic validation if the type is not one of the 6 supported
-      values. Filter unsupported types upstream via load_eval_samples if needed.
     """
     i = sample.inputs
     return RefactoringRecord(
@@ -716,6 +714,7 @@ def invoke_agent(
     max_refactorings: int = 5,
     sonar_url: str = "http://localhost:9000",
     sonar_cache_dir: str | None = None,
+    smell_detector: SmellDetector | None = None,
 ) -> dict:
     """Invoke agent for a single SWE EvalSample.
 
@@ -727,6 +726,7 @@ def invoke_agent(
         max_refactorings: Max refactoring iterations (N-action limit)
         sonar_url: SonarQube server URL
         sonar_cache_dir: SonarQube cache directory
+        smell_detector: Optional injected detector backend
 
     Returns:
         Dictionary with evaluation results
@@ -738,6 +738,7 @@ def invoke_agent(
     workspace_path.mkdir(parents=True, exist_ok=True)
 
     session_id = str(uuid.uuid4())
+    smell_detector = smell_detector or SonarQubeDetector(sonar_url=sonar_url)
 
     result = agent.invoke(
         {
@@ -756,6 +757,7 @@ def invoke_agent(
             "analytics_db": analytics_db,
             "refactoring_iteration": 0,
             "max_refactorings": max_refactorings,
+            "smell_detector": smell_detector,
             "sonar_url": sonar_url,
             "sonar_cache_dir": sonar_cache_dir,
             "detected_smells": [],

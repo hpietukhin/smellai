@@ -1,13 +1,23 @@
 """Dependency analysis agent for refactoring.
 
-This module analyzes positive and negative dependencies for code smells
-to determine the optimal sequence for applying refactoring rules.
+This module exposes smell-dependency analysis over SonarQube issues while using
+``SmellGraph`` as the canonical in-memory representation. When a LangGraph
+``BaseStore`` is provided, the built graph and computed priorities can be
+persisted through ``SmellStore`` for later workflow steps.
 """
 
-from typing import List, Dict, Any
+from __future__ import annotations
+
+from typing import Any, Dict, List
+
+from langgraph.store.base import BaseStore
 from pydantic import BaseModel, Field
 
-from sonarqube.constants import RULE_NAME_MAP  # noqa: F401 (re-exported for callers)
+from sonarqube.constants import RULE_NAME_MAP, SEVERITY_MAP  # noqa: F401 (re-exported for callers)
+from store.graph import SmellGraph
+from store.rules import DEPENDENCY_RULES
+from store.smell_store import SmellStore
+from swe_refactor.persistence.models import SmellAction, SmellEvent
 
 
 class DependencyAnalysis(BaseModel):
@@ -28,104 +38,158 @@ class DependencyAnalysis(BaseModel):
 # Need comprehensive mapping with paper references and detailed citations.
 # MEDIUM priority.
 # (See TECHNICAL_SPECIFICATION.md §4.4)
-DEPENDENCY_RULES = {
-    "Long Method": {
-        "positive": [
-            "Switch Statement",
-            "Feature Envy",
-            "Duplicated Code",
-            "Divergent Change",
-            "Comments",
-            "Long Parameter List",
-        ],
-        "negative": ["Long Method", "Long Parameter List"],
-    },
-    "Complex Method": {
-        "positive": [
-            "Switch Statement",
-            "Feature Envy",
-            "Duplicated Code",
-            "Divergent Change",
-            "Comments",
-            "Long Parameter List",
-        ],
-        "negative": ["Long Method", "Long Parameter List"],
-    },
-    "Conditional Complexity": {
-        "positive": [
-            "Switch Statement",
-            "Feature Envy",
-            "Duplicated Code",
-            "Divergent Change",
-            "Comments",
-            "Long Parameter List",
-        ],
-        "negative": ["Long Method", "Long Parameter List"],
-    },
-    "Long Parameter List": {
-        "positive": ["Long Parameter List", "Data Clumps"],
-        "negative": ["Data Class"],
-    },
-    "Large Class": {
-        "positive": ["Data Clumps", "Feature Envy", "Bad Class Content"],
-        "negative": [
-            "Long Method",
-            "Data Class",
-            "Inappropriate Intimacy",
-            "Message Chains",
-        ],
-    },
-    "God Class": {
-        "positive": ["Data Clumps", "Feature Envy", "Bad Class Content"],
-        "negative": [
-            "Long Method",
-            "Data Class",
-            "Inappropriate Intimacy",
-            "Message Chains",
-        ],
-    },
-    "Duplicated Conditions": {
-        "positive": ["Divergent Change", "Shotgun Surgery"],
-        "negative": ["Large Class", "Bad Inheritance"],
-    },
-    "Print Statements": {
-        "positive": ["Needless Part"],
-        "negative": ["Data Class", "Lazy Class"],
-    },
-}
+
+
+def issue_to_smell_event(
+    issue: Dict[str, Any],
+    *,
+    session_id: str = "",
+    iteration: int = 0,
+) -> SmellEvent | None:
+    """Convert one SonarQube issue dict into a ``SmellEvent``.
+
+    Returns ``None`` when the issue does not contain enough data to locate the
+    smell in a source file.
+    """
+    component = issue.get("component", "")
+    if ":" not in component:
+        return None
+
+    file_path = component.split(":", 1)[1]
+    rule = issue.get("rule")
+    smell_type = RULE_NAME_MAP.get(rule, rule)
+    severity = SEVERITY_MAP.get(issue.get("severity"), "LOW")
+    line = issue.get("line", 0)
+
+    return SmellEvent(
+        session_id=session_id,
+        iteration=iteration,
+        smell_id=f"{smell_type}:{file_path}:{line}",
+        smell_type=smell_type,
+        severity=severity,
+        file_path=file_path,
+        line_number=line,
+        action=SmellAction.DETECTED,
+    )
+
+
+def issues_to_smell_events(
+    sonar_issues: List[Dict[str, Any]],
+    *,
+    session_id: str = "",
+    iteration: int = 0,
+) -> List[SmellEvent]:
+    """Convert SonarQube issues into canonical ``SmellEvent`` objects."""
+    return [
+        event
+        for issue in sonar_issues
+        if (event := issue_to_smell_event(
+            issue,
+            session_id=session_id,
+            iteration=iteration,
+        )) is not None
+    ]
+
+
+def build_smell_graph(
+    sonar_issues: List[Dict[str, Any]],
+    *,
+    store: BaseStore | None = None,
+    session_id: str | None = None,
+    iteration: int = 0,
+) -> SmellGraph:
+    """Build a ``SmellGraph`` from SonarQube issues and optionally persist it."""
+    graph = SmellGraph.from_smells(
+        issues_to_smell_events(
+            sonar_issues,
+            session_id=session_id or "",
+            iteration=iteration,
+        )
+    )
+
+    if store is not None and session_id:
+        SmellStore(store).save_graph(session_id, graph, iteration=iteration)
+
+    return graph
+
+
+def prioritize_smells(
+    sonar_issues: List[Dict[str, Any]],
+    *,
+    store: BaseStore | None = None,
+    session_id: str | None = None,
+    iteration: int = 0,
+) -> List[dict[str, Any]]:
+    """Prioritize smells by building a graph and applying greedy scoring.
+
+    When ``store`` and ``session_id`` are provided, both the graph snapshot and
+    the computed priority queue are persisted via ``SmellStore``.
+    """
+    graph = build_smell_graph(
+        sonar_issues,
+        store=store,
+        session_id=session_id,
+        iteration=iteration,
+    )
+    priorities = graph.calculate_priorities()
+
+    if store is not None and session_id:
+        SmellStore(store).save_priorities(session_id, priorities)
+
+    return priorities
 
 
 def analyze_dependencies(
     sonar_issues: List[Dict[str, Any]],
+    *,
+    store: BaseStore | None = None,
+    session_id: str | None = None,
+    iteration: int = 0,
 ) -> List[DependencyAnalysis]:
     """Analyze dependencies for a list of SonarQube issues.
 
+    This keeps the original smell-type-level response shape for callers, but now
+    builds the canonical ``SmellGraph`` first. If a store/session is provided,
+    the graph is persisted for downstream LangGraph steps.
+
     Args:
-        sonar_issues: List of issues from SonarQube
+        sonar_issues: List of issues from SonarQube.
+        store: Optional LangGraph store for persistence.
+        session_id: Session key used when persisting to ``SmellStore``.
+        iteration: Iteration metadata used for persisted snapshots.
 
     Returns:
-        List of DependencyAnalysis objects
+        List of ``DependencyAnalysis`` objects.
     """
-    results = []
-    seen_rules = set()
+    graph = build_smell_graph(
+        sonar_issues,
+        store=store,
+        session_id=session_id,
+        iteration=iteration,
+    )
 
+    first_rule_by_type: dict[str, str] = {}
     for issue in sonar_issues:
         rule = issue.get("rule")
-        if not rule or rule in seen_rules:
-            continue
+        smell_type = RULE_NAME_MAP.get(rule) if rule else None
+        if smell_type:
+            first_rule_by_type.setdefault(smell_type, rule)
 
-        smell_type = RULE_NAME_MAP.get(rule)
-        if not smell_type:
+    results: List[DependencyAnalysis] = []
+    seen_smell_types: set[str] = set()
+    for smell_id in graph.all_smell_ids():
+        smell_type = graph.node_data(smell_id).get("smell_type")
+        if not smell_type or smell_type in seen_smell_types:
             continue
-
-        seen_rules.add(rule)
+        seen_smell_types.add(smell_type)
 
         deps = DEPENDENCY_RULES.get(smell_type)
-        if deps:
+        rule_id = first_rule_by_type.get(smell_type)
+        if deps and rule_id:
             results.append(
                 DependencyAnalysis(
                     smell_type=smell_type,
-                    rule_id=rule,
+                    rule_id=rule_id,
                     positive_dependencies=deps["positive"],
                     negative_dependencies=deps["negative"],
                 )

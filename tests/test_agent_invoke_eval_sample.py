@@ -128,6 +128,31 @@ class TestSweAgentBoundary:
         call_kwargs = mock_agent.invoke.call_args[0][0]
         assert call_kwargs["record"].projectName == "checkstyle"
         assert call_kwargs["record"].commitId == "abc123"
+        assert call_kwargs["smell_detector"] is not None
+
+    def test_invoke_agent_accepts_injected_smell_detector(self, tmp_path):
+        """invoke_agent forwards an injected smell detector into graph state."""
+        from agents.swe_eval.agent import invoke_agent
+        from store.detector import StaticDetector
+
+        mock_agent = MagicMock()
+        mock_agent.invoke.return_value = {
+            "messages": [],
+            "compile_success": True,
+            "test_success": True,
+            "error_message": None,
+        }
+        detector = StaticDetector()
+
+        invoke_agent(
+            mock_agent,
+            SWE_SAMPLE,
+            workspace_path=tmp_path,
+            smell_detector=detector,
+        )
+
+        call_state = mock_agent.invoke.call_args[0][0]
+        assert call_state["smell_detector"] is detector
 
 
 # ---------------------------------------------------------------------------

@@ -14,14 +14,14 @@ import argparse
 import logging
 import os
 import sys
-from collections import defaultdict, Counter
+from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List
 
 import networkx as nx
 import matplotlib.pyplot as plt
 
-from agents.dependency_analysis.agent import DEPENDENCY_RULES
+from store.rules import DEPENDENCY_RULES
 from workflows.utils import configure_logging, load_manifest, save_matplotlib_graph
 
 configure_logging()
@@ -43,28 +43,28 @@ REFACTORING_TO_SMELL_MAP = {
 }
 
 
+def smells_for_refactoring(refactoring_type: str) -> list[str]:
+    """Return smell types targeted by a refactoring type label."""
+    return [
+        smell
+        for label, smells in REFACTORING_TO_SMELL_MAP.items()
+        if label in refactoring_type
+        for smell in smells
+    ]
+
+
 def get_dependencies_for_refactorings(refactoring_types: List[str]) -> Dict[str, Any]:
-    """
-    Analyze dependencies for a list of refactoring types.
-    Returns a dict with 'positive' and 'negative' counters.
-    """
+    """Analyze positive/negative smell dependencies for refactoring types."""
     analysis = {"positive": Counter(), "negative": Counter(), "targeted_smells": set()}
 
-    for ref_type in refactoring_types:
-        # Handle parameterized types if necessary, though usually they are just strings
-        # Check exact match or partial match
-        matched_smells = []
-        for key, smells in REFACTORING_TO_SMELL_MAP.items():
-            if key in ref_type:
-                matched_smells.extend(smells)
-
+    for refactoring_type in refactoring_types:
+        matched_smells = smells_for_refactoring(refactoring_type)
         analysis["targeted_smells"].update(matched_smells)
 
         for smell in matched_smells:
-            if smell in DEPENDENCY_RULES:
-                rules = DEPENDENCY_RULES[smell]
-                analysis["positive"].update(rules.get("positive", []))
-                analysis["negative"].update(rules.get("negative", []))
+            rules = DEPENDENCY_RULES.get(smell, {})
+            analysis["positive"].update(rules.get("positive", []))
+            analysis["negative"].update(rules.get("negative", []))
 
     return analysis
 
@@ -84,12 +84,7 @@ def visualize_dependencies(
     # Add Refactoring -> Targeted Smell edges
     for ref_type in refactorings:
         G.add_node(ref_type, type="refactoring", color="lightblue")
-        matched_smells = []
-        for key, s_list in REFACTORING_TO_SMELL_MAP.items():
-            if key in ref_type:
-                matched_smells.extend(s_list)
-
-        for smell in matched_smells:
+        for smell in smells_for_refactoring(ref_type):
             smells.add(smell)
             G.add_node(smell, type="smell", color="lightgreen")
             G.add_edge(ref_type, smell, label="targets", color="black")
@@ -179,8 +174,6 @@ def analyze_composites(pairs: List[Dict[str, Any]], draw_graph: bool = False) ->
     if draw_graph:
         logger.info("Generating dependency graph for all found refactoring types...")
         visualize_dependencies(list(all_refactoring_types))
-
-    # Detailed Report
 
     # Detailed Report
     print("\n" + "=" * 60)

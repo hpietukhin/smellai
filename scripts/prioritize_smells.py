@@ -19,12 +19,12 @@ import json
 import logging
 from collections import Counter
 from pathlib import Path
-from typing import Callable, Dict, List, Any
+from typing import Any, Callable, Dict, List
 
 import networkx as nx
 
-from agents.dependency_analysis.agent import DEPENDENCY_RULES
 from agents.dependency_analysis.scorer import STANDARD_SCORE, ScoringContext
+from store.rules import DEPENDENCY_RULES
 from swe_refactor.persistence.models import SmellEvent, SmellAction
 
 # Configure logging
@@ -74,7 +74,7 @@ def smell_json_to_instances(data: Any) -> "List[SmellEvent]":
 # Knowledge Base: Impact Rules
 # -----------------------------------------------------------------------------
 
-# We use the centralized DEPENDENCY_RULES from the agent module.
+# We use the centralized DEPENDENCY_RULES from store.rules.
 # This ensures consistency across the project.
 # DEPENDENCY_RULES structure:
 # {
@@ -87,6 +87,21 @@ def smell_json_to_instances(data: Any) -> "List[SmellEvent]":
 # -----------------------------------------------------------------------------
 # Prioritizer Logic
 # -----------------------------------------------------------------------------
+
+
+def _count_edges_by_type(graph: nx.DiGraph, node: str, edge_type: str) -> int:
+    return sum(
+        1 for _, _, data in graph.out_edges(node, data=True)
+        if data.get("type") == edge_type
+    )
+
+
+def _severity_color(severity_score: int) -> str:
+    if severity_score >= 3:
+        return "#ff9999"  # High
+    if severity_score == 2:
+        return "#ffcc99"  # Medium
+    return "#99ff99"  # Low
 
 
 class SmellPrioritizer:
@@ -158,14 +173,8 @@ class SmellPrioritizer:
             scores = {}
             for node in working_graph.nodes():
                 smell = working_graph.nodes[node]["data"]
-                pos_out = sum(
-                    1 for _, _, d in working_graph.out_edges(node, data=True)
-                    if d.get("type") == "positive"
-                )
-                neg_out = sum(
-                    1 for _, _, d in working_graph.out_edges(node, data=True)
-                    if d.get("type") == "negative"
-                )
+                pos_out = _count_edges_by_type(working_graph, node, "positive")
+                neg_out = _count_edges_by_type(working_graph, node, "negative")
                 ctx = ScoringContext(
                     freq=freq_map[smell.smell_type],
                     pos_out=pos_out,
@@ -178,14 +187,8 @@ class SmellPrioritizer:
 
             best_node = max(scores, key=scores.get)
             best_smell = working_graph.nodes[best_node]["data"]
-            pos_impacts = sum(
-                1 for _, _, d in working_graph.out_edges(best_node, data=True)
-                if d.get("type") == "positive"
-            )
-            neg_impacts = sum(
-                1 for _, _, d in working_graph.out_edges(best_node, data=True)
-                if d.get("type") == "negative"
-            )
+            pos_impacts = _count_edges_by_type(working_graph, best_node, "positive")
+            neg_impacts = _count_edges_by_type(working_graph, best_node, "negative")
 
             sequence.append({
                 "order": len(sequence) + 1,
@@ -251,14 +254,7 @@ class SmellPrioritizer:
             # Get shape for this smell type
             shape = SHAPE_MAP.get(smell.smell_type, DEFAULT_SHAPE)
 
-            # Color by severity
-            score = smell.severity_score
-            if score >= 3:
-                color = "#ff9999"  # Red-ish (High)
-            elif score == 2:
-                color = "#ffcc99"  # Orange-ish (Medium)
-            else:
-                color = "#99ff99"  # Green-ish (Low)
+            color = _severity_color(smell.severity_score)
 
             # Group by (shape, color) for batch drawing
             key = (shape, color)

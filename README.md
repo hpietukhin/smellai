@@ -142,9 +142,12 @@ uv run workflows/java_test_workflow.py --project /path/to/java/project
 ```
 
 
-### A1: SonarQube smell detection
+### A1: Smell detection backend
 
-Start SonarQube container and scan repository for code smells.
+A1 runs smell detection through the `SmellDetector` abstraction. The default
+backend is `SonarQubeDetector`, which uses the SonarQube scanner and API.
+
+Start SonarQube and run the default backend directly:
 
 ```bash
 # Start SonarQube
@@ -160,7 +163,7 @@ uv run sonarqube/commit_scan.py --repo-url https://github.com/user/repo --commit
 Analyzes smell dependencies and calculates optimal refactoring order.
 
 ```bash
-uv run scripts/prioritize_smells.py --smells-file smells.json
+uv run scripts/prioritize_smells.py --input smells.json
 ```
 
 Generates prioritization graphs visualizing positive/negative dependencies.

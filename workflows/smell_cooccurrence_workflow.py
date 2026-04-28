@@ -18,11 +18,28 @@ from typing import Any, Dict, List
 import matplotlib.pyplot as plt
 import networkx as nx
 
-from agents.dependency_analysis.agent import DEPENDENCY_RULES
+from store.rules import DEPENDENCY_RULES
 from workflows.utils import configure_logging, load_manifest, save_matplotlib_graph
 
 configure_logging()
 logger = logging.getLogger(__name__)
+
+
+def _add_dependency_edges(
+    graph: nx.DiGraph,
+    smell: str,
+    present_smell_types: set[str],
+) -> None:
+    rules = DEPENDENCY_RULES.get(smell, {})
+
+    for pos_smell in rules.get("positive", []):
+        if pos_smell in present_smell_types:
+            graph.add_edge(smell, pos_smell, color="green", label="solves")
+
+    for neg_smell in rules.get("negative", []):
+        if neg_smell not in present_smell_types:
+            graph.add_node(neg_smell, color="lightsalmon", style="dashed")
+        graph.add_edge(smell, neg_smell, color="red", label="risks creating")
 
 
 def visualize_file_dependencies(
@@ -40,24 +57,8 @@ def visualize_file_dependencies(
     for smell_type in present_smell_types:
         G.add_node(smell_type, color="lightblue", style="filled")
 
-    # Add edges based on rules
     for smell in present_smell_types:
-        if smell in DEPENDENCY_RULES:
-            rules = DEPENDENCY_RULES[smell]
-
-            # Positive dependencies (Refactoring 'smell' might solve 'pos_smell')
-            for pos_smell in rules.get("positive", []):
-                if pos_smell in present_smell_types:
-                    G.add_edge(smell, pos_smell, color="green", label="solves")
-
-            # Negative dependencies (Refactoring 'smell' might create 'neg_smell')
-            for neg_smell in rules.get("negative", []):
-                # We add the edge even if the target smell isn't currently present,
-                # to show the risk. But we need to add the node if it's missing.
-                if neg_smell not in present_smell_types:
-                    G.add_node(neg_smell, color="lightsalmon", style="dashed")
-
-                G.add_edge(smell, neg_smell, color="red", label="risks creating")
+        _add_dependency_edges(G, smell, present_smell_types)
 
     if G.number_of_nodes() == 0:
         logger.warning(f"No nodes to visualize for {filename}.")
