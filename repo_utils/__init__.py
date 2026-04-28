@@ -244,7 +244,7 @@ def temp_repo_context():
 
 
 # Enhanced repository operations (new)
-from repo_utils.operations import (
+from repo_utils.operations import (  # noqa: E402
     clone_and_checkout,
     checkout_commit,
     get_previous_commit,
@@ -253,7 +253,7 @@ from repo_utils.operations import (
 )
 
 # Enhanced test execution (new)
-from repo_utils.test_execution import (
+from repo_utils.test_execution import (  # noqa: E402
     run_tests_enhanced,
     get_build_command,
     has_wrapper,

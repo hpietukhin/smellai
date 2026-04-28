@@ -15,8 +15,6 @@ import logging
 import argparse
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from datetime import datetime
-import glob as globlib
 
 import networkx as nx
 from nicegui import ui, app
@@ -38,7 +36,6 @@ from swe_refactor.persistence.models import (
     RefactoringAttempt,
     TestRun,
     ToolCall,
-    TokenUsage,
 )
 
 # Configure logging
@@ -757,7 +754,8 @@ class PrioritizationVisualizer:
                         md += f"🔴 `{t['name']}`\n\n"
                         if t.get('error'):
                             md += f"   _{t['error'][:100]}..._\n\n"
-            except: pass
+            except Exception:
+                pass
 
         if test_run.test_names:
             try:
@@ -772,7 +770,8 @@ class PrioritizationVisualizer:
                     md += f"• `{t}`\n\n"
                 if len(relevant or names) > 6:
                     md += f"_... and {len(relevant or names) - 6} more_\n"
-            except: pass
+            except Exception:
+                pass
 
         return md
 

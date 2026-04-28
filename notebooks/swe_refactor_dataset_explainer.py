@@ -59,6 +59,7 @@ def _():
         load_eval_samples,
         load_swe_raw_df,
         pd,
+        _resolve_swe_path,
     )
 
 
@@ -71,7 +72,7 @@ def _(mo):
 
 
 @app.cell
-def _():
+def _(_resolve_swe_path):
     resolved_path = _resolve_swe_path(None)
     assert resolved_path is not None and resolved_path.exists(), (
         "SWE-Refactor dataset not found at the configured path."

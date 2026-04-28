@@ -25,7 +25,7 @@ import networkx as nx
 
 from agents.dependency_analysis.scorer import STANDARD_SCORE, ScoringContext
 from store.rules import DEPENDENCY_RULES
-from swe_refactor.persistence.models import SmellEvent, SmellAction
+from swe_refactor.persistence.models import SmellEvent
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")

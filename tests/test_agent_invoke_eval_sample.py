@@ -1,10 +1,8 @@
 """Tests for agent invoke boundary — EvalSample → internal state."""
 
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-from pydantic import ValidationError
 
 from smellai_datasets.schema import EvalSample
 
@@ -122,7 +120,7 @@ class TestSweAgentBoundary:
             "error_message": None,
         }
 
-        result = invoke_agent(mock_agent, SWE_SAMPLE, workspace_path=tmp_path)
+        invoke_agent(mock_agent, SWE_SAMPLE, workspace_path=tmp_path)
 
         mock_agent.invoke.assert_called_once()
         call_kwargs = mock_agent.invoke.call_args[0][0]

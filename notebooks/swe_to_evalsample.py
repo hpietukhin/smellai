@@ -225,7 +225,7 @@ def _(df_candidates):
         "No candidates found — expand PROJECT_TO_REPO_URL or relax the filter above."
     )
     rec = df_candidates.iloc[0].to_dict()
-    print(f"selected record:")
+    print("selected record:")
     print(f"  pair_id:          {rec['pair_id']}")
     print(f"  project_name:     {rec['project_name']}")
     print(f"  commit_id:        {rec['commit_id']}")

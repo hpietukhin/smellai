@@ -28,7 +28,7 @@ from typing import List
 from dotenv import load_dotenv
 
 from rminer.diff_hunk import DiffHunk
-from rminer.rminer_utils import parse_refactoring_info
+from rminer.rminer_utils import compute_diff_hunks_from_files, parse_refactoring_info
 from smellai_datasets.loaders import _iter_valid_rminer_pairs
 
 try:

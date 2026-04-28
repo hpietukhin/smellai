@@ -101,7 +101,8 @@ SCOURERS = {
     "overall": _overall_scorer,
 }
 
-_get_swe_scorers = lambda: list(SCOURERS.values())
+def _get_swe_scorers():
+    return list(SCOURERS.values())
 
 
 # ---------------------------------------------------------------------------

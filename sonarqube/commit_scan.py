@@ -12,7 +12,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import os
 import re
 import shutil
 import subprocess
@@ -24,10 +23,10 @@ from typing import Any, Dict, List, Optional
 import requests
 from dotenv import load_dotenv
 
+from sonarqube.constants import RULE_NAME_MAP, SEVERITY_MAP  # noqa: F401 (re-exported for callers)
+
 # Load environment variables
 load_dotenv()
-
-from sonarqube.constants import RULE_NAME_MAP, SEVERITY_MAP  # noqa: F401 (re-exported for callers)
 
 
 def run_command(

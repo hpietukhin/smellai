@@ -86,14 +86,14 @@ def print_statistics(records: list[RefactoringRecord]):
 
     # Project distribution
     project_counts = Counter(r.projectName for r in records)
-    print(f"\nProject Distribution (top 10):")
+    print("\nProject Distribution (top 10):")
     for project, count in project_counts.most_common(10):
         pct = count / len(records) * 100
         print(f"  {project}: {count} ({pct:.1f}%)")
 
     # JDK distribution
     jdk_counts = Counter(r.compileJDK for r in records)
-    print(f"\nJDK Version Distribution:")
+    print("\nJDK Version Distribution:")
     for jdk, count in sorted(jdk_counts.items()):
         pct = count / len(records) * 100
         print(f"  Java {jdk}: {count} ({pct:.1f}%)")
@@ -101,14 +101,14 @@ def print_statistics(records: list[RefactoringRecord]):
     # Compound vs atomic
     compound_count = sum(1 for r in records if is_compound(r))
     atomic_count = len(records) - compound_count
-    print(f"\nRefactoring Complexity:")
+    print("\nRefactoring Complexity:")
     print(f"  Compound: {compound_count} ({compound_count/len(records)*100:.1f}%)")
     print(f"  Atomic: {atomic_count} ({atomic_count/len(records)*100:.1f}%)")
 
     # Compilation stats
     compile_before = sum(1 for r in records if r.compileResultBefore)
     compile_after = sum(1 for r in records if r.compileResultCurrent)
-    print(f"\nCompilation Success Rates:")
+    print("\nCompilation Success Rates:")
     print(f"  Before: {compile_before}/{len(records)} ({compile_before/len(records)*100:.1f}%)")
     print(f"  After: {compile_after}/{len(records)} ({compile_after/len(records)*100:.1f}%)")
 
@@ -289,7 +289,7 @@ def main() -> int:
             json.dump(output_data, f, indent=2)
 
         print(f"✅ Saved to {output_path}")
-        print(f"\nUsage:")
+        print("\nUsage:")
         print(f"  uv run workflows/swe_eval_workflow.py --dataset {output_path} --enable-composite")
 
     return 0
