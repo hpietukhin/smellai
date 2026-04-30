@@ -7,7 +7,7 @@ from sqlmodel import Session, SQLModel, create_engine, func, select
 from swe_refactor.persistence.models import (
     RefactoringAttempt,
     SmellDependency,
-    SmellEvent,
+    SmellEventRecord,
     ToolCall,
     TokenUsage,
 )
@@ -32,7 +32,7 @@ class AnalyticsDB:
     def log_tool_call(self, tool_call: ToolCall) -> None:
         self._log(tool_call)
 
-    def log_smell_event(self, event: SmellEvent) -> None:
+    def log_smell_event(self, event: SmellEventRecord) -> None:
         self._log(event)
 
     def log_smell_dependency(self, dep: SmellDependency) -> None:
@@ -79,10 +79,10 @@ class AnalyticsDB:
 
     def get_smell_events(
         self, session_id: str, iteration: int | None = None,
-    ) -> list[SmellEvent]:
+    ) -> list[SmellEventRecord]:
         with Session(self.engine) as session:
-            query = select(SmellEvent).where(SmellEvent.session_id == session_id)
+            query = select(SmellEventRecord).where(SmellEventRecord.session_id == session_id)
             if iteration is not None:
-                query = query.where(SmellEvent.iteration == iteration)
+                query = query.where(SmellEventRecord.iteration == iteration)
 
             return session.exec(query).all()

@@ -13,10 +13,10 @@ from typing import Any, Dict, List
 from langgraph.store.base import BaseStore
 from pydantic import BaseModel, Field
 
-from store.graph import SmellGraph
-from store.rules import DEPENDENCY_RULES
+from domain.graph import SmellGraph
+from domain.rules import DEPENDENCY_RULES
 from store.smell_store import SmellStore
-from swe_refactor.persistence.models import SmellAction, SmellEvent
+from domain.models import SmellAction, SmellEvent
 
 
 class DependencyAnalysis(BaseModel):
@@ -39,12 +39,7 @@ class DependencyAnalysis(BaseModel):
 # (See TECHNICAL_SPECIFICATION.md §4.4)
 
 
-def issue_to_smell_event(
-    issue: Dict[str, Any],
-    *,
-    session_id: str = "",
-    iteration: int = 0,
-) -> SmellEvent | None:
+def issue_to_smell_event(issue: Dict[str, Any]) -> SmellEvent | None:
     """Convert one SonarQube issue dict into a ``SmellEvent``.
 
     Returns ``None`` when the issue does not contain enough data to locate the
@@ -63,8 +58,6 @@ def issue_to_smell_event(
     line = n.get("line") or 0
 
     return SmellEvent(
-        session_id=session_id,
-        iteration=iteration,
         smell_id=f"{smell_type}:{file_path}:{line}",
         smell_type=smell_type,
         severity=severity,
@@ -74,21 +67,12 @@ def issue_to_smell_event(
     )
 
 
-def issues_to_smell_events(
-    sonar_issues: List[Dict[str, Any]],
-    *,
-    session_id: str = "",
-    iteration: int = 0,
-) -> List[SmellEvent]:
+def issues_to_smell_events(sonar_issues: List[Dict[str, Any]]) -> List[SmellEvent]:
     """Convert SonarQube issues into canonical ``SmellEvent`` objects."""
     return [
         event
         for issue in sonar_issues
-        if (event := issue_to_smell_event(
-            issue,
-            session_id=session_id,
-            iteration=iteration,
-        )) is not None
+        if (event := issue_to_smell_event(issue)) is not None
     ]
 
 
@@ -100,13 +84,7 @@ def build_smell_graph(
     iteration: int = 0,
 ) -> SmellGraph:
     """Build a ``SmellGraph`` from SonarQube issues and optionally persist it."""
-    graph = SmellGraph.from_smells(
-        issues_to_smell_events(
-            sonar_issues,
-            session_id=session_id or "",
-            iteration=iteration,
-        )
-    )
+    graph = SmellGraph.from_smells(issues_to_smell_events(sonar_issues))
 
     if store is not None and session_id:
         SmellStore(store).save_graph(session_id, graph, iteration=iteration)

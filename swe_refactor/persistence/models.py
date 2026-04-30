@@ -2,23 +2,17 @@
 # pylint: disable=duplicate-code  # _TestCountsBase mirrors TestCounts (agents/tools/java_test_tools.py).
 # They serve different framework requirements (SQLModel vs dataclass) and cannot share a base.
 
+from __future__ import annotations
+
 from datetime import UTC, datetime
-from enum import Enum
 from sqlmodel import Field, SQLModel
+
+from domain.models import SmellAction, SmellEvent  # re-export SmellAction; SmellEvent used in from_domain
 
 
 def _utc_now() -> datetime:
     """Return a timezone-aware UTC timestamp."""
     return datetime.now(UTC)
-
-
-class SmellAction(str, Enum):
-    """Action performed on a smell during refactoring workflow."""
-
-    DETECTED = "detected"  # Smell found in current iteration
-    RESOLVED = "resolved"  # Smell completely removed by refactoring
-    CREATED = "created"  # Smell introduced by refactoring
-    PERSISTED = "persisted"  # Smell still exists (may have changed severity)
 
 
 class ToolCall(SQLModel, table=True):
@@ -36,10 +30,11 @@ class ToolCall(SQLModel, table=True):
     timestamp: datetime = Field(default_factory=_utc_now)
 
 
-class SmellEvent(SQLModel, table=True):
-    """Smell detection/resolution event.
+class SmellEventRecord(SQLModel, table=True):
+    """ORM record for persisting SmellEvent analytics to SQLite.
 
-    session_id/iteration default to ""/0 for in-memory use (e.g. SmellPrioritizer).
+    Use ``SmellEvent`` (domain.models) for in-memory smell logic.
+    Use this class only when reading/writing the analytics DB.
     """
 
     __tablename__ = "smell_events"
@@ -47,28 +42,33 @@ class SmellEvent(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     session_id: str = Field(default="", index=True)
     iteration: int = Field(default=0, index=True)
-    smell_id: str  # Composite key: {type}:{file}:{line}
-    smell_type: str  # "Long Method", "God Class", etc.
-    severity: str  # "HIGH", "MEDIUM", "LOW" (normalized from SonarQube)
+    smell_id: str
+    smell_type: str
+    severity: str
     file_path: str
     line_number: int = Field(default=0)
     action: SmellAction = Field(default=SmellAction.DETECTED)
     timestamp: datetime = Field(default_factory=_utc_now)
 
-    @property
-    def location(self) -> str:
-        """Composite location string used by SmellPrioritizer."""
-        return f"{self.file_path}:{self.line_number}"
-
-    @property
-    def severity_score(self) -> int:
-        """Numeric severity for PZ prioritization formula (1–3)."""
-        s = self.severity.upper()
-        if s in ("BLOCKER", "CRITICAL", "HIGH"):
-            return 3
-        if s in ("MAJOR", "MEDIUM"):
-            return 2
-        return 1
+    @classmethod
+    def from_domain(
+        cls,
+        event: SmellEvent,
+        *,
+        session_id: str,
+        iteration: int,
+    ) -> SmellEventRecord:
+        """Wrap a domain SmellEvent in an ORM record ready for DB insertion."""
+        return cls(
+            session_id=session_id,
+            iteration=iteration,
+            smell_id=event.smell_id,
+            smell_type=event.smell_type,
+            severity=event.severity,
+            file_path=event.file_path,
+            line_number=event.line_number,
+            action=event.action,
+        )
 
 
 class SmellDependency(SQLModel, table=True):

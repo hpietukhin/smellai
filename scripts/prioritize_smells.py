@@ -23,9 +23,9 @@ from typing import Any, Callable, Dict, List
 
 import networkx as nx
 
-from agents.dependency_analysis.scorer import STANDARD_SCORE, ScoringContext
-from store.rules import DEPENDENCY_RULES
-from swe_refactor.persistence.models import SmellEvent
+from domain.scorer import STANDARD_SCORE, ScoringContext
+from domain.rules import DEPENDENCY_RULES
+from domain.models import SmellEvent
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -74,7 +74,7 @@ def smell_json_to_instances(data: Any) -> "List[SmellEvent]":
 # Knowledge Base: Impact Rules
 # -----------------------------------------------------------------------------
 
-# We use the centralized DEPENDENCY_RULES from store.rules.
+# We use the centralized DEPENDENCY_RULES from domain.rules.
 # This ensures consistency across the project.
 # DEPENDENCY_RULES structure:
 # {

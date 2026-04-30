@@ -5,7 +5,7 @@ workflow code should depend on this module, not on `sonarqube.*` details.
 
 Contract for `SmellDetector.detect(...)`:
 - accepts a checked-out local project path;
-- returns a normalized `list[SmellEvent]`;
+- returns a normalized `list[SmellEvent]` (domain type, no ORM fields);
 - may raise `SmellDetectionError` subclasses for configuration, availability,
   or backend execution failures.
 """
@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Iterable, Sequence
 
-from swe_refactor.persistence.models import SmellAction, SmellEvent
+from domain.models import SmellEvent
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,22 +40,11 @@ class DetectorExecutionError(SmellDetectionError):
 
 
 class SmellDetector(ABC):
-    """Strategy interface for smell detection backends.
-
-    Implementations should return normalized `SmellEvent` instances using the
-    provided `session_id` and `iteration`. Failures should raise a
-    `SmellDetectionError` subclass rather than leaking backend-specific
-    exceptions directly.
-    """
+    """Strategy interface for smell detection backends."""
 
     @abstractmethod
-    def detect(
-        self,
-        project_path: Path,
-        session_id: str,
-        iteration: int,
-    ) -> list[SmellEvent]:
-        """Scan `project_path` and return detected smells."""
+    def detect(self, project_path: Path) -> list[SmellEvent]:
+        """Scan ``project_path`` and return detected domain SmellEvents."""
         ...
 
     @staticmethod
@@ -84,18 +73,12 @@ class SonarQubeDetector(SmellDetector):
         self.sonar_url = sonar_url
         self.sonar_token = os.getenv("SONAR_TOKEN") if sonar_token is None else sonar_token
 
-    def detect(
-        self,
-        project_path: Path,
-        session_id: str,
-        iteration: int,
-    ) -> list[SmellEvent]:
+    def detect(self, project_path: Path) -> list[SmellEvent]:
         if not self.sonar_token:
             msg = "SONAR_TOKEN is not set for SonarQubeDetector"
             raise DetectorConfigError(msg)
 
         try:
-            # Lazy import: sonarqube depends on requests, subprocess, etc.
             from sonarqube.commit_scan import (
                 fetch_all_project_issues,
                 poll_analysis_completion,
@@ -106,7 +89,7 @@ class SonarQubeDetector(SmellDetector):
                 "Failed to import SonarQube scanning dependencies"
             ) from exc
 
-        project_key = f"smellai_{session_id}_{iteration}"
+        project_key = f"smellai_{project_path.name}"
 
         try:
             LOGGER.info("Running SonarQube scanner for %s", project_key)
@@ -116,10 +99,8 @@ class SonarQubeDetector(SmellDetector):
                 sonar_url=self.sonar_url,
                 sonar_token=self.sonar_token,
             )
-
             LOGGER.info("Waiting for analysis to complete...")
             poll_analysis_completion(task_id, self.sonar_url, self.sonar_token)
-
             LOGGER.info("Fetching issues from SonarQube API...")
             raw_issues = fetch_all_project_issues(
                 project_key, self.sonar_url, self.sonar_token,
@@ -135,13 +116,8 @@ class SonarQubeDetector(SmellDetector):
                 f"SonarQube scan failed for {project_key}"
             ) from exc
 
-        events = _normalize_issues(
-            raw_issues,
-            session_id=session_id,
-            iteration=iteration,
-        )
-
-        LOGGER.info("Detected %d smells (iteration %d)", len(events), iteration)
+        events = _normalize_issues(raw_issues)
+        LOGGER.info("Detected %d smells", len(events))
         return events
 
 
@@ -151,35 +127,23 @@ class StaticDetector(SmellDetector):
     def __init__(self, smells: Sequence[SmellEvent] | None = None) -> None:
         self._smells = list(smells or [])
 
-    def detect(
-        self,
-        project_path: Path,
-        session_id: str,
-        iteration: int,
-    ) -> list[SmellEvent]:
+    def detect(self, project_path: Path) -> list[SmellEvent]:
         del project_path
         return [
             SmellEvent(
-                session_id=session_id,
-                iteration=iteration,
                 smell_id=smell.smell_id,
                 smell_type=smell.smell_type,
                 severity=smell.severity,
                 file_path=smell.file_path,
                 line_number=smell.line_number,
-                action=smell.action or SmellAction.DETECTED,
+                action=smell.action,
             )
             for smell in self._smells
         ]
 
 
-def _normalize_issues(
-    raw_issues: Iterable[dict],
-    *,
-    session_id: str,
-    iteration: int,
-) -> list[SmellEvent]:
-    """Normalize raw backend issues into canonical `SmellEvent`s."""
+def _normalize_issues(raw_issues: Iterable[dict]) -> list[SmellEvent]:
+    """Normalize raw SonarQube issue dicts into domain SmellEvents."""
     from sonarqube.commit_scan import normalize_issue
 
     events: list[SmellEvent] = []
@@ -194,14 +158,11 @@ def _normalize_issues(
 
         events.append(
             SmellEvent(
-                session_id=session_id,
-                iteration=iteration,
                 smell_id=f"{n['smell_type']}:{file_path}:{line}",
                 smell_type=n["smell_type"],
                 severity=n["severity"],
                 file_path=file_path,
                 line_number=line,
-                action=SmellAction.DETECTED,
             )
         )
     return events

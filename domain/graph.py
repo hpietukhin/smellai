@@ -11,9 +11,9 @@ from typing import Any, NamedTuple
 
 import networkx as nx
 
-from agents.dependency_analysis.scorer import STANDARD_SCORE, ScoringContext
-from store.rules import DEPENDENCY_RULES
-from swe_refactor.persistence.models import SmellEvent
+from domain.scorer import STANDARD_SCORE, ScoringContext
+from domain.rules import DEPENDENCY_RULES
+from domain.models import SmellEvent
 
 
 class _SmellProxy(NamedTuple):

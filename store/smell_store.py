@@ -15,7 +15,7 @@ from typing import Any
 
 from langgraph.store.base import BaseStore
 
-from store.graph import SmellGraph
+from domain.graph import SmellGraph
 
 _NS_PREFIX = "smell_graph"
 

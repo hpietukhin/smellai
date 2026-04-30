@@ -18,7 +18,7 @@ from typing import Any, Dict, List
 import matplotlib.pyplot as plt
 import networkx as nx
 
-from store.rules import DEPENDENCY_RULES
+from domain.rules import DEPENDENCY_RULES
 from workflows.utils import configure_logging, load_manifest, save_matplotlib_graph
 
 configure_logging()

@@ -9,7 +9,7 @@ Tests that the SmellPrioritizer correctly:
 """
 
 import pytest
-from swe_refactor.persistence.models import SmellEvent
+from domain.models import SmellEvent
 from scripts.prioritize_smells import SmellPrioritizer
 
 

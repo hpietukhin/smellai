@@ -131,7 +131,7 @@ class TestSweAgentBoundary:
     def test_invoke_agent_accepts_injected_smell_detector(self, tmp_path):
         """invoke_agent forwards an injected smell detector into graph state."""
         from agents.swe_eval.agent import invoke_agent
-        from store.detector import StaticDetector
+        from domain.detector import StaticDetector
 
         mock_agent = MagicMock()
         mock_agent.invoke.return_value = {

@@ -354,6 +354,7 @@ const GROUPS = {
   workflows:       { color: "#388bfd", label: "Workflows" },
   agents:          { color: "#a371f7", label: "Agents" },
   store:           { color: "#3fb950", label: "Store" },
+  domain:           { color: "#76e3ea", label: "Domain" },
   sonarqube:       { color: "#f78166", label: "SonarQube" },
   smellai_datasets:{ color: "#39d353", label: "Datasets" },
   swe_refactor:    { color: "#e3b341", label: "SWE Refactor" },
@@ -540,13 +541,13 @@ const NODES = [
     ]
   },
   {
-    id: "agents/dependency_analysis/scorer.py",
-    group: "agents",
-    short: "Dep. scorer",
+    id: "domain/scorer.py",
+    group: "domain",
+    short: "Scorer",
     bullets: [
       "ScoringContext dataclass holding freq/pos_out/neg_out/files_affected per smell instance",
       "STANDARD_SCORE: composable scorer builder that sums weighted feature functions (Spec Eq. 1)",
-      "Used by SmellGraph.calculate_priorities() to rank smells for the A3 → A4 handoff"
+      "Pure store-layer primitive — no agent imports; used by SmellGraph.calculate_priorities() and scripts"
     ]
   },
   {
@@ -572,8 +573,8 @@ const NODES = [
 
   // ── STORE ──────────────────────────────────────────────────────────────────
   {
-    id: "store/graph.py",
-    group: "store",
+    id: "domain/graph.py",
+    group: "domain",
     short: "SmellGraph",
     bullets: [
       "Core data structure: thin wrapper over nx.MultiDiGraph where nodes=smell instances, edges=dependency relations",
@@ -582,8 +583,8 @@ const NODES = [
     ]
   },
   {
-    id: "store/rules.py",
-    group: "store",
+    id: "domain/rules.py",
+    group: "domain",
     short: "DEPENDENCY_RULES",
     bullets: [
       "Single Python dict: smell_type → {positive: [...], negative: [...]} encoding all inter-smell relationships",
@@ -592,8 +593,8 @@ const NODES = [
     ]
   },
   {
-    id: "store/detector.py",
-    group: "store",
+    id: "domain/detector.py",
+    group: "domain",
     short: "SmellDetector",
     bullets: [
       "Abstract SmellDetector ABC + SmellDetectionError hierarchy isolating SonarQube from workflow code",
@@ -935,9 +936,9 @@ const EDGES = [
   { source: "workflows/baseline_eval_workflow.py", target: "workflows/common.py" },
   { source: "workflows/java_test_workflow.py",   target: "agents/java_test/agent.py" },
   { source: "workflows/java_test_workflow.py",   target: "agents/tools/java_test_tools.py" },
-  { source: "workflows/composite_analysis_workflow.py", target: "store/rules.py" },
+  { source: "workflows/composite_analysis_workflow.py", target: "domain/rules.py" },
   { source: "workflows/composite_analysis_workflow.py", target: "workflows/utils.py" },
-  { source: "workflows/smell_cooccurrence_workflow.py", target: "store/rules.py" },
+  { source: "workflows/smell_cooccurrence_workflow.py", target: "domain/rules.py" },
   { source: "workflows/smell_cooccurrence_workflow.py", target: "workflows/utils.py" },
   { source: "workflows/common.py",              target: "smellai_datasets/schema.py" },
 
@@ -953,23 +954,23 @@ const EDGES = [
   { source: "agents/swe_eval/agent.py",         target: "agents/tools/java_test_tools.py" },
   { source: "agents/swe_eval/agent.py",         target: "agents/swe_eval/config.py" },
   { source: "agents/swe_eval/agent.py",         target: "agents/swe_eval/prompts.py" },
-  { source: "agents/swe_eval/agent.py",         target: "store/detector.py" },
+  { source: "agents/swe_eval/agent.py",         target: "domain/detector.py" },
   { source: "agents/swe_eval/agent.py",         target: "smellai_datasets/schema.py" },
   { source: "agents/java_test/agent.py",        target: "agents/tools/java_test_tools.py" },
-  { source: "agents/dependency_analysis/agent.py", target: "store/graph.py" },
-  { source: "agents/dependency_analysis/agent.py", target: "store/rules.py" },
+  { source: "agents/dependency_analysis/agent.py", target: "domain/graph.py" },
+  { source: "agents/dependency_analysis/agent.py", target: "domain/rules.py" },
   { source: "agents/dependency_analysis/agent.py", target: "store/smell_store.py" },
   { source: "agents/dependency_analysis/agent.py", target: "swe_refactor/persistence/models.py" },
   { source: "agents/dependency_analysis/agent.py", target: "sonarqube/constants.py" },
   { source: "agents/baseline/agent.py",         target: "smellai_datasets/schema.py" },
 
   // Store
-  { source: "store/graph.py",                   target: "store/rules.py" },
-  { source: "store/graph.py",                   target: "agents/dependency_analysis/scorer.py" },
-  { source: "store/graph.py",                   target: "swe_refactor/persistence/models.py" },
-  { source: "store/detector.py",                target: "swe_refactor/persistence/models.py" },
-  { source: "store/detector.py",                target: "sonarqube/commit_scan.py" },
-  { source: "store/smell_store.py",             target: "store/graph.py" },
+  { source: "domain/graph.py",                   target: "domain/rules.py" },
+  { source: "domain/graph.py",                   target: "domain/scorer.py" },
+  { source: "domain/graph.py",                   target: "swe_refactor/persistence/models.py" },
+  { source: "domain/detector.py",                target: "swe_refactor/persistence/models.py" },
+  { source: "domain/detector.py",                target: "sonarqube/commit_scan.py" },
+  { source: "store/smell_store.py",             target: "domain/graph.py" },
 
   // SonarQube
   { source: "sonarqube/commit_scan.py",         target: "sonarqube/constants.py" },
@@ -1004,7 +1005,8 @@ const EDGES = [
 
   // scripts
   { source: "scripts/prioritize_smells.py",     target: "agents/dependency_analysis/agent.py" },
-  { source: "scripts/prioritize_smells.py",     target: "store/graph.py" },
+  { source: "scripts/prioritize_smells.py",     target: "domain/graph.py" },
+  { source: "scripts/prioritize_smells.py",     target: "domain/scorer.py" },
   { source: "scripts/viz/dashboard.py",         target: "swe_refactor/persistence/database.py" },
 ];
 

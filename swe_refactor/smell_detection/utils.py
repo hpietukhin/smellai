@@ -8,33 +8,23 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from store.detector import SmellDetector, SonarQubeDetector
-from swe_refactor.persistence.models import SmellEvent
+from domain.detector import SmellDetector, SonarQubeDetector
+from domain.models import SmellEvent
 
 
 def scan_local_project(
     project_path: Path | str,
     project_key: str,
     sonar_url: str,
-    session_id: str,
-    iteration: int,
+    session_id: str,  # noqa: ARG001 — kept for call-site compatibility
+    iteration: int,   # noqa: ARG001 — kept for call-site compatibility
     cache_dir: str | None = None,
     detector: SmellDetector | None = None,
 ) -> list[SmellEvent]:
-    """Compatibility wrapper around the detector abstraction.
-
-    Args:
-        project_path: Local checked-out project path.
-        project_key: Deprecated compatibility argument; ignored.
-        sonar_url: Used only when constructing the default detector.
-        session_id: Session identifier copied into returned `SmellEvent`s.
-        iteration: Iteration number copied into returned `SmellEvent`s.
-        cache_dir: Deprecated compatibility argument; ignored.
-        detector: Optional detector backend. Defaults to `SonarQubeDetector`.
-    """
-    del project_key, cache_dir
+    """Compatibility wrapper around the detector abstraction."""
+    del project_key, cache_dir, session_id, iteration
     smell_detector = detector or SonarQubeDetector(sonar_url=sonar_url)
-    return smell_detector.detect(Path(project_path), session_id, iteration)
+    return smell_detector.detect(Path(project_path))
 
 
 def compare_smell_sets(

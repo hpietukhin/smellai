@@ -38,11 +38,9 @@ SONAR_ISSUES = [
 
 
 def test_issue_to_smell_event_converts_issue():
-    event = issue_to_smell_event(SONAR_ISSUES[0], session_id="sess", iteration=2)
+    event = issue_to_smell_event(SONAR_ISSUES[0])
 
     assert event is not None
-    assert event.session_id == "sess"
-    assert event.iteration == 2
     assert event.smell_type == "Long Method"
     assert event.file_path == "src/A.java"
     assert event.severity == "HIGH"

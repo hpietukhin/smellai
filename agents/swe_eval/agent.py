@@ -19,7 +19,8 @@ from langgraph.graph.message import add_messages
 from swe_refactor.dataset import RefactoringRecord
 from swe_refactor.persistence.database import AnalyticsDB
 from smellai_datasets.schema import EvalSample
-from swe_refactor.persistence.models import SmellEvent
+from domain.models import SmellEvent
+from swe_refactor.persistence.models import SmellEventRecord
 from swe_refactor.utils import (
     clone_repository,
     compile_project,
@@ -32,7 +33,7 @@ from swe_refactor.utils import (
 from agents.tools.java_test_tools import run_tests_if_present
 from agents.swe_eval.config import DEFAULT_CONFIG, SWEEvalAgentConfig
 from agents.swe_eval.prompts import SYSTEM_PROMPT, get_refactoring_prompt
-from store.detector import SmellDetectionError, SmellDetector, SonarQubeDetector
+from domain.detector import SmellDetectionError, SmellDetector, SonarQubeDetector
 
 LOGGER = logging.getLogger(__name__)
 
@@ -325,11 +326,7 @@ def create_swe_eval_agent(
             detector = get_smell_detector(state)
 
             try:
-                after_smells = detector.detect(
-                    project_path=Path(project_path),
-                    session_id=session_id,
-                    iteration=iteration,
-                )
+                after_smells = detector.detect(Path(project_path))
 
                 before_smells = state.get("detected_smells", [])
                 diff = SmellDetector.compare(before_smells, after_smells)
@@ -414,11 +411,7 @@ def create_swe_eval_agent(
         LOGGER.debug("A1: Using smell detector %s for %s", detector.__class__.__name__, record.projectName)
 
         try:
-            detected_smells = detector.detect(
-                project_path=Path(project_path),
-                session_id=session_id,
-                iteration=iteration,
-            )
+            detected_smells = detector.detect(Path(project_path))
         except SmellDetectionError as e:
             LOGGER.error("A1: Smell detection failed: %s", e)
             return {
@@ -432,9 +425,8 @@ def create_swe_eval_agent(
         # Log to analytics DB if available
         if analytics_db := state.get("analytics_db"):
             for smell in detected_smells:
-                # Create a copy to avoid session binding issues
-                smell_copy = SmellEvent(**smell.model_dump())
-                analytics_db.log_smell_event(smell_copy)
+                record = SmellEventRecord.from_domain(smell, session_id=session_id, iteration=iteration)
+                analytics_db.log_smell_event(record)
 
         # Save initial snapshot (iteration 0)
         initial_smells = (

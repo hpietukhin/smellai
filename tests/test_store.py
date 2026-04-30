@@ -7,15 +7,15 @@ from langgraph.graph import StateGraph
 from langgraph.store.base import BaseStore
 from langgraph.store.memory import InMemoryStore
 
-from store.detector import (
+from domain.detector import (
     DetectorConfigError,
     SmellDetector,
     SonarQubeDetector,
     StaticDetector,
 )
-from store.graph import SmellGraph
+from domain.graph import SmellGraph
 from store.smell_store import SmellStore
-from swe_refactor.persistence.models import SmellEvent
+from domain.models import SmellEvent
 
 
 def _smell(
@@ -194,11 +194,9 @@ class TestSmellDetector:
     def test_static_detector_returns_normalized_events(self, tmp_path):
         detector = StaticDetector([_smell("s1", file_path="A.java", line=7)])
 
-        events = detector.detect(tmp_path, session_id="sess-1", iteration=2)
+        events = detector.detect(tmp_path)
 
         assert len(events) == 1
-        assert events[0].session_id == "sess-1"
-        assert events[0].iteration == 2
         assert events[0].smell_id == "s1"
         assert events[0].file_path == "A.java"
         assert events[0].line_number == 7
@@ -207,7 +205,7 @@ class TestSmellDetector:
         detector = SonarQubeDetector(sonar_url="http://localhost:9000", sonar_token="")
 
         with pytest.raises(DetectorConfigError, match="SONAR_TOKEN"):
-            detector.detect(tmp_path, session_id="sess-1", iteration=0)
+            detector.detect(tmp_path)
 
 
 # === LangGraph integration ================================================

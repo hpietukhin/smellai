@@ -32,7 +32,7 @@ from scripts.prioritize_smells import (
 
 from swe_refactor.persistence.database import AnalyticsDB
 from swe_refactor.persistence.models import (
-    SmellEvent,
+    SmellEventRecord,
     RefactoringAttempt,
     TestRun,
     ToolCall,
@@ -60,7 +60,7 @@ class PrioritizationVisualizer:
         # Agent execution data
         self.refactoring_attempts: List[RefactoringAttempt] = []
         self.tool_calls: List[ToolCall] = []
-        self.smell_events_by_iteration: Dict[int, List[SmellEvent]] = {}
+        self.smell_events_by_iteration: Dict[int, List[SmellEventRecord]] = {}
         self.test_runs_by_iteration: Dict[int, TestRun] = {}
 
         # Current iteration for timeline playback
@@ -92,7 +92,7 @@ class PrioritizationVisualizer:
         from sqlmodel import Session, select
 
         with Session(self.analytics_db.engine) as session:
-            stmt = select(SmellEvent.session_id).distinct()
+            stmt = select(SmellEventRecord.session_id).distinct()
             self.sessions = list(session.exec(stmt).all())
 
         logger.info(f"Loaded database with {len(self.sessions)} sessions")
@@ -131,9 +131,9 @@ class PrioritizationVisualizer:
             # Load smell events by iteration
             self.smell_events_by_iteration = {}
             stmt = (
-                select(SmellEvent)
-                .where(SmellEvent.session_id == session_id)
-                .order_by(SmellEvent.iteration, SmellEvent.smell_id)
+                select(SmellEventRecord)
+                .where(SmellEventRecord.session_id == session_id)
+                .order_by(SmellEventRecord.iteration, SmellEventRecord.smell_id)
             )
             all_events = list(session.exec(stmt).all())
 
