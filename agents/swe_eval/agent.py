@@ -16,21 +16,13 @@ from langchain_litellm import ChatLiteLLM
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 
+from swe_refactor.adapters import sample_to_refactoring_record
 from swe_refactor.dataset import RefactoringRecord
 from swe_refactor.persistence.database import AnalyticsDB
 from smellai_datasets.schema import EvalSample
 from domain.models import SmellEvent
 from swe_refactor.persistence.models import SmellEventRecord
-from swe_refactor.utils import (
-    clone_repository,
-    compile_project,
-    force_checkout_commit,
-    get_previous_commit,
-    get_repo_url,
-    replace_java_code,
-    switch_java_version,
-)
-from agents.tools.java_test_tools import run_tests_if_present
+from swe_refactor.runtime import setup_project_workspace, verify_refactoring
 from agents.swe_eval.config import DEFAULT_CONFIG, SWEEvalAgentConfig
 from agents.swe_eval.prompts import SYSTEM_PROMPT, get_refactoring_prompt
 from domain.detector import SmellDetectionError, SmellDetector, SonarQubeDetector
@@ -135,53 +127,10 @@ def create_swe_eval_agent(
             record.commitId[:8],
         )
 
-        try:
-            repo_url = get_repo_url(record.projectName)
-        except KeyError:
-            error_msg = f"Unknown project: {record.projectName}"
-            LOGGER.error(error_msg)
-            return {
-                "error_message": error_msg,
-                "project_path": workspace_path / record.projectName,
-            }
-
-        project_path = workspace_path / record.projectName
-
-        if not project_path.exists():
-            success = clone_repository(repo_url, project_path)
-            if not success:
-                return {
-                    "error_message": f"Failed to clone {repo_url}",
-                    "project_path": project_path,
-                }
-
-        parent_commit = get_previous_commit(project_path, record.commitId)
-        if not parent_commit:
-            return {
-                "error_message": f"Failed to get parent of {record.commitId}",
-                "project_path": project_path,
-            }
-
-        success = force_checkout_commit(project_path, parent_commit)
-        if not success:
-            return {
-                "error_message": f"Failed to checkout {parent_commit}",
-                "project_path": project_path,
-            }
-
-        success = switch_java_version(record.compileJDK, project_path)
-        if not success:
-            LOGGER.warning("Failed to switch Java version to %d", record.compileJDK)
-
-        LOGGER.info(
-            "A0: Setup complete. Project at %s, commit %s",
-            project_path,
-            parent_commit[:8],
-        )
-
+        setup = setup_project_workspace(record, workspace_path)
         return {
-            "project_path": project_path,
-            "error_message": None,
+            "project_path": setup.project_path,
+            "error_message": setup.error,
         }
 
     def a5_generate(state: SWEEvalState) -> dict:
@@ -280,49 +229,27 @@ def create_swe_eval_agent(
 
         LOGGER.info("A6: Verifying refactored code")
 
-        source_file = project_path / record.filePathBefore
-        success = replace_java_code(source_file, refactored_code)
+        verification = verify_refactoring(
+            record,
+            project_path,
+            refactored_code=refactored_code,
+            refactored_target_code=state.get("refactored_target_code"),
+        )
 
-        if not success:
-            return {
-                "error_message": f"Failed to write {source_file}",
-                "compile_success": False,
-                "test_success": False,
-            }
-
-        if state.get("refactored_target_code"):
-            target_file = project_path / record.filePathAfter
-            replace_java_code(target_file, state["refactored_target_code"])
-
-        compile_result = compile_project(project_path, record.compileCommand)
-
-        if not compile_result.success:
-            error_summary = "\n".join(
-                compile_result.error_summary or ["Unknown compile error"]
-            )
-            LOGGER.warning("A6: Compilation failed:\n%s", error_summary)
+        if not verification.compile_success:
             return {
                 "compile_success": False,
                 "test_success": False,
-                "error_message": error_summary,
+                "error_message": verification.error,
             }
 
-        LOGGER.info("A6: Compilation succeeded")
-
-        test_success = run_tests_if_present(project_path, record.hasTestC)
-        if record.hasTestC:
-            if not test_success:
-                LOGGER.warning("A6: Tests failed")
-            else:
-                LOGGER.info("A6: Tests passed")
+        test_success = verification.test_success
 
         # Re-scan for smells after successful compilation (composite mode)
         after_smells = []
         diff = {"resolved": [], "created": [], "persisted": []}
 
-        if compile_result.success and state.get("analytics_db"):
-            iteration = state.get("refactoring_iteration", 0)
-            session_id = state.get("session_id", "unknown")
+        if verification.compile_success and state.get("analytics_db"):
             detector = get_smell_detector(state)
 
             try:
@@ -348,7 +275,7 @@ def create_swe_eval_agent(
 
             # Capture git diff if compilation was successful
             code_diff = None
-            if compile_result.success:
+            if verification.compile_success:
                 try:
                     from git import Repo
 
@@ -363,7 +290,7 @@ def create_swe_eval_agent(
                 iteration=state.get("refactoring_iteration", 0),
                 smell_id=state.get("current_smell", "unknown"),
                 refactoring_type=state.get("refactoring_type", "Extract Method"),
-                outcome=_refactoring_outcome(compile_result.success, test_success),
+                outcome=_refactoring_outcome(verification.compile_success, test_success),
                 retries=state.get("retry_count", 0),
                 smells_resolved=len(diff["resolved"]),
                 smells_created=len(diff["created"]),
@@ -439,8 +366,8 @@ def create_swe_eval_agent(
         }
 
     def a2_prioritize_smells(state: SWEEvalState) -> dict:
-        """A2: Prioritize smells using dependency analysis."""
-        from scripts.prioritize_smells import SmellPrioritizer
+        """A2: Prioritize smells using the canonical domain smell graph."""
+        from domain.graph import SmellGraph
 
         detected_smells = state.get("detected_smells", [])
 
@@ -450,10 +377,8 @@ def create_swe_eval_agent(
 
         LOGGER.info("A2: Prioritizing %d smells", len(detected_smells))
 
-        prioritizer = SmellPrioritizer(detected_smells)
-
-        # Get priority queue (sorted by PZ score descending)
-        priority_sequence = prioritizer.calculate_priorities()
+        smell_graph = SmellGraph.from_smells(detected_smells)
+        priority_sequence = smell_graph.calculate_priorities()
 
         LOGGER.info(
             "A2: Priority queue: %s",
@@ -463,12 +388,11 @@ def create_swe_eval_agent(
             ],
         )
 
-        # Extract smell_ids from sequence
         priority_ids = [item["smell_id"] for item in priority_sequence]
 
         return {
             "priority_queue": priority_ids,
-            "smell_graph": prioritizer.graph,
+            "smell_graph": smell_graph.graph,
         }
 
     def a3_select_next_smell(state: SWEEvalState) -> dict:
@@ -669,35 +593,6 @@ def _extract_multi_file(
     return source_code, target_code
 
 
-def _sample_to_refactoring_record(sample: EvalSample) -> RefactoringRecord:
-    """Build internal RefactoringRecord from a SWE EvalSample.
-
-    Notes
-    -----
-    - ``sourceCodeAfterForWhole`` is set to "" because the agent generates its
-      own refactored code; the ground-truth is in ``sample.expectations`` and
-      used only by scorers.
-    - ``compileResultBefore`` / ``compileResultCurrent`` default to True because
-      SWE-Refactor guarantees both pre- and post-refactoring compilability.
-    """
-    i = sample.inputs
-    return RefactoringRecord(
-        projectName=i["project_name"],
-        commitId=i["commit_id"],
-        type=i["refactoring_type"],
-        filePathBefore=i["file_path_before"],
-        filePathAfter=i["file_path_after"],
-        sourceCodeBeforeForWhole=i["class_before"],
-        sourceCodeAfterForWhole="",  # generated by agent; not needed at runtime
-        compileJDK=i["jdk_version"],
-        compileCommand=i["compile_command"],
-        compileResultBefore=True,
-        compileResultCurrent=True,
-        hasTestC=sample.tags.get("has_tests", False),
-        isPureRefactoring=sample.tags.get("is_pure", True),
-    )
-
-
 def invoke_agent(
     agent: StateGraph,
     sample: EvalSample,
@@ -725,7 +620,7 @@ def invoke_agent(
     """
     if sample.source != "swe":
         raise ValueError(f"SWE agent expects source='swe', got {sample.source!r}")
-    record = _sample_to_refactoring_record(sample)
+    record = sample_to_refactoring_record(sample)
     workspace_path = Path(workspace_path)
     workspace_path.mkdir(parents=True, exist_ok=True)
 

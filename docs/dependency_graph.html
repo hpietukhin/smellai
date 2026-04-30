@@ -351,24 +351,26 @@
 // ══════════════════════════════════════════════════════════════════════════════
 
 const GROUPS = {
-  workflows:       { color: "#388bfd", label: "Workflows" },
-  agents:          { color: "#a371f7", label: "Agents" },
-  store:           { color: "#3fb950", label: "Store" },
-  domain:           { color: "#76e3ea", label: "Domain" },
-  sonarqube:       { color: "#f78166", label: "SonarQube" },
-  smellai_datasets:{ color: "#39d353", label: "Datasets" },
-  swe_refactor:    { color: "#e3b341", label: "SWE Refactor" },
-  rminer:          { color: "#f0883e", label: "RMiner" },
-  repo_utils:      { color: "#79c0ff", label: "Repo Utils" },
-  mlflow_utils:    { color: "#ff7b72", label: "MLflow Utils" },
-  models:          { color: "#d2a8ff", label: "Models" },
-  scripts:         { color: "#56d364", label: "Scripts" },
-  evals:           { color: "#ffa657", label: "Evals" },
+  workflows:          { color: "#388bfd", label: "Workflows" },
+  agents:             { color: "#a371f7", label: "Agents" },
+  store:              { color: "#3fb950", label: "Store" },
+  domain:             { color: "#76e3ea", label: "Domain" },
+  sonarqube:          { color: "#f78166", label: "SonarQube" },
+  smellai_datasets:   { color: "#39d353", label: "Datasets" },
+  swe_refactor:       { color: "#e3b341", label: "SWE Refactor" },
+  rminer:             { color: "#f0883e", label: "RMiner" },
+  repo_utils:         { color: "#79c0ff", label: "Repo Utils" },
+  mlflow_utils:       { color: "#ff7b72", label: "MLflow Utils" },
+  models:             { color: "#d2a8ff", label: "Models" },
+  scripts:            { color: "#56d364", label: "Scripts" },
+  evals:              { color: "#ffa657", label: "Evals" },
+  tools:              { color: "#8b949e", label: "Tools" },
+  presentation_innovaite: { color: "#db6d28", label: "Presentation" },
+  config:             { color: "#8b949e", label: "Config" },
 };
 
 const NODES = [
-  // ── WORKFLOWS ──────────────────────────────────────────────────────────────
-  {
+{
     id: "workflows/eval_workflow.py",
     group: "workflows",
     short: "eval_workflow",
@@ -378,7 +380,7 @@ const NODES = [
       "Spec role: top-level orchestrator for both A4-mapping (RMiner) and A5-generation (SWE) experimental pipelines"
     ]
   },
-  {
+{
     id: "workflows/rminer_eval_workflow.py",
     group: "workflows",
     short: "rminer_eval_workflow",
@@ -388,7 +390,7 @@ const NODES = [
       "Used in paper experiments as entry-point for RMiner refactoring-mapping accuracy measurement"
     ]
   },
-  {
+{
     id: "workflows/swe_eval_workflow.py",
     group: "workflows",
     short: "swe_eval_workflow",
@@ -398,7 +400,7 @@ const NODES = [
       "Spec role: runs the A0→A1→…→A6 loop evaluating whether LLM-generated refactorings preserve test suite green"
     ]
   },
-  {
+{
     id: "workflows/baseline_eval_workflow.py",
     group: "workflows",
     short: "baseline_eval_workflow",
@@ -408,7 +410,7 @@ const NODES = [
       "Provides lower-bound reference score for mapping_accuracy / hunk_coverage metrics in the paper"
     ]
   },
-  {
+{
     id: "workflows/java_test_workflow.py",
     group: "workflows",
     short: "java_test_workflow",
@@ -418,7 +420,7 @@ const NODES = [
       "Outputs pass/fail counts and optional JSON; used to establish pre-refactoring test baseline (Spec §3.1)"
     ]
   },
-  {
+{
     id: "workflows/composite_analysis_workflow.py",
     group: "workflows",
     short: "composite_analysis",
@@ -428,7 +430,7 @@ const NODES = [
       "Exploratory analysis tool for validating DEPENDENCY_RULES against real refactoring data"
     ]
   },
-  {
+{
     id: "workflows/smell_cooccurrence_workflow.py",
     group: "workflows",
     short: "smell_cooccurrence",
@@ -438,7 +440,7 @@ const NODES = [
       "Validates that store/rules.py captures the empirical relationships seen in the TDD dataset"
     ]
   },
-  {
+{
     id: "workflows/common.py",
     group: "workflows",
     short: "common",
@@ -448,7 +450,7 @@ const NODES = [
       "Single import point for all workflows so agent/dataset import churn stays out of workflow files"
     ]
   },
-  {
+{
     id: "workflows/utils.py",
     group: "workflows",
     short: "utils",
@@ -458,9 +460,7 @@ const NODES = [
       "Intentionally lightweight: no agent or dataset imports to stay importable in isolation"
     ]
   },
-
-  // ── AGENTS ─────────────────────────────────────────────────────────────────
-  {
+{
     id: "agents/rminer_eval/agent.py",
     group: "agents",
     short: "A4 RMiner agent",
@@ -470,7 +470,7 @@ const NODES = [
       "Integrates dependency_analysis to enrich each EvalSample with smell context before LLM call"
     ]
   },
-  {
+{
     id: "agents/swe_eval/agent.py",
     group: "agents",
     short: "A5/A6 SWE agent",
@@ -480,7 +480,7 @@ const NODES = [
       "Implements the core empirical loop of the thesis: does LLM refactoring preserve behavior AND reduce smells?"
     ]
   },
-  {
+{
     id: "agents/java_test/agent.py",
     group: "agents",
     short: "A0/D/J Java test agent",
@@ -490,7 +490,7 @@ const NODES = [
       "Reused as A6 (behavior verification) by swe_eval agent after refactoring is applied"
     ]
   },
-  {
+{
     id: "agents/dependency_analysis/agent.py",
     group: "agents",
     short: "A3 Dependency agent",
@@ -500,7 +500,7 @@ const NODES = [
       "Implements Eq. 1–2 from conf.tex: PZ_i = Severity_i + Σ(positive outgoing weights)"
     ]
   },
-  {
+{
     id: "agents/baseline/agent.py",
     group: "agents",
     short: "Baseline agent",
@@ -510,7 +510,7 @@ const NODES = [
       "Control condition in the paper: shows the accuracy gain from full pipeline vs. bare prompt"
     ]
   },
-  {
+{
     id: "agents/tools/java_test_tools.py",
     group: "agents",
     short: "java_test_tools",
@@ -520,7 +520,7 @@ const NODES = [
       "Exposed as a LangChain @tool and also called directly by the java_test agent"
     ]
   },
-  {
+{
     id: "agents/rminer_eval/scorers.py",
     group: "agents",
     short: "RMiner scorers",
@@ -530,7 +530,7 @@ const NODES = [
       "Directly consumed by mlflow.genai.evaluate() in eval_workflow to produce experiment metrics"
     ]
   },
-  {
+{
     id: "agents/rminer_eval/config.py",
     group: "agents",
     short: "RMiner config",
@@ -540,7 +540,7 @@ const NODES = [
       "Pattern used throughout agents to avoid magic strings in config dicts"
     ]
   },
-  {
+{
     id: "domain/scorer.py",
     group: "domain",
     short: "Scorer",
@@ -550,7 +550,7 @@ const NODES = [
       "Pure store-layer primitive — no agent imports; used by SmellGraph.calculate_priorities() and scripts"
     ]
   },
-  {
+{
     id: "agents/swe_eval/config.py",
     group: "agents",
     short: "SWE config",
@@ -560,7 +560,7 @@ const NODES = [
       "Mirrors rminer config pattern for consistent agent configuration style"
     ]
   },
-  {
+{
     id: "agents/swe_eval/prompts.py",
     group: "agents",
     short: "SWE prompts",
@@ -570,9 +570,7 @@ const NODES = [
       "Referenced in swe_eval agent at the 'generate' node; kept separate to allow prompt ablation"
     ]
   },
-
-  // ── STORE ──────────────────────────────────────────────────────────────────
-  {
+{
     id: "domain/graph.py",
     group: "domain",
     short: "SmellGraph",
@@ -582,7 +580,7 @@ const NODES = [
       "calculate_priorities() applies STANDARD_SCORE to return ranked list for A3 stage (Spec §4.4 Alg. 1–2)"
     ]
   },
-  {
+{
     id: "domain/rules.py",
     group: "domain",
     short: "DEPENDENCY_RULES",
@@ -592,7 +590,7 @@ const NODES = [
       "No imports — pure data; both agents and workflow scripts import from here"
     ]
   },
-  {
+{
     id: "domain/detector.py",
     group: "domain",
     short: "SmellDetector",
@@ -602,7 +600,7 @@ const NODES = [
       "Architectural boundary: swe_eval agent depends on this interface, not on sonarqube.* directly"
     ]
   },
-  {
+{
     id: "store/smell_store.py",
     group: "store",
     short: "SmellStore",
@@ -612,9 +610,7 @@ const NODES = [
       "Enables stateful multi-step workflows: A3 writes priorities, A4 reads them without re-computing"
     ]
   },
-
-  // ── SONARQUBE ──────────────────────────────────────────────────────────────
-  {
+{
     id: "sonarqube/commit_scan.py",
     group: "sonarqube",
     short: "commit_scan (A1)",
@@ -624,7 +620,7 @@ const NODES = [
       "Returns normalized SmellEvent-compatible dicts using RULE_NAME_MAP and SEVERITY_MAP from constants"
     ]
   },
-  {
+{
     id: "sonarqube/tool.py",
     group: "sonarqube",
     short: "SonarQube @tool",
@@ -634,7 +630,7 @@ const NODES = [
       "Allows the swe_eval agent to trigger SonarQube scanning as a tool call rather than a direct function call"
     ]
   },
-  {
+{
     id: "sonarqube/constants.py",
     group: "sonarqube",
     short: "constants",
@@ -644,9 +640,7 @@ const NODES = [
       "Imported by commit_scan, dependency_analysis agent, and smellai_datasets enrichment — single source of truth"
     ]
   },
-
-  // ── SMELLAI_DATASETS ───────────────────────────────────────────────────────
-  {
+{
     id: "smellai_datasets/schema.py",
     group: "smellai_datasets",
     short: "EvalSample schema",
@@ -656,7 +650,7 @@ const NODES = [
       "All agent predict_fn signatures unpack EvalSample.inputs; scorers read EvalSample.expectations"
     ]
   },
-  {
+{
     id: "smellai_datasets/models.py",
     group: "smellai_datasets",
     short: "models (compat)",
@@ -666,7 +660,7 @@ const NODES = [
       "No logic — just one import and __all__ = ['DiffHunk']"
     ]
   },
-  {
+{
     id: "smellai_datasets/mlflow_bridge.py",
     group: "smellai_datasets",
     short: "MLflow bridge",
@@ -676,7 +670,7 @@ const NODES = [
       "Thin shim — no transformation logic, just model_dump() calls; keeps MLflow coupling out of schema"
     ]
   },
-  {
+{
     id: "smellai_datasets/loaders.py",
     group: "smellai_datasets",
     short: "Loaders",
@@ -686,7 +680,7 @@ const NODES = [
       "Resolves default dataset paths from well-known locations; handles zip-compressed SWE archives"
     ]
   },
-  {
+{
     id: "smellai_datasets/enrich_sonar.py",
     group: "smellai_datasets",
     short: "Sonar enrichment",
@@ -696,9 +690,7 @@ const NODES = [
       "Deliberately NOT called from loaders — heavy I/O; must be explicitly invoked in notebooks or workflows"
     ]
   },
-
-  // ── SWE_REFACTOR ───────────────────────────────────────────────────────────
-  {
+{
     id: "swe_refactor/dataset.py",
     group: "swe_refactor",
     short: "RefactoringRecord",
@@ -708,7 +700,7 @@ const NODES = [
       "Consumed by swe_eval agent as the raw input before conversion to EvalSample"
     ]
   },
-  {
+{
     id: "swe_refactor/persistence/database.py",
     group: "swe_refactor",
     short: "AnalyticsDB",
@@ -718,7 +710,7 @@ const NODES = [
       "Used by swe_eval agent to persist SmellEvent, ToolCall, RefactoringAttempt, TokenUsage per session"
     ]
   },
-  {
+{
     id: "swe_refactor/persistence/models.py",
     group: "swe_refactor",
     short: "Analytics models",
@@ -728,7 +720,7 @@ const NODES = [
       "session_id + iteration fields on every model enable per-run aggregation queries for the paper's tables"
     ]
   },
-  {
+{
     id: "swe_refactor/utils/repos.py",
     group: "swe_refactor",
     short: "repos (URL map)",
@@ -738,7 +730,7 @@ const NODES = [
       "Single place to update when adding new benchmark projects to the evaluation"
     ]
   },
-  {
+{
     id: "swe_refactor/utils/build_util.py",
     group: "swe_refactor",
     short: "build_util",
@@ -748,7 +740,7 @@ const NODES = [
       "Used by swe_eval agent A5 node to verify the LLM-generated code compiles before running tests"
     ]
   },
-  {
+{
     id: "swe_refactor/utils/jenv_util.py",
     group: "swe_refactor",
     short: "jenv_util",
@@ -758,7 +750,7 @@ const NODES = [
       "Called by swe_eval agent before each compile to ensure the correct JDK matches compileJDK in the record"
     ]
   },
-  {
+{
     id: "swe_refactor/smell_detection/utils.py",
     group: "swe_refactor",
     short: "smell_detection utils",
@@ -768,9 +760,7 @@ const NODES = [
       "Used by store/detector.py SonarQubeDetector to post-process scan results before returning to agent"
     ]
   },
-
-  // ── RMINER ─────────────────────────────────────────────────────────────────
-  {
+{
     id: "rminer/diff_hunk.py",
     group: "rminer",
     short: "DiffHunk",
@@ -780,7 +770,7 @@ const NODES = [
       "No logic — pure data model; re-exported from smellai_datasets.models for backwards compatibility"
     ]
   },
-  {
+{
     id: "rminer/rminer_utils.py",
     group: "rminer",
     short: "rminer_utils",
@@ -790,7 +780,7 @@ const NODES = [
       "Used by create_rminer_dataset.py to build the manifest and by smellai_datasets loaders to read it"
     ]
   },
-  {
+{
     id: "rminer/create_rminer_dataset.py",
     group: "rminer",
     short: "create_rminer_dataset",
@@ -800,9 +790,7 @@ const NODES = [
       "Uses rminer_utils for parsing and smellai_datasets models for DiffHunk serialization"
     ]
   },
-
-  // ── REPO_UTILS ─────────────────────────────────────────────────────────────
-  {
+{
     id: "repo_utils/operations.py",
     group: "repo_utils",
     short: "repo operations",
@@ -812,7 +800,7 @@ const NODES = [
       "Provides replace_java_code() to write LLM-generated source back to the cloned repo before compile"
     ]
   },
-  {
+{
     id: "repo_utils/test_execution.py",
     group: "repo_utils",
     short: "test_execution",
@@ -822,7 +810,7 @@ const NODES = [
       "Calls into agents/tools/java_test_tools for the actual subprocess execution and XML parsing"
     ]
   },
-  {
+{
     id: "repo_utils/errors.py",
     group: "repo_utils",
     short: "errors",
@@ -832,9 +820,7 @@ const NODES = [
       "Simple module — only exception classes, no logic"
     ]
   },
-
-  // ── MLFLOW_UTILS ───────────────────────────────────────────────────────────
-  {
+{
     id: "mlflow_utils/datasets/manager.py",
     group: "mlflow_utils",
     short: "DatasetManager",
@@ -844,7 +830,7 @@ const NODES = [
       "Used by scripts/datasets/ CLI tools to inspect and register datasets for experiments"
     ]
   },
-  {
+{
     id: "mlflow_utils/runner.py",
     group: "mlflow_utils",
     short: "EvaluationRunner",
@@ -854,7 +840,7 @@ const NODES = [
       "Thin orchestrator used by mlflow_utils/cli.py to wire config dict to server + evaluation"
     ]
   },
-  {
+{
     id: "mlflow_utils/server.py",
     group: "mlflow_utils",
     short: "MLflowServer",
@@ -864,7 +850,7 @@ const NODES = [
       "Used by EvaluationRunner before running evaluations to ensure the tracking backend is up"
     ]
   },
-  {
+{
     id: "mlflow_utils/auto_server.py",
     group: "mlflow_utils",
     short: "auto_server",
@@ -874,9 +860,7 @@ const NODES = [
       "Delegates to MLflowServer; adds a short startup grace-period sleep"
     ]
   },
-
-  // ── MODELS ─────────────────────────────────────────────────────────────────
-  {
+{
     id: "models/refactoring.py",
     group: "models",
     short: "Refactoring models",
@@ -886,9 +870,7 @@ const NODES = [
       "Used by rminer_utils.py for parsing and by create_rminer_dataset.py for structured data extraction"
     ]
   },
-
-  // ── SCRIPTS ────────────────────────────────────────────────────────────────
-  {
+{
     id: "scripts/prioritize_smells.py",
     group: "scripts",
     short: "prioritize_smells",
@@ -898,7 +880,7 @@ const NODES = [
       "Outputs prioritization.json with ranked smell IDs and computed PZ scores"
     ]
   },
-  {
+{
     id: "scripts/viz/dashboard.py",
     group: "scripts",
     short: "dashboard",
@@ -908,9 +890,7 @@ const NODES = [
       "Dev/debug tool — run with `uv run tools/visualize_smell_prioritization.py` (port 8080)"
     ]
   },
-
-  // ── EVALS ──────────────────────────────────────────────────────────────────
-  {
+{
     id: "evals/ablation/mini_swe_agent/agent.py",
     group: "evals",
     short: "mini_swe_agent",
@@ -920,95 +900,346 @@ const NODES = [
       "Same scorers and EvalSample contract as full swe_eval agent for direct metric comparison"
     ]
   },
+  {
+    id: "agents/swe_eval/scorers.py",
+    group: "agents",
+    short: "scorers",
+    bullets: [
+      "MLflow scorers for SWE-Refactor evaluation outputs.",
+      "Static local imports: 0 outgoing, 1 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "domain/models.py",
+    group: "domain",
+    short: "models",
+    bullets: [
+      "Core smell domain types. These are pure data structures with no dependency on SQLModel, LangGraph, or any external infrastructure.",
+      "Static local imports: 0 outgoing, 7 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "evals/ablation/mini_swe_agent/config.py",
+    group: "evals",
+    short: "config",
+    bullets: [
+      "Default configuration for mini-swe-agent ablation wrapper.",
+      "Static local imports: 0 outgoing, 1 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "evals/ablation/mini_swe_agent/prompts.py",
+    group: "evals",
+    short: "prompts",
+    bullets: [
+      "Task prompt builder for mini-swe-agent ablation. Reuses the same refactoring framing as agents/swe_eval/prompts.py but phrases it as a bash-agent task (edit files in place, verify \u2026",
+      "Static local imports: 1 outgoing, 1 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "evals/ablation/mini_swe_agent/scorers.py",
+    group: "evals",
+    short: "scorers",
+    bullets: [
+      "Ablation-specific MLflow scorers for mini-swe-agent runs. These supplement the baseline swe scorers (compile_success, test_pass, overall_success) with mini-swe-agent-specific effic\u2026",
+      "Static local imports: 0 outgoing, 1 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "logging_config.py",
+    group: "config",
+    short: "logging_config",
+    bullets: [
+      "Centralized logging configuration for the smellai project. This module provides a consistent logging setup for both application code and tests. Import and call setup_logging() at t\u2026",
+      "Static local imports: 0 outgoing, 0 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "mlflow_utils/cli.py",
+    group: "mlflow_utils",
+    short: "cli",
+    bullets: [
+      "No module docstring found; node generated from static Python import analysis.",
+      "Static local imports: 4 outgoing, 0 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "presentation_innovaite/insert_template_images.py",
+    group: "presentation_innovaite",
+    short: "insert_template_images",
+    bullets: [
+      "Insert content images from the Beamer deck into the InnovAIte PPT template.",
+      "Static local imports: 0 outgoing, 0 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "scripts/datasets/analyze.py",
+    group: "scripts",
+    short: "analyze",
+    bullets: [
+      "Dataset aggregation and statistics CLI. Usage: uv run scripts/datasets/analyze.py --source rminer --oracle-path /path/to/data.json uv run scripts/datasets/analyze.py --source swe -\u2026",
+      "Static local imports: 0 outgoing, 0 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "scripts/datasets/inspect_rminer.py",
+    group: "scripts",
+    short: "inspect_rminer",
+    bullets: [
+      "Step-by-step inspection of RMiner oracle dataset pipeline. Shows the DataFrame at each transformation stage: 1. Raw oracle \u2192 DataFrame (rminer_to_df) 2. Deduplication 3. Train/val/\u2026",
+      "Static local imports: 1 outgoing, 0 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "scripts/datasets/preprocess.py",
+    group: "scripts",
+    short: "preprocess",
+    bullets: [
+      "Pre-processing pipeline CLI: dedup, filter, split, save to Parquet format. Usage: uv run scripts/datasets/preprocess.py \\ --source rminer \\ --oracle-path /path/to/data.json \\ --ded\u2026",
+      "Static local imports: 0 outgoing, 0 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "scripts/rminer/explore_rminer.py",
+    group: "scripts",
+    short: "explore_rminer",
+    bullets: [
+      "Exploratory script for RefactoringMiner benchmark analysis. This script analyzes refactoring operations from RefactoringMiner's benchmark data.json file. It identifies repositories\u2026",
+      "Static local imports: 0 outgoing, 0 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "scripts/rminer/extract_rminer_data.py",
+    group: "scripts",
+    short: "extract_rminer_data",
+    bullets: [
+      "Extract Java before/after pairs from RefactoringMiner benchmark data. uv run scripts/extract_rminer_data.py --data /path/to/data.json --max-commits 10",
+      "Static local imports: 0 outgoing, 0 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "scripts/run_demo_eval.py",
+    group: "scripts",
+    short: "run_demo_eval",
+    bullets: [
+      "Run composite evaluation demo with automatic SonarQube readiness check. Usage: uv run python scripts/run_demo_eval.py uv run python scripts/run_demo_eval.py --records 2 --iteration\u2026",
+      "Static local imports: 0 outgoing, 0 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "scripts/viz/extract_compound_refactorings.py",
+    group: "scripts",
+    short: "extract_compound_refactorings",
+    bullets: [
+      "Extract compound refactorings from SWE-Refactor dataset. Compound refactorings = multiple operations in one refactoring: - Extract And Move Method (142 records, 12.9%) - Move And R\u2026",
+      "Static local imports: 2 outgoing, 0 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "scripts/viz/run_visualizer.py",
+    group: "scripts",
+    short: "run_visualizer",
+    bullets: [
+      "Launch NiceGUI-based agent execution visualizer. The visualizer runs on port 8080 (hardcoded in tools/visualize_smell_prioritization.py). To change the port, edit line 1074 in that\u2026",
+      "Static local imports: 0 outgoing, 0 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "scripts/viz/visualize_analytics.py",
+    group: "scripts",
+    short: "visualize_analytics",
+    bullets: [
+      "Visualization script for composite refactoring analytics database. Usage: uv run python scripts/visualize_analytics.py analytics.db uv run python scripts/visualize_analytics.py ana\u2026",
+      "Static local imports: 0 outgoing, 0 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "swe_refactor/adapters.py",
+    group: "swe_refactor",
+    short: "adapters",
+    bullets: [
+      "Adapters between generic EvalSample records and SWE-Refactor models.",
+      "Static local imports: 2 outgoing, 2 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "swe_refactor/persistence/logger.py",
+    group: "swe_refactor",
+    short: "logger",
+    bullets: [
+      "Context manager for automatic tool call logging with timing.",
+      "Static local imports: 2 outgoing, 0 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "swe_refactor/runtime.py",
+    group: "swe_refactor",
+    short: "runtime",
+    bullets: [
+      "Shared runtime helpers for SWE-Refactor evaluation agents. This module centralizes workspace setup and verification primitives used by both full SWE LangGraph agents and mini-swe a\u2026",
+      "Static local imports: 6 outgoing, 2 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "swe_refactor/utils/project_util.py",
+    group: "swe_refactor",
+    short: "project_util",
+    bullets: [
+      "Project manipulation utilities (git, file operations).",
+      "Static local imports: 0 outgoing, 1 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "tools/visualize_smell_prioritization.py",
+    group: "tools",
+    short: "visualize_smell_prioritization",
+    bullets: [
+      "Interactive Smell Prioritization Visualizer using NiceGUI and ECharts. Loads agent execution data from analytics database and displays: - Agent execution timeline with node invocat\u2026",
+      "Static local imports: 3 outgoing, 0 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
+  {
+    id: "workflows/predict_adapters.py",
+    group: "workflows",
+    short: "predict_adapters",
+    bullets: [
+      "MLflow predict_fn adapters for evaluation workflows. MLflow GenAI calls predict functions with flattened EvalSample input fields. This module reconstructs canonical EvalSample obje\u2026",
+      "Static local imports: 2 outgoing, 1 incoming.",
+      "Added during dependency graph renewal; generated from repository AST and validated with uv run --with pydeps."
+    ]
+  },
 ];
 
 const EDGES = [
-  // Workflow deps
-  { source: "workflows/rminer_eval_workflow.py", target: "workflows/eval_workflow.py" },
-  { source: "workflows/swe_eval_workflow.py",    target: "workflows/eval_workflow.py" },
-  { source: "workflows/eval_workflow.py",        target: "workflows/common.py" },
-  { source: "workflows/eval_workflow.py",        target: "smellai_datasets/loaders.py" },
-  { source: "workflows/eval_workflow.py",        target: "smellai_datasets/mlflow_bridge.py" },
-  { source: "workflows/eval_workflow.py",        target: "agents/rminer_eval/agent.py" },
-  { source: "workflows/eval_workflow.py",        target: "agents/swe_eval/agent.py" },
-  { source: "workflows/eval_workflow.py",        target: "agents/rminer_eval/scorers.py" },
-  { source: "workflows/baseline_eval_workflow.py", target: "agents/baseline/agent.py" },
-  { source: "workflows/baseline_eval_workflow.py", target: "workflows/common.py" },
-  { source: "workflows/java_test_workflow.py",   target: "agents/java_test/agent.py" },
-  { source: "workflows/java_test_workflow.py",   target: "agents/tools/java_test_tools.py" },
-  { source: "workflows/composite_analysis_workflow.py", target: "domain/rules.py" },
-  { source: "workflows/composite_analysis_workflow.py", target: "workflows/utils.py" },
-  { source: "workflows/smell_cooccurrence_workflow.py", target: "domain/rules.py" },
-  { source: "workflows/smell_cooccurrence_workflow.py", target: "workflows/utils.py" },
-  { source: "workflows/common.py",              target: "smellai_datasets/schema.py" },
-
-  // Agents
-  { source: "agents/rminer_eval/agent.py",      target: "agents/rminer_eval/config.py" },
-  { source: "agents/rminer_eval/agent.py",      target: "agents/dependency_analysis/agent.py" },
-  { source: "agents/rminer_eval/agent.py",      target: "smellai_datasets/schema.py" },
-  { source: "agents/swe_eval/agent.py",         target: "swe_refactor/dataset.py" },
-  { source: "agents/swe_eval/agent.py",         target: "swe_refactor/persistence/database.py" },
-  { source: "agents/swe_eval/agent.py",         target: "swe_refactor/persistence/models.py" },
-  { source: "agents/swe_eval/agent.py",         target: "swe_refactor/utils/repos.py" },
-  { source: "agents/swe_eval/agent.py",         target: "swe_refactor/utils/build_util.py" },
-  { source: "agents/swe_eval/agent.py",         target: "agents/tools/java_test_tools.py" },
-  { source: "agents/swe_eval/agent.py",         target: "agents/swe_eval/config.py" },
-  { source: "agents/swe_eval/agent.py",         target: "agents/swe_eval/prompts.py" },
-  { source: "agents/swe_eval/agent.py",         target: "domain/detector.py" },
-  { source: "agents/swe_eval/agent.py",         target: "smellai_datasets/schema.py" },
-  { source: "agents/java_test/agent.py",        target: "agents/tools/java_test_tools.py" },
+  { source: "agents/baseline/agent.py", target: "smellai_datasets/schema.py" },
   { source: "agents/dependency_analysis/agent.py", target: "domain/graph.py" },
+  { source: "agents/dependency_analysis/agent.py", target: "domain/models.py" },
   { source: "agents/dependency_analysis/agent.py", target: "domain/rules.py" },
+  { source: "agents/dependency_analysis/agent.py", target: "sonarqube/commit_scan.py" },
   { source: "agents/dependency_analysis/agent.py", target: "store/smell_store.py" },
-  { source: "agents/dependency_analysis/agent.py", target: "swe_refactor/persistence/models.py" },
-  { source: "agents/dependency_analysis/agent.py", target: "sonarqube/constants.py" },
-  { source: "agents/baseline/agent.py",         target: "smellai_datasets/schema.py" },
-
-  // Store
-  { source: "domain/graph.py",                   target: "domain/rules.py" },
-  { source: "domain/graph.py",                   target: "domain/scorer.py" },
-  { source: "domain/graph.py",                   target: "swe_refactor/persistence/models.py" },
-  { source: "domain/detector.py",                target: "swe_refactor/persistence/models.py" },
-  { source: "domain/detector.py",                target: "sonarqube/commit_scan.py" },
-  { source: "store/smell_store.py",             target: "domain/graph.py" },
-
-  // SonarQube
-  { source: "sonarqube/commit_scan.py",         target: "sonarqube/constants.py" },
-  { source: "sonarqube/tool.py",                target: "sonarqube/commit_scan.py" },
-
-  // smellai_datasets
-  { source: "smellai_datasets/models.py",       target: "rminer/diff_hunk.py" },
-  { source: "smellai_datasets/mlflow_bridge.py",target: "smellai_datasets/schema.py" },
-  { source: "smellai_datasets/loaders.py",      target: "smellai_datasets/schema.py" },
-  { source: "smellai_datasets/loaders.py",      target: "swe_refactor/dataset.py" },
+  { source: "agents/java_test/agent.py", target: "agents/tools/java_test_tools.py" },
+  { source: "agents/rminer_eval/agent.py", target: "agents/dependency_analysis/agent.py" },
+  { source: "agents/rminer_eval/agent.py", target: "agents/rminer_eval/config.py" },
+  { source: "agents/rminer_eval/agent.py", target: "smellai_datasets/schema.py" },
+  { source: "agents/swe_eval/agent.py", target: "agents/swe_eval/config.py" },
+  { source: "agents/swe_eval/agent.py", target: "agents/swe_eval/prompts.py" },
+  { source: "agents/swe_eval/agent.py", target: "domain/detector.py" },
+  { source: "agents/swe_eval/agent.py", target: "domain/graph.py" },
+  { source: "agents/swe_eval/agent.py", target: "domain/models.py" },
+  { source: "agents/swe_eval/agent.py", target: "smellai_datasets/schema.py" },
+  { source: "agents/swe_eval/agent.py", target: "swe_refactor/adapters.py" },
+  { source: "agents/swe_eval/agent.py", target: "swe_refactor/dataset.py" },
+  { source: "agents/swe_eval/agent.py", target: "swe_refactor/persistence/database.py" },
+  { source: "agents/swe_eval/agent.py", target: "swe_refactor/persistence/models.py" },
+  { source: "agents/swe_eval/agent.py", target: "swe_refactor/runtime.py" },
+  { source: "domain/detector.py", target: "domain/models.py" },
+  { source: "domain/detector.py", target: "sonarqube/commit_scan.py" },
+  { source: "domain/graph.py", target: "domain/models.py" },
+  { source: "domain/graph.py", target: "domain/rules.py" },
+  { source: "domain/graph.py", target: "domain/scorer.py" },
+  { source: "evals/ablation/mini_swe_agent/agent.py", target: "evals/ablation/mini_swe_agent/config.py" },
+  { source: "evals/ablation/mini_swe_agent/agent.py", target: "evals/ablation/mini_swe_agent/prompts.py" },
+  { source: "evals/ablation/mini_swe_agent/agent.py", target: "smellai_datasets/schema.py" },
+  { source: "evals/ablation/mini_swe_agent/agent.py", target: "swe_refactor/adapters.py" },
+  { source: "evals/ablation/mini_swe_agent/agent.py", target: "swe_refactor/dataset.py" },
+  { source: "evals/ablation/mini_swe_agent/agent.py", target: "swe_refactor/runtime.py" },
+  { source: "evals/ablation/mini_swe_agent/prompts.py", target: "swe_refactor/dataset.py" },
+  { source: "mlflow_utils/auto_server.py", target: "mlflow_utils/server.py" },
+  { source: "mlflow_utils/cli.py", target: "mlflow_utils/datasets/manager.py" },
+  { source: "mlflow_utils/cli.py", target: "mlflow_utils/runner.py" },
+  { source: "mlflow_utils/cli.py", target: "mlflow_utils/server.py" },
+  { source: "mlflow_utils/cli.py", target: "rminer/create_rminer_dataset.py" },
+  { source: "mlflow_utils/runner.py", target: "mlflow_utils/datasets/manager.py" },
+  { source: "mlflow_utils/runner.py", target: "mlflow_utils/server.py" },
+  { source: "repo_utils/test_execution.py", target: "agents/tools/java_test_tools.py" },
+  { source: "rminer/create_rminer_dataset.py", target: "rminer/diff_hunk.py" },
+  { source: "rminer/create_rminer_dataset.py", target: "rminer/rminer_utils.py" },
+  { source: "rminer/create_rminer_dataset.py", target: "smellai_datasets/loaders.py" },
+  { source: "rminer/rminer_utils.py", target: "models/refactoring.py" },
+  { source: "rminer/rminer_utils.py", target: "rminer/diff_hunk.py" },
+  { source: "scripts/datasets/inspect_rminer.py", target: "smellai_datasets/mlflow_bridge.py" },
+  { source: "scripts/prioritize_smells.py", target: "domain/graph.py" },
+  { source: "scripts/prioritize_smells.py", target: "domain/models.py" },
+  { source: "scripts/viz/extract_compound_refactorings.py", target: "smellai_datasets/mlflow_bridge.py" },
+  { source: "scripts/viz/extract_compound_refactorings.py", target: "swe_refactor/dataset.py" },
   { source: "smellai_datasets/enrich_sonar.py", target: "smellai_datasets/schema.py" },
   { source: "smellai_datasets/enrich_sonar.py", target: "sonarqube/commit_scan.py" },
-
-  // swe_refactor
+  { source: "smellai_datasets/loaders.py", target: "rminer/rminer_utils.py" },
+  { source: "smellai_datasets/loaders.py", target: "smellai_datasets/schema.py" },
+  { source: "smellai_datasets/loaders.py", target: "swe_refactor/dataset.py" },
+  { source: "smellai_datasets/mlflow_bridge.py", target: "smellai_datasets/schema.py" },
+  { source: "smellai_datasets/models.py", target: "rminer/diff_hunk.py" },
+  { source: "sonarqube/commit_scan.py", target: "sonarqube/constants.py" },
+  { source: "sonarqube/tool.py", target: "sonarqube/commit_scan.py" },
+  { source: "store/smell_store.py", target: "domain/graph.py" },
+  { source: "swe_refactor/adapters.py", target: "smellai_datasets/schema.py" },
+  { source: "swe_refactor/adapters.py", target: "swe_refactor/dataset.py" },
   { source: "swe_refactor/persistence/database.py", target: "swe_refactor/persistence/models.py" },
-  { source: "swe_refactor/smell_detection/utils.py", target: "swe_refactor/persistence/models.py" },
-  { source: "swe_refactor/smell_detection/utils.py", target: "sonarqube/constants.py" },
-  { source: "swe_refactor/utils/jenv_util.py",  target: "swe_refactor/utils/repos.py" },
-
-  // rminer
-  { source: "rminer/rminer_utils.py",           target: "rminer/diff_hunk.py" },
-  { source: "rminer/rminer_utils.py",           target: "models/refactoring.py" },
-  { source: "rminer/create_rminer_dataset.py",  target: "rminer/rminer_utils.py" },
-  { source: "rminer/create_rminer_dataset.py",  target: "smellai_datasets/models.py" },
-
-  // repo_utils
-  { source: "repo_utils/test_execution.py",     target: "agents/tools/java_test_tools.py" },
-
-  // mlflow_utils
-  { source: "mlflow_utils/runner.py",           target: "mlflow_utils/server.py" },
-  { source: "mlflow_utils/runner.py",           target: "mlflow_utils/datasets/manager.py" },
-
-  // scripts
-  { source: "scripts/prioritize_smells.py",     target: "agents/dependency_analysis/agent.py" },
-  { source: "scripts/prioritize_smells.py",     target: "domain/graph.py" },
-  { source: "scripts/prioritize_smells.py",     target: "domain/scorer.py" },
-  { source: "scripts/viz/dashboard.py",         target: "swe_refactor/persistence/database.py" },
+  { source: "swe_refactor/persistence/logger.py", target: "swe_refactor/persistence/database.py" },
+  { source: "swe_refactor/persistence/logger.py", target: "swe_refactor/persistence/models.py" },
+  { source: "swe_refactor/persistence/models.py", target: "domain/models.py" },
+  { source: "swe_refactor/runtime.py", target: "agents/tools/java_test_tools.py" },
+  { source: "swe_refactor/runtime.py", target: "swe_refactor/dataset.py" },
+  { source: "swe_refactor/runtime.py", target: "swe_refactor/utils/build_util.py" },
+  { source: "swe_refactor/runtime.py", target: "swe_refactor/utils/jenv_util.py" },
+  { source: "swe_refactor/runtime.py", target: "swe_refactor/utils/project_util.py" },
+  { source: "swe_refactor/runtime.py", target: "swe_refactor/utils/repos.py" },
+  { source: "swe_refactor/smell_detection/utils.py", target: "domain/detector.py" },
+  { source: "swe_refactor/smell_detection/utils.py", target: "domain/models.py" },
+  { source: "tools/visualize_smell_prioritization.py", target: "scripts/prioritize_smells.py" },
+  { source: "tools/visualize_smell_prioritization.py", target: "swe_refactor/persistence/database.py" },
+  { source: "tools/visualize_smell_prioritization.py", target: "swe_refactor/persistence/models.py" },
+  { source: "workflows/baseline_eval_workflow.py", target: "agents/baseline/agent.py" },
+  { source: "workflows/baseline_eval_workflow.py", target: "workflows/common.py" },
+  { source: "workflows/common.py", target: "agents/rminer_eval/scorers.py" },
+  { source: "workflows/common.py", target: "mlflow_utils/auto_server.py" },
+  { source: "workflows/common.py", target: "smellai_datasets/loaders.py" },
+  { source: "workflows/common.py", target: "smellai_datasets/mlflow_bridge.py" },
+  { source: "workflows/common.py", target: "smellai_datasets/schema.py" },
+  { source: "workflows/composite_analysis_workflow.py", target: "domain/rules.py" },
+  { source: "workflows/composite_analysis_workflow.py", target: "workflows/utils.py" },
+  { source: "workflows/eval_workflow.py", target: "agents/rminer_eval/agent.py" },
+  { source: "workflows/eval_workflow.py", target: "agents/rminer_eval/scorers.py" },
+  { source: "workflows/eval_workflow.py", target: "agents/swe_eval/agent.py" },
+  { source: "workflows/eval_workflow.py", target: "agents/swe_eval/scorers.py" },
+  { source: "workflows/eval_workflow.py", target: "evals/ablation/mini_swe_agent/scorers.py" },
+  { source: "workflows/eval_workflow.py", target: "smellai_datasets/enrich_sonar.py" },
+  { source: "workflows/eval_workflow.py", target: "smellai_datasets/loaders.py" },
+  { source: "workflows/eval_workflow.py", target: "smellai_datasets/mlflow_bridge.py" },
+  { source: "workflows/eval_workflow.py", target: "workflows/common.py" },
+  { source: "workflows/eval_workflow.py", target: "workflows/predict_adapters.py" },
+  { source: "workflows/java_test_workflow.py", target: "agents/java_test/agent.py" },
+  { source: "workflows/java_test_workflow.py", target: "agents/tools/java_test_tools.py" },
+  { source: "workflows/predict_adapters.py", target: "swe_refactor/persistence/database.py" },
+  { source: "workflows/predict_adapters.py", target: "workflows/common.py" },
+  { source: "workflows/rminer_eval_workflow.py", target: "workflows/eval_workflow.py" },
+  { source: "workflows/smell_cooccurrence_workflow.py", target: "domain/rules.py" },
+  { source: "workflows/smell_cooccurrence_workflow.py", target: "workflows/utils.py" },
+  { source: "workflows/swe_eval_workflow.py", target: "workflows/eval_workflow.py" },
 ];
+
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  GRAPH SETUP

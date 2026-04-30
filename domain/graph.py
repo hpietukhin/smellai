@@ -161,11 +161,15 @@ class SmellGraph:
 
             best = max(scores, key=scores.get)  # type: ignore[arg-type]
             best_attrs = working.nodes[best]
+            file_path = best_attrs.get("file_path", "")
+            line_number = best_attrs.get("line_number", 0)
             sequence.append({
                 "order": len(sequence) + 1,
                 "smell_id": best,
                 "smell_type": best_attrs.get("smell_type", ""),
-                "file_path": best_attrs.get("file_path", ""),
+                "file_path": file_path,
+                "line_number": line_number,
+                "location": f"{file_path}:{line_number}",
                 "pz_score": scores[best],
                 "positive_impacts": _count_by_relation(
                     working, best, "positive",

@@ -17,17 +17,9 @@ from pathlib import Path
 from typing import Any
 
 from smellai_datasets.schema import EvalSample
+from swe_refactor.adapters import sample_to_refactoring_record
 from swe_refactor.dataset import RefactoringRecord
-from swe_refactor.utils import (
-    clone_repository,
-    compile_project,
-    force_checkout_commit,
-    get_previous_commit,
-    get_repo_url,
-    switch_java_version,
-)
-from agents.tools.java_test_tools import run_tests_if_present
-from agents.swe_eval.agent import _sample_to_refactoring_record
+from swe_refactor.runtime import setup_project_workspace, verify_refactoring
 
 from evals.ablation.mini_swe_agent.config import DEFAULT_MINI_CONFIG
 from evals.ablation.mini_swe_agent.prompts import build_refactoring_task
@@ -100,7 +92,7 @@ def invoke_agent(
     if sample.source != "swe":
         raise ValueError(f"mini-swe-agent wrapper expects source='swe', got {sample.source!r}")
 
-    record = _sample_to_refactoring_record(sample)
+    record = sample_to_refactoring_record(sample)
 
     workspace_path = Path(workspace_path)
     workspace_path.mkdir(parents=True, exist_ok=True)
@@ -108,9 +100,10 @@ def invoke_agent(
     project_path = workspace_path / record.projectName
 
     # --- a0: setup (clone, checkout, jdk) ---
-    setup_error = _a0_setup(record, project_path)
-    if setup_error:
-        return _failure(record, setup_error)
+    setup = setup_project_workspace(record, workspace_path)
+    if not setup.success:
+        return _failure(record, setup.error or "Setup failed")
+    project_path = setup.project_path
 
     # --- a5: generate (mini-swe-agent) ---
     gen_result = _a5_generate(handle, record, project_path)
@@ -140,34 +133,6 @@ def invoke_agent(
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
-
-
-def _a0_setup(record: RefactoringRecord, project_path: Path) -> str | None:
-    """Clone repo, checkout parent commit, switch JDK. Returns error string or None."""
-    try:
-        repo_url = get_repo_url(record.projectName)
-    except KeyError:
-        return f"Unknown project: {record.projectName}"
-
-    if not project_path.exists():
-        success = clone_repository(repo_url, project_path)
-        if not success:
-            return f"Failed to clone {repo_url}"
-
-    parent_commit = get_previous_commit(project_path, record.commitId)
-    if not parent_commit:
-        return f"Failed to get parent of {record.commitId}"
-
-    success = force_checkout_commit(project_path, parent_commit)
-    if not success:
-        return f"Failed to checkout {parent_commit}"
-
-    success = switch_java_version(record.compileJDK, project_path)
-    if not success:
-        LOGGER.warning("Failed to switch JDK to %s", record.compileJDK)
-
-    LOGGER.info("a0: setup complete — %s @ %s", record.projectName, parent_commit[:8])
-    return None
 
 
 def _a5_generate(
@@ -212,23 +177,12 @@ def _a5_generate(
 
 def _a6_verify(record: RefactoringRecord, project_path: Path) -> dict:
     """Compile and optionally run tests on the mutated working tree."""
-    compile_result = compile_project(project_path, record.compileCommand)
-
-    if not compile_result.success:
-        error_summary = "\n".join(compile_result.error_summary or ["Unknown compile error"])
-        LOGGER.warning("a6: compile failed:\n%s", error_summary)
-        return {"compile_success": False, "test_success": False, "error": error_summary}
-
-    LOGGER.info("a6: compilation succeeded")
-
-    test_success = run_tests_if_present(project_path, record.hasTestC)
-    if record.hasTestC:
-        if not test_success:
-            LOGGER.warning("a6: tests failed")
-        else:
-            LOGGER.info("a6: tests passed")
-
-    return {"compile_success": True, "test_success": test_success, "error": None}
+    verification = verify_refactoring(record, project_path)
+    return {
+        "compile_success": verification.compile_success,
+        "test_success": verification.test_success,
+        "error": verification.error,
+    }
 
 
 def _extract_stats(agent_obj: Any) -> dict:

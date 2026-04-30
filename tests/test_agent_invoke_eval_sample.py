@@ -65,10 +65,10 @@ RMINER_SAMPLE = EvalSample(
 
 class TestSweAgentBoundary:
     def test_sample_to_refactoring_record_fields(self):
-        """_sample_to_refactoring_record maps EvalSample inputs correctly."""
-        from agents.swe_eval.agent import _sample_to_refactoring_record
+        """sample_to_refactoring_record maps EvalSample inputs correctly."""
+        from swe_refactor.adapters import sample_to_refactoring_record
 
-        record = _sample_to_refactoring_record(SWE_SAMPLE)
+        record = sample_to_refactoring_record(SWE_SAMPLE)
 
         assert record.projectName == "checkstyle"
         assert record.commitId == "abc123"
@@ -84,9 +84,9 @@ class TestSweAgentBoundary:
 
     def test_sample_to_refactoring_record_defaults(self):
         """compile result flags default to True (SWE-Refactor guarantee)."""
-        from agents.swe_eval.agent import _sample_to_refactoring_record
+        from swe_refactor.adapters import sample_to_refactoring_record
 
-        record = _sample_to_refactoring_record(SWE_SAMPLE)
+        record = sample_to_refactoring_record(SWE_SAMPLE)
 
         assert record.compileResultBefore is True
         assert record.compileResultCurrent is True

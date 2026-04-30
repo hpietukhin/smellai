@@ -17,14 +17,12 @@ Usage:
 import argparse
 import json
 import logging
-from collections import Counter
 from pathlib import Path
-from typing import Any, Callable, Dict, List
+from typing import Any, Dict, List
 
 import networkx as nx
 
-from domain.scorer import STANDARD_SCORE, ScoringContext
-from domain.rules import DEPENDENCY_RULES
+from domain.graph import SmellGraph
 from domain.models import SmellEvent
 
 # Configure logging
@@ -32,11 +30,11 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 LOGGER = logging.getLogger(__name__)
 
 # -----------------------------------------------------------------------------
-# Data Model: SmellEvent (imported from swe_refactor.persistence.models)
+# Data Model: SmellEvent (canonical domain model)
 # -----------------------------------------------------------------------------
 # SmellEvent is used directly — no separate SmellInstance class.
-# In-memory use: SmellEvent(smell_id=..., smell_type=..., file_path=..., severity=...)
-# DB use: same model with session_id/iteration/action populated before saving.
+# In-memory use: SmellEvent(smell_id=..., smell_type=..., file_path=..., severity=...).
+# DB/session metadata belongs to swe_refactor.persistence.models.SmellEventRecord.
 
 
 def smell_json_to_instances(data: Any) -> "List[SmellEvent]":
@@ -71,29 +69,35 @@ def smell_json_to_instances(data: Any) -> "List[SmellEvent]":
 
 
 # -----------------------------------------------------------------------------
-# Knowledge Base: Impact Rules
-# -----------------------------------------------------------------------------
-
-# We use the centralized DEPENDENCY_RULES from domain.rules.
-# This ensures consistency across the project.
-# DEPENDENCY_RULES structure:
-# {
-#     "SmellType": {
-#         "positive": ["SmellA", "SmellB"], # Refactoring SmellType helps solve these
-#         "negative": ["SmellC"]            # Refactoring SmellType might create these
-#     }
-# }
-
-# -----------------------------------------------------------------------------
-# Prioritizer Logic
+# Prioritizer CLI adapter
 # -----------------------------------------------------------------------------
 
 
-def _count_edges_by_type(graph: nx.DiGraph, node: str, edge_type: str) -> int:
-    return sum(
-        1 for _, _, data in graph.out_edges(node, data=True)
-        if data.get("type") == edge_type
-    )
+def _to_visualization_graph(smell_graph: SmellGraph) -> nx.DiGraph:
+    """Convert the canonical domain graph to the legacy visualization shape."""
+    graph = nx.DiGraph()
+    for smell_id in smell_graph.all_smell_ids():
+        data = smell_graph.node_data(smell_id)
+        smell = SmellEvent(
+            smell_id=smell_id,
+            smell_type=data.get("smell_type", "Unknown"),
+            file_path=data.get("file_path", "Unknown"),
+            line_number=int(data.get("line_number", 0) or 0),
+            severity=data.get("severity", "LOW"),
+        )
+        # NiceGUI visualization historically expected a free-form description.
+        setattr(smell, "description", data.get("description", ""))
+        graph.add_node(smell_id, data=smell)
+
+    for source, target, data in smell_graph.graph.edges(data=True):
+        relation = data.get("relation", "")
+        graph.add_edge(
+            source,
+            target,
+            type=relation,
+            color="green" if relation == "positive" else "red",
+        )
+    return graph
 
 
 def _severity_color(severity_score: int) -> str:
@@ -105,104 +109,21 @@ def _severity_color(severity_score: int) -> str:
 
 
 class SmellPrioritizer:
+    """Thin compatibility wrapper around the canonical ``domain.graph.SmellGraph``.
+
+    Production code should depend on ``SmellGraph`` directly. This wrapper keeps
+    the CLI and visualization tool API stable while avoiding duplicate graph and
+    priority logic in ``scripts``.
+    """
+
     def __init__(self, smells: List[SmellEvent]):
         self.smells = smells
-        self.graph = nx.DiGraph()
-        self._build_dependency_graph()
+        self.smell_graph = SmellGraph.from_smells(smells)
+        self.graph = _to_visualization_graph(self.smell_graph)
 
-    def _build_dependency_graph(self):
-        """
-        Builds a graph where nodes are smells and edges represent dependencies.
-        - Green edges: Positive Impact (PZ) - Refactoring A helps B.
-        - Red edges: Negative Impact (NZ) - Refactoring A might create B.
-        """
-        # Add all nodes
-        for smell in self.smells:
-            self.graph.add_node(smell.smell_id, data=smell)
-
-        # Add edges based on rules and location
-        for i, smell_a in enumerate(self.smells):
-            for j, smell_b in enumerate(self.smells):
-                if i == j:
-                    continue
-
-                # Check if they are in the same context (Class/File)
-                loc_a = smell_a.location.split(":")[0]
-                loc_b = smell_b.location.split(":")[0]
-
-                in_same_context = loc_a == loc_b
-
-                if in_same_context:
-                    rules = DEPENDENCY_RULES.get(smell_a.smell_type, {})
-
-                    # Positive Impact (Green)
-                    positive_impacts = rules.get("positive", [])
-                    if smell_b.smell_type in positive_impacts:
-                        self.graph.add_edge(
-                            smell_a.smell_id, smell_b.smell_id, type="positive", color="green"
-                        )
-
-                    # Negative Impact (Red)
-                    negative_impacts = rules.get("negative", [])
-                    if smell_b.smell_type in negative_impacts:
-                        self.graph.add_edge(
-                            smell_a.smell_id, smell_b.smell_id, type="negative", color="red"
-                        )
-
-    def calculate_priorities(
-        self, score_fn: Callable = STANDARD_SCORE
-    ) -> List[Dict[str, Any]]:
-        """Greedy planner: at each step picks the highest-scoring available smell.
-
-        Implements Algorithm 1 from the paper using the spec formula (Eq. 2):
-          P_i^conc = f_i · w_sev · sev(s_i) + Σpos_out^conc − w_neg · Σneg_out^abs
-
-        score_fn can be swapped for experiments via scorer() from scorer.py.
-
-        # TODO SPEC-010: Implement cycle detection mechanism and max-step limit.
-        # If refactoring A creates smell B, and refactoring B creates smell A,
-        # mark as outlier and prevent infinite loops.
-        # HIGH priority.
-        # (See TECHNICAL_SPECIFICATION.md §4.4)
-        """
-        freq_map = Counter(s.smell_type for s in self.smells)
-        working_graph = self.graph.copy()
-        sequence = []
-
-        while working_graph.number_of_nodes() > 0:
-            scores = {}
-            for node in working_graph.nodes():
-                smell = working_graph.nodes[node]["data"]
-                pos_out = _count_edges_by_type(working_graph, node, "positive")
-                neg_out = _count_edges_by_type(working_graph, node, "negative")
-                ctx = ScoringContext(
-                    freq=freq_map[smell.smell_type],
-                    pos_out=pos_out,
-                    neg_out=neg_out,
-                )
-                scores[node] = score_fn(smell, ctx)
-
-            if not scores:
-                break
-
-            best_node = max(scores, key=scores.get)
-            best_smell = working_graph.nodes[best_node]["data"]
-            pos_impacts = _count_edges_by_type(working_graph, best_node, "positive")
-            neg_impacts = _count_edges_by_type(working_graph, best_node, "negative")
-
-            sequence.append({
-                "order": len(sequence) + 1,
-                "smell_id": best_node,
-                "smell_type": best_smell.smell_type,
-                "location": best_smell.location,
-                "pz_score": scores[best_node],
-                "positive_impacts": pos_impacts,
-                "negative_impacts": neg_impacts,
-            })
-
-            working_graph.remove_node(best_node)
-
-        return sequence
+    def calculate_priorities(self) -> List[Dict[str, Any]]:
+        """Delegate priority calculation to ``SmellGraph.calculate_priorities``."""
+        return self.smell_graph.calculate_priorities()
 
     def visualize(self, output_path: Path):
         """Generates a diagram of the smell dependencies and importance."""
