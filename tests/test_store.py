@@ -10,9 +10,9 @@ from langgraph.store.memory import InMemoryStore
 from domain.detector import (
     DetectorConfigError,
     SmellDetector,
-    SonarQubeDetector,
     StaticDetector,
 )
+from sonarqube.detector import SonarQubeDetector
 from domain.graph import SmellGraph
 from store.smell_store import SmellStore
 from domain.models import SmellEvent

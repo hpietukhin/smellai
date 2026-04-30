@@ -12,7 +12,6 @@ from domain.detector import (
     DetectorUnavailableError,
     SmellDetectionError,
     SmellDetector,
-    SonarQubeDetector,
     StaticDetector,
 )
 from domain.graph import SmellGraph
@@ -32,6 +31,5 @@ __all__ = [
     "STANDARD_H",
     "STANDARD_SCORE",
     "ScoringContext",
-    "SonarQubeDetector",
     "StaticDetector",
 ]

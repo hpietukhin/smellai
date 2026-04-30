@@ -4,11 +4,13 @@ Workflow (basic): A0 (setup) → A5 (generate) → A6 (verify)
 Workflow (composite): A0 → A1 → A2 → A3 → [A4 → A5 → A6] (loop) → END
 """
 
+from __future__ import annotations
+
 import logging
 import re
 import uuid
 from pathlib import Path
-from typing import Annotated, List, Literal, Optional, TypedDict
+from typing import TYPE_CHECKING, Annotated, List, Literal, Optional, TypedDict
 
 import networkx as nx
 from langchain_core.messages import BaseMessage
@@ -16,16 +18,20 @@ from langchain_litellm import ChatLiteLLM
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 
+from agents.dependency_analysis.agent import build_smell_graph_from_events
 from swe_refactor.adapters import sample_to_refactoring_record
 from swe_refactor.dataset import RefactoringRecord
-from swe_refactor.persistence.database import AnalyticsDB
 from smellai_datasets.schema import EvalSample
 from domain.models import SmellEvent
 from swe_refactor.persistence.models import SmellEventRecord
 from swe_refactor.runtime import setup_project_workspace, verify_refactoring
 from agents.swe_eval.config import DEFAULT_CONFIG, SWEEvalAgentConfig
 from agents.swe_eval.prompts import SYSTEM_PROMPT, get_refactoring_prompt
-from domain.detector import SmellDetectionError, SmellDetector, SonarQubeDetector
+from domain.detector import SmellDetectionError, SmellDetector
+from sonarqube.detector import SonarQubeDetector
+
+if TYPE_CHECKING:
+    from swe_refactor.persistence.database import AnalyticsDB
 
 LOGGER = logging.getLogger(__name__)
 
@@ -367,8 +373,6 @@ def create_swe_eval_agent(
 
     def a2_prioritize_smells(state: SWEEvalState) -> dict:
         """A2: Prioritize smells using the canonical domain smell graph."""
-        from domain.graph import SmellGraph
-
         detected_smells = state.get("detected_smells", [])
 
         if not detected_smells:
@@ -377,7 +381,7 @@ def create_swe_eval_agent(
 
         LOGGER.info("A2: Prioritizing %d smells", len(detected_smells))
 
-        smell_graph = SmellGraph.from_smells(detected_smells)
+        smell_graph = build_smell_graph_from_events(detected_smells)
         priority_sequence = smell_graph.calculate_priorities()
 
         LOGGER.info(

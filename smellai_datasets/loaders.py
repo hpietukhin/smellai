@@ -26,31 +26,25 @@ from swe_refactor.dataset import RefactoringRecord
 
 # ---------------------------------------------------------------------------
 # Default dataset path resolution
+#
+# All paths come from explicit args or env vars — no hardcoded host-specific
+# absolute paths. Env vars used:
+#   SWE_REFACTOR_PATH   — SWE-Refactor JSON file or containing directory
+#   RMINER_MANIFEST_PATH — RefactoringMiner manifest.json
+#   RMINER_ORACLE_PATH  — RefactoringMiner oracle JSON
 # ---------------------------------------------------------------------------
 
-_RMINER_MANIFEST_DEFAULT = Path(
-    "/Users/havriil.pietukhin/uni/masterThesis/datasets/rminer_data/manifest.json"
-)
-_SWE_JSON_CANDIDATES = (
-    Path("/Users/havriil.pietukhin/uni/masterThesis/datasets/pure_refactoring_data.json"),
-    Path(
-        "/Users/havriil.pietukhin/uni/masterThesis/datasets/SWE-Refactor/pure_refactoring_data.json"
-    ),
-    Path(
-        "/Users/havriil.pietukhin/uni/masterThesis/SWE-Refactor/SWE-Refactor/pure_refactoring_data.json"
-    ),
-)
-def _first_existing(*paths: Path | None) -> Path | None:
-    for p in paths:
-        if p and p.exists():
-            return p
-    return None
+def _env_path(var: str) -> Path | None:
+    value = os.environ.get(var)
+    return Path(value) if value else None
 
 
 def _resolve_swe_path(path: Path | None) -> Path | None:
     """Accept a file path or a directory containing pure_refactoring_data.json."""
     if path is None:
-        return _first_existing(*_SWE_JSON_CANDIDATES)
+        path = _env_path("SWE_REFACTOR_PATH")
+    if path is None:
+        return None
     if path.is_file():
         return path
     for candidate in (
@@ -62,11 +56,11 @@ def _resolve_swe_path(path: Path | None) -> Path | None:
     return None
 
 
-def _require(path: Path | None, label: str) -> Path:
+def _require(path: Path | None, label: str, env_var: str) -> Path:
     if path is None:
         raise FileNotFoundError(
             f"Could not resolve {label}. "
-            "Set the matching env var or place the dataset at the expected default location."
+            f"Pass an explicit path or set the {env_var} environment variable."
         )
     return path
 
@@ -129,7 +123,9 @@ def load_swe_raw_df(path: Path | None = None) -> pd.DataFrame:
     One row per refactoring pair with all relevant columns.
     Field mapping and JDK coercion are delegated to RefactoringRecord.
     """
-    resolved = _require(_resolve_swe_path(path), "SWE-Refactor JSON")
+    resolved = _require(
+        _resolve_swe_path(path), "SWE-Refactor JSON", "SWE_REFACTOR_PATH"
+    )
     raw_records = _load_swe_raw_jsons(resolved)
 
     rows: list[dict[str, Any]] = []
@@ -168,11 +164,9 @@ def load_rminer_raw_df(path: Path | None = None, *, tp_only: bool = True) -> pd.
     evaluation pairs come from the manifest (see load_eval_samples).
     """
     resolved = _require(
-        path or _first_existing(
-            Path(os.environ.get("RMINER_ORACLE_PATH", "")),
-            Path("/Users/havriil.pietukhin/uni/masterThesis/datasets/rminer_oracle_java1.json"),
-        ),
+        path or _env_path("RMINER_ORACLE_PATH"),
         "RMiner oracle JSON",
+        "RMINER_ORACLE_PATH",
     )
     with resolved.open() as f:
         commits = json.load(f)
@@ -342,11 +336,11 @@ def load_eval_samples(
             samples.extend(_swe_samples(df))
 
         elif source == "rminer":
-            resolved = rminer_manifest_path or _first_existing(
-                Path(os.environ.get("RMINER_MANIFEST_PATH", "")),
-                _RMINER_MANIFEST_DEFAULT,
+            resolved = _require(
+                rminer_manifest_path or _env_path("RMINER_MANIFEST_PATH"),
+                "RMiner manifest.json",
+                "RMINER_MANIFEST_PATH",
             )
-            resolved = _require(resolved, "RMiner manifest.json")
             samples.extend(_rminer_samples(resolved, limit=limit))
 
         elif source == "tdd":

@@ -76,6 +76,22 @@ def issues_to_smell_events(sonar_issues: List[Dict[str, Any]]) -> List[SmellEven
     ]
 
 
+def build_smell_graph_from_events(
+    smell_events: List[SmellEvent],
+    *,
+    store: BaseStore | None = None,
+    session_id: str | None = None,
+    iteration: int = 0,
+) -> SmellGraph:
+    """Build a ``SmellGraph`` from already-normalized ``SmellEvent`` objects."""
+    graph = SmellGraph.from_smells(smell_events)
+
+    if store is not None and session_id:
+        SmellStore(store).save_graph(session_id, graph, iteration=iteration)
+
+    return graph
+
+
 def build_smell_graph(
     sonar_issues: List[Dict[str, Any]],
     *,

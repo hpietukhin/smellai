@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from domain.detector import SmellDetector, SonarQubeDetector
+from domain.detector import SmellDetector
 from domain.models import SmellEvent
+from sonarqube.detector import SonarQubeDetector
 
 
 def scan_local_project(
