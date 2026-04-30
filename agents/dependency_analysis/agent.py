@@ -13,7 +13,6 @@ from typing import Any, Dict, List
 from langgraph.store.base import BaseStore
 from pydantic import BaseModel, Field
 
-from sonarqube.constants import RULE_NAME_MAP, SEVERITY_MAP  # noqa: F401 (re-exported for callers)
 from store.graph import SmellGraph
 from store.rules import DEPENDENCY_RULES
 from store.smell_store import SmellStore
@@ -55,11 +54,13 @@ def issue_to_smell_event(
     if ":" not in component:
         return None
 
+    from sonarqube.commit_scan import normalize_issue
+
     file_path = component.split(":", 1)[1]
-    rule = issue.get("rule")
-    smell_type = RULE_NAME_MAP.get(rule, rule)
-    severity = SEVERITY_MAP.get(issue.get("severity"), "LOW")
-    line = issue.get("line", 0)
+    n = normalize_issue(issue)
+    smell_type = n["smell_type"]
+    severity = n["severity"]
+    line = n.get("line") or 0
 
     return SmellEvent(
         session_id=session_id,
@@ -168,11 +169,13 @@ def analyze_dependencies(
         iteration=iteration,
     )
 
+    from sonarqube.commit_scan import normalize_issue
+
     first_rule_by_type: dict[str, str] = {}
     for issue in sonar_issues:
         rule = issue.get("rule")
-        smell_type = RULE_NAME_MAP.get(rule) if rule else None
-        if smell_type:
+        if rule:
+            smell_type = normalize_issue(issue)["smell_type"]
             first_rule_by_type.setdefault(smell_type, rule)
 
     results: List[DependencyAnalysis] = []

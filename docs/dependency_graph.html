@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmellAI — Dependency Graph</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    background: #0d1117;
+    color: #e6edf3;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: 280px;
+    min-width: 200px;
+    background: #161b22;
+    border-right: 1px solid #30363d;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    resize: horizontal;
+  }
+
+  #sidebar-header {
+    padding: 12px 14px;
+    background: #21262d;
+    border-bottom: 1px solid #30363d;
+  }
+
+  #sidebar-header h2 {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  #search-box {
+    width: 100%;
+    margin-top: 8px;
+    padding: 5px 8px;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    color: #e6edf3;
+    font-size: 12px;
+    font-family: inherit;
+  }
+
+  #search-box:focus { outline: none; border-color: #388bfd; }
+
+  #tree {
+    overflow-y: auto;
+    flex: 1;
+    padding: 6px 0;
+  }
+
+  .tree-group { margin-bottom: 2px; }
+
+  .tree-group-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 14px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 700;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    user-select: none;
+  }
+
+  .tree-group-header:hover { background: #21262d; }
+
+  .tree-group-header .dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .tree-group-header .chevron {
+    margin-left: auto;
+    transition: transform 0.15s;
+    font-size: 10px;
+  }
+
+  .tree-group-header.collapsed .chevron { transform: rotate(-90deg); }
+
+  .tree-items { }
+
+  .tree-item {
+    padding: 3px 14px 3px 30px;
+    font-size: 11px;
+    color: #8b949e;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tree-item:hover { background: #21262d; color: #e6edf3; }
+  .tree-item.active { background: #1f3757; color: #58a6ff; }
+
+  /* ── MAIN AREA ── */
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #toolbar {
+    padding: 8px 14px;
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  #toolbar h1 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e6edf3;
+    margin-right: 6px;
+  }
+
+  .legend-item {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 10px; color: #8b949e;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 3px;
+    transition: background 0.1s;
+  }
+  .legend-item:hover { background: #21262d; }
+  .legend-item.dim { opacity: 0.35; }
+
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  #controls {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+  }
+
+  button {
+    padding: 3px 10px;
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    color: #e6edf3;
+    font-size: 11px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  button:hover { background: #30363d; }
+
+  #canvas-wrapper { flex: 1; position: relative; overflow: hidden; }
+
+  #graph-svg {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+  }
+
+  #graph-svg:active { cursor: grabbing; }
+
+  /* ── DETAIL PANEL ── */
+  #detail {
+    width: 320px;
+    background: #161b22;
+    border-left: 1px solid #30363d;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: width 0.2s;
+  }
+
+  #detail.hidden { width: 0; border: none; }
+
+  #detail-inner {
+    padding: 14px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  #detail-inner h3 {
+    font-size: 12px;
+    font-weight: 700;
+    color: #58a6ff;
+    word-break: break-all;
+    margin-bottom: 4px;
+  }
+
+  #detail-inner .group-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  #detail-inner h4 {
+    font-size: 11px;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 10px 0 4px;
+  }
+
+  #detail-inner ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  #detail-inner ul li {
+    padding: 3px 0 3px 12px;
+    font-size: 11px;
+    color: #c9d1d9;
+    border-left: 2px solid #30363d;
+    margin-bottom: 4px;
+    line-height: 1.5;
+  }
+
+  #detail-inner .dep-link {
+    display: block;
+    padding: 2px 6px;
+    margin-bottom: 2px;
+    font-size: 10px;
+    color: #8b949e;
+    background: #0d1117;
+    border-radius: 3px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #detail-inner .dep-link:hover { color: #58a6ff; }
+
+  #detail-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #8b949e;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+
+  #detail-close:hover { color: #e6edf3; }
+
+  /* ── GRAPH ELEMENTS ── */
+  .node circle {
+    stroke-width: 1.5px;
+    cursor: pointer;
+    transition: r 0.1s;
+  }
+
+  .node text {
+    font-size: 9px;
+    fill: #8b949e;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .node.highlighted circle { stroke: #f0f6ff !important; stroke-width: 2.5px; }
+  .node.highlighted text { fill: #e6edf3; font-weight: 700; }
+  .node.dimmed { opacity: 0.18; }
+
+  .link {
+    stroke: #30363d;
+    stroke-width: 1.2px;
+    stroke-opacity: 0.65;
+    fill: none;
+    marker-end: url(#arrow);
+  }
+
+  .link.highlighted { stroke: #58a6ff; stroke-opacity: 1; stroke-width: 1.8px; }
+  .link.dimmed { opacity: 0.06; }
+
+  #tooltip {
+    position: absolute;
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 5px;
+    padding: 6px 10px;
+    font-size: 11px;
+    color: #e6edf3;
+    pointer-events: none;
+    display: none;
+    z-index: 100;
+    max-width: 280px;
+  }
+</style>
+</head>
+<body>
+
+<!-- LEFT SIDEBAR -->
+<div id="sidebar">
+  <div id="sidebar-header">
+    <h2>File Tree</h2>
+    <input id="search-box" type="text" placeholder="Search files…">
+  </div>
+  <div id="tree"></div>
+</div>
+
+<!-- MAIN CANVAS -->
+<div id="main">
+  <div id="toolbar">
+    <h1>SmellAI — Dependency Graph</h1>
+    <div id="legend"></div>
+    <div id="controls">
+      <button onclick="resetZoom()">⌖ Reset</button>
+      <button onclick="toggleLabels()">Labels</button>
+      <button onclick="togglePhysics()">Freeze</button>
+    </div>
+  </div>
+  <div id="canvas-wrapper">
+    <svg id="graph-svg"></svg>
+    <div id="tooltip"></div>
+  </div>
+</div>
+
+<!-- RIGHT DETAIL PANEL -->
+<div id="detail" class="hidden">
+  <div style="position:relative">
+    <button id="detail-close" onclick="closeDetail()">✕</button>
+  </div>
+  <div id="detail-inner"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════════════════════════════════════
+
+const GROUPS = {
+  workflows:       { color: "#388bfd", label: "Workflows" },
+  agents:          { color: "#a371f7", label: "Agents" },
+  store:           { color: "#3fb950", label: "Store" },
+  sonarqube:       { color: "#f78166", label: "SonarQube" },
+  smellai_datasets:{ color: "#39d353", label: "Datasets" },
+  swe_refactor:    { color: "#e3b341", label: "SWE Refactor" },
+  rminer:          { color: "#f0883e", label: "RMiner" },
+  repo_utils:      { color: "#79c0ff", label: "Repo Utils" },
+  mlflow_utils:    { color: "#ff7b72", label: "MLflow Utils" },
+  models:          { color: "#d2a8ff", label: "Models" },
+  scripts:         { color: "#56d364", label: "Scripts" },
+  evals:           { color: "#ffa657", label: "Evals" },
+};
+
+const NODES = [
+  // ── WORKFLOWS ──────────────────────────────────────────────────────────────
+  {
+    id: "workflows/eval_workflow.py",
+    group: "workflows",
+    short: "eval_workflow",
+    bullets: [
+      "Unified MLflow evaluation entry-point: routes by --source (rminer | swe) to appropriate agent and scorers",
+      "Builds EvalSamples from raw datasets via smellai_datasets.loaders, converts to MLflow GenAI records, calls mlflow.genai.evaluate()",
+      "Spec role: top-level orchestrator for both A4-mapping (RMiner) and A5-generation (SWE) experimental pipelines"
+    ]
+  },
+  {
+    id: "workflows/rminer_eval_workflow.py",
+    group: "workflows",
+    short: "rminer_eval_workflow",
+    bullets: [
+      "Thin backwards-compat wrapper that delegates entirely to eval_workflow.py with --source rminer",
+      "Accepts manifest path + model name; preserves old CLI contract without duplicating logic",
+      "Used in paper experiments as entry-point for RMiner refactoring-mapping accuracy measurement"
+    ]
+  },
+  {
+    id: "workflows/swe_eval_workflow.py",
+    group: "workflows",
+    short: "swe_eval_workflow",
+    bullets: [
+      "Thin wrapper over eval_workflow.py for the SWE-Refactor behavior-preservation pipeline",
+      "Passes composite mode, analytics DB, and SonarQube flags specific to the SWE evaluation",
+      "Spec role: runs the A0→A1→…→A6 loop evaluating whether LLM-generated refactorings preserve test suite green"
+    ]
+  },
+  {
+    id: "workflows/baseline_eval_workflow.py",
+    group: "workflows",
+    short: "baseline_eval_workflow",
+    bullets: [
+      "Single-call LLM baseline with no LangGraph orchestration or SonarQube context",
+      "Uses agents/baseline agent; feeds same RMiner records as full pipeline for apples-to-apples comparison",
+      "Provides lower-bound reference score for mapping_accuracy / hunk_coverage metrics in the paper"
+    ]
+  },
+  {
+    id: "workflows/java_test_workflow.py",
+    group: "workflows",
+    short: "java_test_workflow",
+    bullets: [
+      "CLI for pipeline stages A (build detection) and D (baseline test run) on local Java projects",
+      "Deterministic: zero LLM calls; just runs Maven/Gradle and parses XML surefire reports",
+      "Outputs pass/fail counts and optional JSON; used to establish pre-refactoring test baseline (Spec §3.1)"
+    ]
+  },
+  {
+    id: "workflows/composite_analysis_workflow.py",
+    group: "workflows",
+    short: "composite_analysis",
+    bullets: [
+      "Loads RMiner manifest and detects commits containing multiple co-occurring refactoring operations",
+      "Builds NetworkX graph of smell-dependency relationships implied by each composite commit",
+      "Exploratory analysis tool for validating DEPENDENCY_RULES against real refactoring data"
+    ]
+  },
+  {
+    id: "workflows/smell_cooccurrence_workflow.py",
+    group: "workflows",
+    short: "smell_cooccurrence",
+    bullets: [
+      "Reads a smell manifest JSON and draws per-file smell co-occurrence graphs using DEPENDENCY_RULES",
+      "Shows green 'solves' and red 'risks creating' edges between smell types",
+      "Validates that store/rules.py captures the empirical relationships seen in the TDD dataset"
+    ]
+  },
+  {
+    id: "workflows/common.py",
+    group: "workflows",
+    short: "common",
+    bullets: [
+      "Factory helpers that build typed EvalSample objects for RMiner and SWE predict_fn signatures",
+      "Houses shared setup: MLflow experiment creation, agent graph PNG export, eval result printing",
+      "Single import point for all workflows so agent/dataset import churn stays out of workflow files"
+    ]
+  },
+  {
+    id: "workflows/utils.py",
+    group: "workflows",
+    short: "utils",
+    bullets: [
+      "Manifest JSON loader handling both list-of-pairs and dict-with-pairs formats",
+      "Matplotlib figure saver and root logger configurator used by both workflow scripts",
+      "Intentionally lightweight: no agent or dataset imports to stay importable in isolation"
+    ]
+  },
+
+  // ── AGENTS ─────────────────────────────────────────────────────────────────
+  {
+    id: "agents/rminer_eval/agent.py",
+    group: "agents",
+    short: "A4 RMiner agent",
+    bullets: [
+      "LangGraph agent implementing pipeline stage A4 (refactoring → diff-hunk mapping)",
+      "Uses structured LLM output (RefactoringMappingOutput) with JSON fallback; wraps ChatLiteLLM",
+      "Integrates dependency_analysis to enrich each EvalSample with smell context before LLM call"
+    ]
+  },
+  {
+    id: "agents/swe_eval/agent.py",
+    group: "agents",
+    short: "A5/A6 SWE agent",
+    bullets: [
+      "LangGraph composite agent: A0 (setup) → A1 (detect) → A3 (prioritize) → A5 (generate) → A6 (verify) loop",
+      "Generates refactored Java code via LLM, compiles it, runs tests, logs SmellEvents to AnalyticsDB",
+      "Implements the core empirical loop of the thesis: does LLM refactoring preserve behavior AND reduce smells?"
+    ]
+  },
+  {
+    id: "agents/java_test/agent.py",
+    group: "agents",
+    short: "A0/D/J Java test agent",
+    bullets: [
+      "Pipeline stages A0 (build system detection) and D/J (test execution + parse); zero LLM",
+      "Thin facade over agents/tools/java_test_tools.py; returns structured dict with TestRunSummary",
+      "Reused as A6 (behavior verification) by swe_eval agent after refactoring is applied"
+    ]
+  },
+  {
+    id: "agents/dependency_analysis/agent.py",
+    group: "agents",
+    short: "A3 Dependency agent",
+    bullets: [
+      "Pipeline stage A3: converts raw SonarQube issues to SmellEvents, builds SmellGraph, computes PZ priorities",
+      "Persists graph snapshot to LangGraph BaseStore via SmellStore for downstream nodes",
+      "Implements Eq. 1–2 from conf.tex: PZ_i = Severity_i + Σ(positive outgoing weights)"
+    ]
+  },
+  {
+    id: "agents/baseline/agent.py",
+    group: "agents",
+    short: "Baseline agent",
+    bullets: [
+      "Single LLM call with a static prompt; no LangGraph graph, no SonarQube, no dependency analysis",
+      "Returns the same {mappings: [...]} JSON shape as rminer_eval agent for scorer compatibility",
+      "Control condition in the paper: shows the accuracy gain from full pipeline vs. bare prompt"
+    ]
+  },
+  {
+    id: "agents/tools/java_test_tools.py",
+    group: "agents",
+    short: "java_test_tools",
+    bullets: [
+      "Build system detection (pom.xml → Maven, build.gradle → Gradle), test command construction and subprocess execution",
+      "Parses Maven Surefire XML reports into TestResult / TestRunSummary dataclasses",
+      "Exposed as a LangChain @tool and also called directly by the java_test agent"
+    ]
+  },
+  {
+    id: "agents/rminer_eval/scorers.py",
+    group: "agents",
+    short: "RMiner scorers",
+    bullets: [
+      "Three MLflow @scorers: mapping_accuracy (line-overlap), hunk_coverage, prediction_completeness",
+      "Each scorer compares agent outputs dict against expectations dict from EvalSample",
+      "Directly consumed by mlflow.genai.evaluate() in eval_workflow to produce experiment metrics"
+    ]
+  },
+  {
+    id: "agents/rminer_eval/config.py",
+    group: "agents",
+    short: "RMiner config",
+    bullets: [
+      "Enum-based config keys (RMinerEvalAgentConfig) with string values for type-safe dict access",
+      "DEFAULT_CONFIG provides sensible defaults: model=gpt-4o-mini, max_retries=3",
+      "Pattern used throughout agents to avoid magic strings in config dicts"
+    ]
+  },
+  {
+    id: "agents/dependency_analysis/scorer.py",
+    group: "agents",
+    short: "Dep. scorer",
+    bullets: [
+      "ScoringContext dataclass holding freq/pos_out/neg_out/files_affected per smell instance",
+      "STANDARD_SCORE: composable scorer builder that sums weighted feature functions (Spec Eq. 1)",
+      "Used by SmellGraph.calculate_priorities() to rank smells for the A3 → A4 handoff"
+    ]
+  },
+  {
+    id: "agents/swe_eval/config.py",
+    group: "agents",
+    short: "SWE config",
+    bullets: [
+      "SWEEvalAgentConfig enum + DEFAULT_CONFIG for the composite SWE agent",
+      "Includes model name, max composite iterations, analytics DB path, SonarQube flags",
+      "Mirrors rminer config pattern for consistent agent configuration style"
+    ]
+  },
+  {
+    id: "agents/swe_eval/prompts.py",
+    group: "agents",
+    short: "SWE prompts",
+    bullets: [
+      "SYSTEM_PROMPT and get_refactoring_prompt() factory for the A5 code-generation LLM call",
+      "Prompt instructs LLM to return the complete refactored Java file, not a diff",
+      "Referenced in swe_eval agent at the 'generate' node; kept separate to allow prompt ablation"
+    ]
+  },
+
+  // ── STORE ──────────────────────────────────────────────────────────────────
+  {
+    id: "store/graph.py",
+    group: "store",
+    short: "SmellGraph",
+    bullets: [
+      "Core data structure: thin wrapper over nx.MultiDiGraph where nodes=smell instances, edges=dependency relations",
+      "add_smell() populates nodes; add_dependencies() adds positive/negative edges from DEPENDENCY_RULES",
+      "calculate_priorities() applies STANDARD_SCORE to return ranked list for A3 stage (Spec §4.4 Alg. 1–2)"
+    ]
+  },
+  {
+    id: "store/rules.py",
+    group: "store",
+    short: "DEPENDENCY_RULES",
+    bullets: [
+      "Single Python dict: smell_type → {positive: [...], negative: [...]} encoding all inter-smell relationships",
+      "Based on Markovič & Polášek research; shared source of truth for graph, analysis, and visualization",
+      "No imports — pure data; both agents and workflow scripts import from here"
+    ]
+  },
+  {
+    id: "store/detector.py",
+    group: "store",
+    short: "SmellDetector",
+    bullets: [
+      "Abstract SmellDetector ABC + SmellDetectionError hierarchy isolating SonarQube from workflow code",
+      "SonarQubeDetector concrete implementation wraps sonarqube.commit_scan and normalizes to SmellEvent list",
+      "Architectural boundary: swe_eval agent depends on this interface, not on sonarqube.* directly"
+    ]
+  },
+  {
+    id: "store/smell_store.py",
+    group: "store",
+    short: "SmellStore",
+    bullets: [
+      "Domain adapter over LangGraph BaseStore; saves/loads SmellGraph snapshots between agent nodes",
+      "Namespace: ('smell_graph', session_id, 'snapshot') → JSON-serialized graph dict",
+      "Enables stateful multi-step workflows: A3 writes priorities, A4 reads them without re-computing"
+    ]
+  },
+
+  // ── SONARQUBE ──────────────────────────────────────────────────────────────
+  {
+    id: "sonarqube/commit_scan.py",
+    group: "sonarqube",
+    short: "commit_scan (A1)",
+    bullets: [
+      "Pipeline stage A1: checks out a specific git commit in a temp dir, runs sonar-scanner CLI, polls API for issues",
+      "Disk-caches scan results as JSON (sonar_cache/) to avoid redundant re-scans across agent runs",
+      "Returns normalized SmellEvent-compatible dicts using RULE_NAME_MAP and SEVERITY_MAP from constants"
+    ]
+  },
+  {
+    id: "sonarqube/tool.py",
+    group: "sonarqube",
+    short: "SonarQube @tool",
+    bullets: [
+      "LangChain @tool wrapper exposing scan_commit / scan_commit_file as typed tools usable inside LangGraph nodes",
+      "SonarScanArgs pydantic model validates repo_url, commit_sha, file_paths, sonar_url inputs",
+      "Allows the swe_eval agent to trigger SonarQube scanning as a tool call rather than a direct function call"
+    ]
+  },
+  {
+    id: "sonarqube/constants.py",
+    group: "sonarqube",
+    short: "constants",
+    bullets: [
+      "RULE_NAME_MAP: 8 SonarQube java:S* rule IDs → human smell names (Long Method, Complex Method, etc.)",
+      "SEVERITY_MAP: SonarQube severity strings (BLOCKER/CRITICAL/MAJOR/MINOR/INFO) → HIGH/MEDIUM/LOW",
+      "Imported by commit_scan, dependency_analysis agent, and smellai_datasets enrichment — single source of truth"
+    ]
+  },
+
+  // ── SMELLAI_DATASETS ───────────────────────────────────────────────────────
+  {
+    id: "smellai_datasets/schema.py",
+    group: "smellai_datasets",
+    short: "EvalSample schema",
+    bullets: [
+      "EvalSample pydantic model: source discriminator + sample_id + inputs/expectations/tags dicts — matches MLflow GenAI contract",
+      "rminer_sample() and swe_sample() factory functions build typed instances from raw field args",
+      "All agent predict_fn signatures unpack EvalSample.inputs; scorers read EvalSample.expectations"
+    ]
+  },
+  {
+    id: "smellai_datasets/models.py",
+    group: "smellai_datasets",
+    short: "models (compat)",
+    bullets: [
+      "Backward-compatibility shim: re-exports DiffHunk from rminer.diff_hunk",
+      "Exists so old imports from smellai_datasets.models continue to work after package reorganization",
+      "No logic — just one import and __all__ = ['DiffHunk']"
+    ]
+  },
+  {
+    id: "smellai_datasets/mlflow_bridge.py",
+    group: "smellai_datasets",
+    short: "MLflow bridge",
+    bullets: [
+      "samples_to_mlflow_records(): list[EvalSample] → list[dict] for mlflow.genai.evaluate(data=...)",
+      "samples_to_mlflow_df(): same conversion to pandas DataFrame for inspection notebooks",
+      "Thin shim — no transformation logic, just model_dump() calls; keeps MLflow coupling out of schema"
+    ]
+  },
+  {
+    id: "smellai_datasets/loaders.py",
+    group: "smellai_datasets",
+    short: "Loaders",
+    bullets: [
+      "load_eval_samples(): reads raw SWE JSON or RMiner manifest and returns list[EvalSample]",
+      "load_swe_raw_df() / load_rminer_raw_df(): flat DataFrames for notebook inspection / debugging",
+      "Resolves default dataset paths from well-known locations; handles zip-compressed SWE archives"
+    ]
+  },
+  {
+    id: "smellai_datasets/enrich_sonar.py",
+    group: "smellai_datasets",
+    short: "Sonar enrichment",
+    bullets: [
+      "Optional post-load step: clones repo at EvalSample commit, runs SonarQube scan, injects issues into EvalSample.inputs",
+      "PROJECT_TO_REPO_URL and REFACTORING_TO_RULES static tables from conf.tex §III-A drive enrichment",
+      "Deliberately NOT called from loaders — heavy I/O; must be explicitly invoked in notebooks or workflows"
+    ]
+  },
+
+  // ── SWE_REFACTOR ───────────────────────────────────────────────────────────
+  {
+    id: "swe_refactor/dataset.py",
+    group: "swe_refactor",
+    short: "RefactoringRecord",
+    bullets: [
+      "RefactoringRecord pydantic model: single SWE-Refactor benchmark row with projectName, commitId, type, JDK, compile commands",
+      "load_dataset() reads the raw JSON and returns validated list[RefactoringRecord]",
+      "Consumed by swe_eval agent as the raw input before conversion to EvalSample"
+    ]
+  },
+  {
+    id: "swe_refactor/persistence/database.py",
+    group: "swe_refactor",
+    short: "AnalyticsDB",
+    bullets: [
+      "SQLModel-backed AnalyticsDB: auto-creates tables on __init__; provides log_* methods for each model type",
+      "Separate from LangGraph checkpoints: checkpoints enable replay, analytics enable MLflow reporting and dashboards",
+      "Used by swe_eval agent to persist SmellEvent, ToolCall, RefactoringAttempt, TokenUsage per session"
+    ]
+  },
+  {
+    id: "swe_refactor/persistence/models.py",
+    group: "swe_refactor",
+    short: "Analytics models",
+    bullets: [
+      "SQLModel ORM table definitions: SmellEvent, ToolCall, RefactoringAttempt, SmellDependency, TokenUsage",
+      "SmellAction enum: DETECTED / RESOLVED / CREATED / PERSISTED tracks smell lifecycle across iterations",
+      "session_id + iteration fields on every model enable per-run aggregation queries for the paper's tables"
+    ]
+  },
+  {
+    id: "swe_refactor/utils/repos.py",
+    group: "swe_refactor",
+    short: "repos (URL map)",
+    bullets: [
+      "PROJECT_REPOS dict: project short name → full GitHub clone URL for the 10 SWE-Refactor benchmark projects",
+      "get_repo_url() raises KeyError for unknown projects (fail fast design)",
+      "Single place to update when adding new benchmark projects to the evaluation"
+    ]
+  },
+  {
+    id: "swe_refactor/utils/build_util.py",
+    group: "swe_refactor",
+    short: "build_util",
+    bullets: [
+      "compile_project(): runs Maven or Gradle compile command, retries with Gradle fallback list on checkstyle/spotless failures",
+      "CompileResult dataclass captures success flag, command used, stdout/stderr, error_summary lines",
+      "Used by swe_eval agent A5 node to verify the LLM-generated code compiles before running tests"
+    ]
+  },
+  {
+    id: "swe_refactor/utils/jenv_util.py",
+    group: "swe_refactor",
+    short: "jenv_util",
+    bullets: [
+      "switch_java_version(): calls jenv shell-init + jenv local to switch active JDK for the project directory",
+      "Required because SWE-Refactor benchmark spans JDK 8 / 11 / 17 / 21 across different projects",
+      "Called by swe_eval agent before each compile to ensure the correct JDK matches compileJDK in the record"
+    ]
+  },
+  {
+    id: "swe_refactor/smell_detection/utils.py",
+    group: "swe_refactor",
+    short: "smell_detection utils",
+    bullets: [
+      "Filtering and normalization helpers for raw SonarQube issue JSON (component path extraction, severity mapping)",
+      "Converts raw API response dicts to SmellEvent objects using RULE_NAME_MAP from sonarqube.constants",
+      "Used by store/detector.py SonarQubeDetector to post-process scan results before returning to agent"
+    ]
+  },
+
+  // ── RMINER ─────────────────────────────────────────────────────────────────
+  {
+    id: "rminer/diff_hunk.py",
+    group: "rminer",
+    short: "DiffHunk",
+    bullets: [
+      "DiffHunk pydantic model: git diff hunk with old/new start lines, removed/added/context line lists",
+      "Canonical representation shared across rminer_utils, scorers, and EvalSample inputs dict",
+      "No logic — pure data model; re-exported from smellai_datasets.models for backwards compatibility"
+    ]
+  },
+  {
+    id: "rminer/rminer_utils.py",
+    group: "rminer",
+    short: "rminer_utils",
+    bullets: [
+      "Loads and parses RefactoringMiner 2.0 JSON manifest into pydantic RMinerCommit / RefactoringLocation models",
+      "Provides grouping by repository, consecutive-commit cluster detection, and basic semantic similarity scoring",
+      "Used by create_rminer_dataset.py to build the manifest and by smellai_datasets loaders to read it"
+    ]
+  },
+  {
+    id: "rminer/create_rminer_dataset.py",
+    group: "rminer",
+    short: "create_rminer_dataset",
+    bullets: [
+      "CLI script: reads raw RefactoringMiner output, extracts DiffHunks for each pair, writes manifest.json",
+      "One-time data preparation step run before experiments; output is the dataset file consumed by eval_workflow",
+      "Uses rminer_utils for parsing and smellai_datasets models for DiffHunk serialization"
+    ]
+  },
+
+  // ── REPO_UTILS ─────────────────────────────────────────────────────────────
+  {
+    id: "repo_utils/operations.py",
+    group: "repo_utils",
+    short: "repo operations",
+    bullets: [
+      "clone_repository(), force_checkout_commit(), get_previous_commit() — GitPython wrappers used by swe_eval",
+      "Handles shallow clones, pull-if-exists semantics, and RepositoryError on failure",
+      "Provides replace_java_code() to write LLM-generated source back to the cloned repo before compile"
+    ]
+  },
+  {
+    id: "repo_utils/test_execution.py",
+    group: "repo_utils",
+    short: "test_execution",
+    bullets: [
+      "Extended test runner: prefers mvnw/gradlew wrapper scripts over system-installed build tools",
+      "has_wrapper() + get_build_command() allow using dataset's compileCommand as-is when present",
+      "Calls into agents/tools/java_test_tools for the actual subprocess execution and XML parsing"
+    ]
+  },
+  {
+    id: "repo_utils/errors.py",
+    group: "repo_utils",
+    short: "errors",
+    bullets: [
+      "RepositoryError hierarchy: base class for all repo operation failures",
+      "Allows workflow code to catch repo-specific errors separately from general exceptions",
+      "Simple module — only exception classes, no logic"
+    ]
+  },
+
+  // ── MLFLOW_UTILS ───────────────────────────────────────────────────────────
+  {
+    id: "mlflow_utils/datasets/manager.py",
+    group: "mlflow_utils",
+    short: "DatasetManager",
+    bullets: [
+      "CRUD over MLflow GenAI datasets: list_datasets(), get_dataset(), create_dataset_from_records()",
+      "Wraps mlflow.genai.datasets API with fallback error handling for older MLflow versions",
+      "Used by scripts/datasets/ CLI tools to inspect and register datasets for experiments"
+    ]
+  },
+  {
+    id: "mlflow_utils/runner.py",
+    group: "mlflow_utils",
+    short: "EvaluationRunner",
+    bullets: [
+      "EvaluationRunner.run(): starts MLflow UI as subprocess then delegates to DatasetManager and agent logic",
+      "TODO SPEC-015: currently sequential only; parallel chunk evaluation is planned",
+      "Thin orchestrator used by mlflow_utils/cli.py to wire config dict to server + evaluation"
+    ]
+  },
+  {
+    id: "mlflow_utils/server.py",
+    group: "mlflow_utils",
+    short: "MLflowServer",
+    bullets: [
+      "MLflowServer: starts/stops `mlflow ui` subprocess with configurable tracking URI and port",
+      "wait_for_ready() polls the HTTP endpoint until the server responds (max 30 s)",
+      "Used by EvaluationRunner before running evaluations to ensure the tracking backend is up"
+    ]
+  },
+  {
+    id: "mlflow_utils/auto_server.py",
+    group: "mlflow_utils",
+    short: "auto_server",
+    bullets: [
+      "ensure_mlflow_running(): checks if MLflow UI is already up; starts it if not",
+      "Convenience import for workflow scripts that want auto-start behavior without boilerplate",
+      "Delegates to MLflowServer; adds a short startup grace-period sleep"
+    ]
+  },
+
+  // ── MODELS ─────────────────────────────────────────────────────────────────
+  {
+    id: "models/refactoring.py",
+    group: "models",
+    short: "Refactoring models",
+    bullets: [
+      "Pydantic models for RefactoringMiner 2.0 output: RefactoringLocation, RMinerCommit, CommitCluster, RefactoringStats",
+      "RefactoringLocation captures file_path, start_line, end_line, code_element for precise diff alignment",
+      "Used by rminer_utils.py for parsing and by create_rminer_dataset.py for structured data extraction"
+    ]
+  },
+
+  // ── SCRIPTS ────────────────────────────────────────────────────────────────
+  {
+    id: "scripts/prioritize_smells.py",
+    group: "scripts",
+    short: "prioritize_smells",
+    bullets: [
+      "CLI: reads a JSON smell list, feeds it to dependency_analysis agent, prints PZ-ranked priority queue",
+      "Demo / debugging tool for the A3 stage; not part of automated evaluation pipeline",
+      "Outputs prioritization.json with ranked smell IDs and computed PZ scores"
+    ]
+  },
+  {
+    id: "scripts/viz/dashboard.py",
+    group: "scripts",
+    short: "dashboard",
+    bullets: [
+      "NiceGUI web dashboard at :8080 for visualizing analytics from AnalyticsDB",
+      "Displays smell lifecycle timeline, refactoring attempt outcomes, token usage by node",
+      "Dev/debug tool — run with `uv run tools/visualize_smell_prioritization.py` (port 8080)"
+    ]
+  },
+
+  // ── EVALS ──────────────────────────────────────────────────────────────────
+  {
+    id: "evals/ablation/mini_swe_agent/agent.py",
+    group: "evals",
+    short: "mini_swe_agent",
+    bullets: [
+      "Ablation variant of swe_eval agent: stripped-down composite loop without smell detection or dependency analysis",
+      "Used to measure contribution of A1/A3 stages to the overall refactoring success rate",
+      "Same scorers and EvalSample contract as full swe_eval agent for direct metric comparison"
+    ]
+  },
+];
+
+const EDGES = [
+  // Workflow deps
+  { source: "workflows/rminer_eval_workflow.py", target: "workflows/eval_workflow.py" },
+  { source: "workflows/swe_eval_workflow.py",    target: "workflows/eval_workflow.py" },
+  { source: "workflows/eval_workflow.py",        target: "workflows/common.py" },
+  { source: "workflows/eval_workflow.py",        target: "smellai_datasets/loaders.py" },
+  { source: "workflows/eval_workflow.py",        target: "smellai_datasets/mlflow_bridge.py" },
+  { source: "workflows/eval_workflow.py",        target: "agents/rminer_eval/agent.py" },
+  { source: "workflows/eval_workflow.py",        target: "agents/swe_eval/agent.py" },
+  { source: "workflows/eval_workflow.py",        target: "agents/rminer_eval/scorers.py" },
+  { source: "workflows/baseline_eval_workflow.py", target: "agents/baseline/agent.py" },
+  { source: "workflows/baseline_eval_workflow.py", target: "workflows/common.py" },
+  { source: "workflows/java_test_workflow.py",   target: "agents/java_test/agent.py" },
+  { source: "workflows/java_test_workflow.py",   target: "agents/tools/java_test_tools.py" },
+  { source: "workflows/composite_analysis_workflow.py", target: "store/rules.py" },
+  { source: "workflows/composite_analysis_workflow.py", target: "workflows/utils.py" },
+  { source: "workflows/smell_cooccurrence_workflow.py", target: "store/rules.py" },
+  { source: "workflows/smell_cooccurrence_workflow.py", target: "workflows/utils.py" },
+  { source: "workflows/common.py",              target: "smellai_datasets/schema.py" },
+
+  // Agents
+  { source: "agents/rminer_eval/agent.py",      target: "agents/rminer_eval/config.py" },
+  { source: "agents/rminer_eval/agent.py",      target: "agents/dependency_analysis/agent.py" },
+  { source: "agents/rminer_eval/agent.py",      target: "smellai_datasets/schema.py" },
+  { source: "agents/swe_eval/agent.py",         target: "swe_refactor/dataset.py" },
+  { source: "agents/swe_eval/agent.py",         target: "swe_refactor/persistence/database.py" },
+  { source: "agents/swe_eval/agent.py",         target: "swe_refactor/persistence/models.py" },
+  { source: "agents/swe_eval/agent.py",         target: "swe_refactor/utils/repos.py" },
+  { source: "agents/swe_eval/agent.py",         target: "swe_refactor/utils/build_util.py" },
+  { source: "agents/swe_eval/agent.py",         target: "agents/tools/java_test_tools.py" },
+  { source: "agents/swe_eval/agent.py",         target: "agents/swe_eval/config.py" },
+  { source: "agents/swe_eval/agent.py",         target: "agents/swe_eval/prompts.py" },
+  { source: "agents/swe_eval/agent.py",         target: "store/detector.py" },
+  { source: "agents/swe_eval/agent.py",         target: "smellai_datasets/schema.py" },
+  { source: "agents/java_test/agent.py",        target: "agents/tools/java_test_tools.py" },
+  { source: "agents/dependency_analysis/agent.py", target: "store/graph.py" },
+  { source: "agents/dependency_analysis/agent.py", target: "store/rules.py" },
+  { source: "agents/dependency_analysis/agent.py", target: "store/smell_store.py" },
+  { source: "agents/dependency_analysis/agent.py", target: "swe_refactor/persistence/models.py" },
+  { source: "agents/dependency_analysis/agent.py", target: "sonarqube/constants.py" },
+  { source: "agents/baseline/agent.py",         target: "smellai_datasets/schema.py" },
+
+  // Store
+  { source: "store/graph.py",                   target: "store/rules.py" },
+  { source: "store/graph.py",                   target: "agents/dependency_analysis/scorer.py" },
+  { source: "store/graph.py",                   target: "swe_refactor/persistence/models.py" },
+  { source: "store/detector.py",                target: "swe_refactor/persistence/models.py" },
+  { source: "store/detector.py",                target: "sonarqube/commit_scan.py" },
+  { source: "store/smell_store.py",             target: "store/graph.py" },
+
+  // SonarQube
+  { source: "sonarqube/commit_scan.py",         target: "sonarqube/constants.py" },
+  { source: "sonarqube/tool.py",                target: "sonarqube/commit_scan.py" },
+
+  // smellai_datasets
+  { source: "smellai_datasets/models.py",       target: "rminer/diff_hunk.py" },
+  { source: "smellai_datasets/mlflow_bridge.py",target: "smellai_datasets/schema.py" },
+  { source: "smellai_datasets/loaders.py",      target: "smellai_datasets/schema.py" },
+  { source: "smellai_datasets/loaders.py",      target: "swe_refactor/dataset.py" },
+  { source: "smellai_datasets/enrich_sonar.py", target: "smellai_datasets/schema.py" },
+  { source: "smellai_datasets/enrich_sonar.py", target: "sonarqube/commit_scan.py" },
+
+  // swe_refactor
+  { source: "swe_refactor/persistence/database.py", target: "swe_refactor/persistence/models.py" },
+  { source: "swe_refactor/smell_detection/utils.py", target: "swe_refactor/persistence/models.py" },
+  { source: "swe_refactor/smell_detection/utils.py", target: "sonarqube/constants.py" },
+  { source: "swe_refactor/utils/jenv_util.py",  target: "swe_refactor/utils/repos.py" },
+
+  // rminer
+  { source: "rminer/rminer_utils.py",           target: "rminer/diff_hunk.py" },
+  { source: "rminer/rminer_utils.py",           target: "models/refactoring.py" },
+  { source: "rminer/create_rminer_dataset.py",  target: "rminer/rminer_utils.py" },
+  { source: "rminer/create_rminer_dataset.py",  target: "smellai_datasets/models.py" },
+
+  // repo_utils
+  { source: "repo_utils/test_execution.py",     target: "agents/tools/java_test_tools.py" },
+
+  // mlflow_utils
+  { source: "mlflow_utils/runner.py",           target: "mlflow_utils/server.py" },
+  { source: "mlflow_utils/runner.py",           target: "mlflow_utils/datasets/manager.py" },
+
+  // scripts
+  { source: "scripts/prioritize_smells.py",     target: "agents/dependency_analysis/agent.py" },
+  { source: "scripts/prioritize_smells.py",     target: "store/graph.py" },
+  { source: "scripts/viz/dashboard.py",         target: "swe_refactor/persistence/database.py" },
+];
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  GRAPH SETUP
+// ══════════════════════════════════════════════════════════════════════════════
+
+const nodeMap = {};
+NODES.forEach(n => nodeMap[n.id] = n);
+
+// Build adjacency for highlighting
+const outEdges = {}, inEdges = {};
+NODES.forEach(n => { outEdges[n.id] = []; inEdges[n.id] = []; });
+EDGES.forEach(e => {
+  if (outEdges[e.source]) outEdges[e.source].push(e.target);
+  if (inEdges[e.target])  inEdges[e.target].push(e.source);
+});
+
+const svg = d3.select("#graph-svg");
+const wrapper = document.getElementById("canvas-wrapper");
+
+let W = wrapper.clientWidth;
+let H = wrapper.clientHeight;
+
+const defs = svg.append("defs");
+defs.append("marker")
+  .attr("id", "arrow")
+  .attr("viewBox", "0 -4 8 8")
+  .attr("refX", 14).attr("refY", 0)
+  .attr("markerWidth", 6).attr("markerHeight", 6)
+  .attr("orient", "auto")
+  .append("path")
+  .attr("d", "M0,-4L8,0L0,4")
+  .attr("fill", "#484f58");
+
+const g = svg.append("g");
+
+const zoom = d3.zoom()
+  .scaleExtent([0.1, 4])
+  .on("zoom", e => g.attr("transform", e.transform));
+
+svg.call(zoom);
+
+// Force simulation
+const simulation = d3.forceSimulation(NODES)
+  .force("link", d3.forceLink(EDGES).id(d => d.id).distance(110).strength(0.4))
+  .force("charge", d3.forceManyBody().strength(-280))
+  .force("center", d3.forceCenter(W / 2, H / 2))
+  .force("collision", d3.forceCollide(22))
+  .force("x", d3.forceX(W / 2).strength(0.03))
+  .force("y", d3.forceY(H / 2).strength(0.03));
+
+// Links
+const link = g.append("g")
+  .selectAll("line")
+  .data(EDGES)
+  .join("line")
+  .attr("class", "link");
+
+// Nodes
+const node = g.append("g")
+  .selectAll(".node")
+  .data(NODES)
+  .join("g")
+  .attr("class", "node")
+  .call(d3.drag()
+    .on("start", (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+    .on("drag",  (e, d) => { d.fx = e.x; d.fy = e.y; })
+    .on("end",   (e, d) => { if (!e.active) simulation.alphaTarget(0); if (!frozen) { d.fx = null; d.fy = null; } })
+  )
+  .on("click", (e, d) => { e.stopPropagation(); selectNode(d); })
+  .on("mouseover", (e, d) => showTooltip(e, d))
+  .on("mouseout", hideTooltip);
+
+node.append("circle")
+  .attr("r", d => 6 + Math.min(8, (outEdges[d.id]||[]).length * 1.2))
+  .attr("fill", d => GROUPS[d.group].color + "cc")
+  .attr("stroke", d => GROUPS[d.group].color);
+
+let showLabels = true;
+
+const label = node.append("text")
+  .attr("dy", d => -(6 + Math.min(8, (outEdges[d.id]||[]).length * 1.2)) - 2)
+  .attr("text-anchor", "middle")
+  .text(d => d.short);
+
+simulation.on("tick", () => {
+  link
+    .attr("x1", d => d.source.x)
+    .attr("y1", d => d.source.y)
+    .attr("x2", d => d.target.x)
+    .attr("y2", d => d.target.y);
+  node.attr("transform", d => `translate(${d.x},${d.y})`);
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  TOOLTIP
+// ══════════════════════════════════════════════════════════════════════════════
+
+const tooltip = document.getElementById("tooltip");
+
+function showTooltip(e, d) {
+  tooltip.style.display = "block";
+  tooltip.style.left = (e.offsetX + 12) + "px";
+  tooltip.style.top  = (e.offsetY + 12) + "px";
+  tooltip.textContent = d.id;
+}
+function hideTooltip() { tooltip.style.display = "none"; }
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  SELECTION / HIGHLIGHTING
+// ══════════════════════════════════════════════════════════════════════════════
+
+let selectedId = null;
+
+function selectNode(d) {
+  if (selectedId === d.id) { clearSelection(); return; }
+  selectedId = d.id;
+
+  const related = new Set([d.id, ...(outEdges[d.id]||[]), ...(inEdges[d.id]||[])]);
+  const relEdges = new Set(
+    EDGES.filter(e => e.source.id === d.id || e.target.id === d.id)
+  );
+
+  node.classed("highlighted", n => n.id === d.id);
+  node.classed("dimmed", n => !related.has(n.id));
+  link.classed("highlighted", l => l.source.id === d.id || l.target.id === d.id);
+  link.classed("dimmed", l => l.source.id !== d.id && l.target.id !== d.id);
+
+  showDetail(d);
+  highlightTreeItem(d.id);
+}
+
+function clearSelection() {
+  selectedId = null;
+  node.classed("highlighted dimmed", false);
+  link.classed("highlighted dimmed", false);
+  closeDetail();
+  document.querySelectorAll(".tree-item.active").forEach(el => el.classList.remove("active"));
+}
+
+svg.on("click", clearSelection);
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DETAIL PANEL
+// ══════════════════════════════════════════════════════════════════════════════
+
+function showDetail(d) {
+  const panel = document.getElementById("detail");
+  panel.classList.remove("hidden");
+
+  const grp = GROUPS[d.group];
+  const deps  = outEdges[d.id] || [];
+  const callers = inEdges[d.id] || [];
+
+  document.getElementById("detail-inner").innerHTML = `
+    <h3>${d.id}</h3>
+    <span class="group-badge" style="background:${grp.color}22;color:${grp.color}">${grp.label}</span>
+
+    <h4>What it does</h4>
+    <ul>
+      ${d.bullets.map(b => `<li>${b}</li>`).join("")}
+    </ul>
+
+    ${deps.length ? `
+    <h4>Imports / depends on (${deps.length})</h4>
+    ${deps.map(id => `<span class="dep-link" onclick="selectNode(nodeMap['${id}'])">${id}</span>`).join("")}
+    ` : ""}
+
+    ${callers.length ? `
+    <h4>Used by (${callers.length})</h4>
+    ${callers.map(id => `<span class="dep-link" onclick="selectNode(nodeMap['${id}'])">${id}</span>`).join("")}
+    ` : ""}
+  `;
+}
+
+function closeDetail() {
+  document.getElementById("detail").classList.add("hidden");
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  SIDEBAR TREE
+// ══════════════════════════════════════════════════════════════════════════════
+
+function buildTree() {
+  const byGroup = {};
+  NODES.forEach(n => {
+    if (!byGroup[n.group]) byGroup[n.group] = [];
+    byGroup[n.group].push(n);
+  });
+
+  const treeEl = document.getElementById("tree");
+  treeEl.innerHTML = "";
+
+  Object.keys(GROUPS).forEach(grpKey => {
+    const nodes = byGroup[grpKey];
+    if (!nodes || !nodes.length) return;
+    const grp = GROUPS[grpKey];
+
+    const groupDiv = document.createElement("div");
+    groupDiv.className = "tree-group";
+
+    const header = document.createElement("div");
+    header.className = "tree-group-header";
+    header.innerHTML = `
+      <span class="dot" style="background:${grp.color}"></span>
+      ${grp.label} <small style="color:#484f58">(${nodes.length})</small>
+      <span class="chevron">▾</span>
+    `;
+
+    const items = document.createElement("div");
+    items.className = "tree-items";
+
+    nodes.forEach(n => {
+      const item = document.createElement("div");
+      item.className = "tree-item";
+      item.dataset.id = n.id;
+      item.textContent = n.short;
+      item.title = n.id;
+      item.addEventListener("click", e => { e.stopPropagation(); selectNode(n); zoomToNode(n); });
+      items.appendChild(item);
+    });
+
+    header.addEventListener("click", () => {
+      const collapsed = header.classList.toggle("collapsed");
+      items.style.display = collapsed ? "none" : "";
+    });
+
+    groupDiv.appendChild(header);
+    groupDiv.appendChild(items);
+    treeEl.appendChild(groupDiv);
+  });
+}
+
+function highlightTreeItem(id) {
+  document.querySelectorAll(".tree-item").forEach(el => {
+    el.classList.toggle("active", el.dataset.id === id);
+  });
+}
+
+function zoomToNode(d) {
+  const t = d3.zoomTransform(svg.node());
+  const scale = Math.max(t.k, 1.2);
+  svg.transition().duration(500).call(
+    zoom.transform,
+    d3.zoomIdentity.translate(W/2 - d.x * scale, H/2 - d.y * scale).scale(scale)
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  SEARCH
+// ══════════════════════════════════════════════════════════════════════════════
+
+document.getElementById("search-box").addEventListener("input", function() {
+  const q = this.value.toLowerCase().trim();
+  document.querySelectorAll(".tree-item").forEach(el => {
+    const match = !q || el.dataset.id.toLowerCase().includes(q) || el.textContent.toLowerCase().includes(q);
+    el.style.display = match ? "" : "none";
+  });
+
+  if (q) {
+    const matches = NODES.filter(n => n.id.toLowerCase().includes(q) || n.short.toLowerCase().includes(q));
+    const matchIds = new Set(matches.map(n => n.id));
+    node.classed("dimmed", n => !matchIds.has(n.id));
+    node.classed("highlighted", n => matchIds.has(n.id));
+    link.classed("dimmed", true);
+    link.classed("highlighted", false);
+  } else {
+    node.classed("dimmed highlighted", false);
+    link.classed("dimmed highlighted", false);
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  LEGEND
+// ══════════════════════════════════════════════════════════════════════════════
+
+const dimGroups = new Set();
+
+function buildLegend() {
+  const legendEl = document.getElementById("legend");
+  Object.entries(GROUPS).forEach(([key, grp]) => {
+    const item = document.createElement("div");
+    item.className = "legend-item";
+    item.innerHTML = `<span class="legend-dot" style="background:${grp.color}"></span>${grp.label}`;
+    item.dataset.group = key;
+    item.title = "Click to toggle group";
+    item.addEventListener("click", () => toggleGroup(key, item));
+    legendEl.appendChild(item);
+  });
+}
+
+function toggleGroup(key, item) {
+  if (dimGroups.has(key)) {
+    dimGroups.delete(key);
+    item.classList.remove("dim");
+  } else {
+    dimGroups.add(key);
+    item.classList.add("dim");
+  }
+  node.classed("dimmed", n => dimGroups.has(n.group));
+  link.classed("dimmed", l => dimGroups.has(l.source.group) || dimGroups.has(l.target.group));
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  CONTROLS
+// ══════════════════════════════════════════════════════════════════════════════
+
+function resetZoom() {
+  svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity.translate(W/2, H/2).scale(0.85));
+}
+
+let labelsVisible = true;
+function toggleLabels() {
+  labelsVisible = !labelsVisible;
+  label.style("display", labelsVisible ? null : "none");
+}
+
+let frozen = false;
+function togglePhysics() {
+  frozen = !frozen;
+  if (frozen) {
+    simulation.stop();
+    NODES.forEach(n => { n.fx = n.x; n.fy = n.y; });
+  } else {
+    NODES.forEach(n => { n.fx = null; n.fy = null; });
+    simulation.alphaTarget(0.1).restart();
+    setTimeout(() => simulation.alphaTarget(0), 2000);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  RESIZE
+// ══════════════════════════════════════════════════════════════════════════════
+
+window.addEventListener("resize", () => {
+  W = wrapper.clientWidth;
+  H = wrapper.clientHeight;
+  simulation.force("center", d3.forceCenter(W/2, H/2)).restart();
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════════════════════
+
+buildLegend();
+buildTree();
+
+// Initial zoom to fit
+setTimeout(() => {
+  svg.call(zoom.transform, d3.zoomIdentity.translate(W/2, H/2).scale(0.75));
+}, 100);
+</script>
+</body>
+</html>

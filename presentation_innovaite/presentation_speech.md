@@ -1,0 +1,17 @@
+Good morning. My name is Havriil Pietukhin, and this work was done with Ivan Polasek. We focus on code smell refactoring in Java projects, especially cases where several smells appear in the same class.
+
+Developers and current AI tools often handle smells one by one. That is risky. A refactoring that removes one problem can leave another untouched, or even create a new one. Prior studies show that this is common: in one longitudinal study, 57 percent of refactorings did not reduce the smell count. So our goal is to plan the order of refactorings before asking an LLM to edit the code.
+
+The main idea is a dependency model. Each detected smell is a node in a graph. A green edge means that refactoring one smell may also remove another smell. For example, extracting a long method can also reduce feature envy. A red edge means that a refactoring may introduce another smell. For example, handling a God Class too early can create long methods or inappropriate intimacy. The graph can also include severity, frequency, and project-specific priorities.
+
+The pipeline starts by loading the Java project and checking the build setup. Then it records the test baseline and uses SonarQube to detect smells. The developer can choose which smells to target. After that, the system builds the dependency graph, plans the refactoring order, sends each step to an LLM refactoring agent, and validates every patch with tests and code quality checks. If tests fail, the system rolls back and replans.
+
+For planning, we implemented two approaches. The greedy planner chooses the smell with the highest current score, using severity, frequency, positive dependencies, and penalties for negative dependencies. This is fast, but it can make a poor early choice when a high-priority smell has dangerous outgoing negative edges.
+
+Best-First Search treats refactoring as a state-space search. A state is the current set of active smells. An action removes the selected smell, may remove related smells, and may introduce new ones. The planner compares the next possible states and prefers the one with lower remaining smell severity. In the paper example, greedy chooses God Class first and creates extra work. Best-First Search chooses Long Method first, removes a related smell, suppresses the negative edge, and reaches a clean state in fewer steps.
+
+The LLM agent acts only after the planner selects the next target. It retrieves the affected Java class, chooses the refactoring operation from the smell catalogue, asks the LLM for a patch, checks that the response has the expected structure, writes the change, and runs the tests. This keeps the LLM inside a controlled loop instead of letting it refactor freely.
+
+Our contribution is a multi-agent refactoring pipeline with a formal dependency graph for the eight SonarQube smell types used in the implementation: Long Method, Complex Method, Long Parameter List, Conditional Complexity, God Class, Large Class, Duplicated Conditions, and Print Statements. The article's future work is to build a labelled multi-smell Java dataset from RefactoringMiner 2.0 and SWE-Refactor, evaluate planning quality over complete developer sequences, measure plan efficiency, negative-dependency rate, and compile-test pass rate, and validate or learn dependency weights from empirical smell trajectories.
+
+Thank you for your attention.

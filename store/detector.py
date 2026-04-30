@@ -97,8 +97,6 @@ class SonarQubeDetector(SmellDetector):
         try:
             # Lazy import: sonarqube depends on requests, subprocess, etc.
             from sonarqube.commit_scan import (
-                RULE_NAME_MAP,
-                SEVERITY_MAP,
                 fetch_all_project_issues,
                 poll_analysis_completion,
                 run_sonar_scanner_local,
@@ -141,8 +139,6 @@ class SonarQubeDetector(SmellDetector):
             raw_issues,
             session_id=session_id,
             iteration=iteration,
-            rule_name_map=RULE_NAME_MAP,
-            severity_map=SEVERITY_MAP,
         )
 
         LOGGER.info("Detected %d smells (iteration %d)", len(events), iteration)
@@ -182,10 +178,10 @@ def _normalize_issues(
     *,
     session_id: str,
     iteration: int,
-    rule_name_map: dict,
-    severity_map: dict,
 ) -> list[SmellEvent]:
     """Normalize raw backend issues into canonical `SmellEvent`s."""
+    from sonarqube.commit_scan import normalize_issue
+
     events: list[SmellEvent] = []
     for issue in raw_issues:
         component = issue.get("component", "")
@@ -193,18 +189,16 @@ def _normalize_issues(
             continue
 
         file_path = component.split(":", 1)[1]
-        rule = issue.get("rule")
-        smell_type = rule_name_map.get(rule, rule)
-        severity = severity_map.get(issue.get("severity"), "LOW")
-        line = issue.get("line", 0)
+        n = normalize_issue(issue)
+        line = n.get("line") or 0
 
         events.append(
             SmellEvent(
                 session_id=session_id,
                 iteration=iteration,
-                smell_id=f"{smell_type}:{file_path}:{line}",
-                smell_type=smell_type,
-                severity=severity,
+                smell_id=f"{n['smell_type']}:{file_path}:{line}",
+                smell_type=n["smell_type"],
+                severity=n["severity"],
                 file_path=file_path,
                 line_number=line,
                 action=SmellAction.DETECTED,

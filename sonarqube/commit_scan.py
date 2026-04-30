@@ -23,7 +23,7 @@ from typing import Any, Dict, List, Optional
 import requests
 from dotenv import load_dotenv
 
-from sonarqube.constants import RULE_NAME_MAP, SEVERITY_MAP  # noqa: F401 (re-exported for callers)
+from sonarqube.constants import RULE_NAME_MAP, SEVERITY_MAP
 
 # Load environment variables
 load_dotenv()
