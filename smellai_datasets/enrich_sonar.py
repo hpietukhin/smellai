@@ -35,12 +35,14 @@ PROJECT_TO_REPO_URL: dict[str, str] = {
 }
 
 # Refactoring type → SonarQube rules expected to be violated (pre-refactoring)
+JAVA_RULE_CLASS_DEPENDENCY = "java:S1200"
+
 REFACTORING_TO_RULES: dict[str, set[str]] = {
     "Extract Method": {"java:S138", "java:S1541", "java:S1067"},
-    "Extract Class": {"java:S1200", "java:S110"},
-    "Move Method": {"java:S1200"},
-    "Extract And Move Method": {"java:S1200", "java:S138", "java:S1541"},
-    "Move Attribute": {"java:S1200"},
+    "Extract Class": {JAVA_RULE_CLASS_DEPENDENCY, "java:S110"},
+    "Move Method": {JAVA_RULE_CLASS_DEPENDENCY},
+    "Extract And Move Method": {JAVA_RULE_CLASS_DEPENDENCY, "java:S138", "java:S1541"},
+    "Move Attribute": {JAVA_RULE_CLASS_DEPENDENCY},
     "Introduce Parameter Object": {"java:S107"},
     "Consolidate Conditional Expression": {"java:S1871"},
 }

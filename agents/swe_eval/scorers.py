@@ -34,15 +34,12 @@ def overall_scorer(outputs: dict) -> Feedback:
     compile_ok = outputs.get("compile_success", False)
     test_ok = outputs.get("test_success", False)
     success = compile_ok and test_ok
-    rationale = (
-        "Both compilation and tests passed"
-        if success
-        else (
-            "Compilation failed"
-            if not compile_ok
-            else "Compilation passed but tests failed"
-        )
-    )
+    if success:
+        rationale = "Both compilation and tests passed"
+    elif not compile_ok:
+        rationale = "Compilation failed"
+    else:
+        rationale = "Compilation passed but tests failed"
     return Feedback(value=1.0 if success else 0.0, rationale=rationale)
 
 

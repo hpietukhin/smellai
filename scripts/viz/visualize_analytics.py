@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
+NO_REFACTORING_ATTEMPTS = "No refactoring attempts found"
+
 sns.set_theme(style="whitegrid")
 
 
@@ -88,7 +90,7 @@ def plot_refactoring_outcomes(db_path: str, output_dir: Path):
     conn.close()
 
     if df.empty:
-        print("No refactoring attempts found")
+        print(NO_REFACTORING_ATTEMPTS)
         return
 
     # Pivot for stacked bar chart
@@ -136,7 +138,7 @@ def plot_success_rate(db_path: str, output_dir: Path):
     conn.close()
 
     if df.empty:
-        print("No refactoring attempts found")
+        print(NO_REFACTORING_ATTEMPTS)
         return
 
     plt.figure(figsize=(14, 6))
@@ -212,7 +214,7 @@ def plot_token_usage(db_path: str, output_dir: Path, session_id: str | None = No
         return
 
     # Create figure with two subplots
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
 
     # Pie chart
     ax1.pie(
@@ -321,7 +323,7 @@ def plot_iteration_distribution(db_path: str, output_dir: Path):
     conn.close()
 
     if df.empty:
-        print("No refactoring attempts found")
+        print(NO_REFACTORING_ATTEMPTS)
         return
 
     plt.figure(figsize=(10, 6))

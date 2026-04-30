@@ -24,6 +24,8 @@ from pydantic import TypeAdapter
 from .schema import DatasetSource, EvalSample, rminer_sample
 from swe_refactor.dataset import RefactoringRecord
 
+PURE_REFACTORING_DATA_FILE = "pure_refactoring_data.json"
+
 # ---------------------------------------------------------------------------
 # Default dataset path resolution
 #
@@ -40,7 +42,7 @@ def _env_path(var: str) -> Path | None:
 
 
 def _resolve_swe_path(path: Path | None) -> Path | None:
-    """Accept a file path or a directory containing pure_refactoring_data.json."""
+    """Accept a file path or a directory containing the SWE refactoring JSON."""
     if path is None:
         path = _env_path("SWE_REFACTOR_PATH")
     if path is None:
@@ -48,8 +50,8 @@ def _resolve_swe_path(path: Path | None) -> Path | None:
     if path.is_file():
         return path
     for candidate in (
-        path / "pure_refactoring_data.json",
-        path / "SWE-Refactor" / "pure_refactoring_data.json",
+        path / PURE_REFACTORING_DATA_FILE,
+        path / "SWE-Refactor" / PURE_REFACTORING_DATA_FILE,
     ):
         if candidate.exists():
             return candidate
@@ -71,45 +73,50 @@ def _require(path: Path | None, label: str, env_var: str) -> Path:
 
 
 
+def _append_json_records(results: list[dict], data: Any) -> None:
+    if isinstance(data, list):
+        results.extend(data)
+    else:
+        results.append(data)
+
+
+def _load_json_file(path: Path) -> list[dict]:
+    with path.open() as f:
+        data = json.load(f)
+    return data if isinstance(data, list) else [data]
+
+
+def _load_swe_raw_zip(path: Path) -> list[dict]:
+    results: list[dict] = []
+    with zipfile.ZipFile(path, "r") as zf:
+        namelist = zf.namelist()
+        pure = next(
+            (n for n in namelist if n.endswith(PURE_REFACTORING_DATA_FILE)), None
+        )
+        candidates = [pure] if pure else [
+            n for n in namelist
+            if n.endswith(".json") and not n.startswith("__MACOSX/")
+        ]
+        for name in candidates:
+            try:
+                with zf.open(name) as f:
+                    _append_json_records(results, json.load(f))
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                continue
+    return results
+
+
 def _load_swe_raw_jsons(path: Path) -> list[dict]:
     """Load raw SWE-Refactor JSON objects from .zip, .json file, or directory."""
     if path.suffix == ".zip":
-        results: list[dict] = []
-        with zipfile.ZipFile(path, "r") as zf:
-            namelist = zf.namelist()
-            pure = next(
-                (n for n in namelist if n.endswith("pure_refactoring_data.json")), None
-            )
-            candidates = [pure] if pure else [
-                n for n in namelist
-                if n.endswith(".json") and not n.startswith("__MACOSX/")
-            ]
-            for name in candidates:
-                try:
-                    with zf.open(name) as f:
-                        data = json.load(f)
-                    if isinstance(data, list):
-                        results.extend(data)
-                    else:
-                        results.append(data)
-                except (UnicodeDecodeError, json.JSONDecodeError):
-                    continue
-        return results
+        return _load_swe_raw_zip(path)
 
     if path.suffix == ".json":
-        with path.open() as f:
-            data = json.load(f)
-        return data if isinstance(data, list) else [data]
+        return _load_json_file(path)
 
-    # Directory
-    results = []
+    results: list[dict] = []
     for json_file in path.rglob("*.json"):
-        with json_file.open() as f:
-            data = json.load(f)
-            if isinstance(data, list):
-                results.extend(data)
-            else:
-                results.append(data)
+        _append_json_records(results, _load_json_file(json_file))
     return results
 
 

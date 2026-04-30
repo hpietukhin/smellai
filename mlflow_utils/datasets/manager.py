@@ -6,6 +6,8 @@ from typing import Any
 
 import mlflow
 
+GENAI_DATASETS_UNAVAILABLE_WARNING = "Warning: mlflow.genai.datasets not available."
+
 
 class DatasetManager:
     def __init__(self, tracking_uri: str = "http://localhost:5000"):
@@ -17,7 +19,7 @@ class DatasetManager:
             from mlflow.genai.datasets import search_datasets
             return search_datasets(experiment_name=experiment_name)
         except ImportError:
-            print("Warning: mlflow.genai.datasets not available.")
+            print(GENAI_DATASETS_UNAVAILABLE_WARNING)
             return []
         except Exception as e:
             print(f"Error listing datasets: {e}")
@@ -28,7 +30,7 @@ class DatasetManager:
             from mlflow.genai.datasets import get_dataset
             return get_dataset(name)
         except ImportError:
-            print("Warning: mlflow.genai.datasets not available.")
+            print(GENAI_DATASETS_UNAVAILABLE_WARNING)
             return None
         except Exception as e:
             print(f"Error getting dataset: {e}")
@@ -73,7 +75,7 @@ class DatasetManager:
             print(f"Registered MLflow dataset: {dataset.dataset_id}")
             return dataset.dataset_id
         except ImportError:
-            print("Warning: mlflow.genai.datasets not available.")
+            print(GENAI_DATASETS_UNAVAILABLE_WARNING)
             return None
         except Exception as e:
             print(f"Warning: Failed to register dataset: {e}")

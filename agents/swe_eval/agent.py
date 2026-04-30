@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from swe_refactor.persistence.database import AnalyticsDB
 
 LOGGER = logging.getLogger(__name__)
+EXTRACT_METHOD = "Extract Method"
 
 
 def _refactoring_outcome(compile_success: bool, test_success: bool) -> str:
@@ -164,7 +165,7 @@ def create_swe_eval_agent(
 
         # Add smell context if in composite mode
         if current_smell := state.get("current_smell"):
-            refactoring_type = state.get("refactoring_type", "Extract Method")
+            refactoring_type = state.get("refactoring_type", EXTRACT_METHOD)
             smell_context = f"\n\n## Target Code Smell\n{current_smell}\n\n## Refactoring Type\n{refactoring_type}\n\nPlease focus on resolving this specific smell while maintaining code correctness."
             prompt += smell_context
 
@@ -295,7 +296,7 @@ def create_swe_eval_agent(
                 session_id=state.get("session_id", "unknown"),
                 iteration=state.get("refactoring_iteration", 0),
                 smell_id=state.get("current_smell", "unknown"),
-                refactoring_type=state.get("refactoring_type", "Extract Method"),
+                refactoring_type=state.get("refactoring_type", EXTRACT_METHOD),
                 outcome=_refactoring_outcome(verification.compile_success, test_success),
                 retries=state.get("retry_count", 0),
                 smells_resolved=len(diff["resolved"]),
@@ -434,22 +435,22 @@ def create_swe_eval_agent(
         parts = current_smell.split(":", 2)
         if len(parts) != 3:
             LOGGER.warning("A4: Invalid smell_id format: %s", current_smell)
-            return {"refactoring_type": "Extract Method"}  # default fallback
+            return {"refactoring_type": EXTRACT_METHOD}  # default fallback
 
         smell_type = parts[0]
 
         # Simple mapping (can be enhanced with LLM later)
         mapping = {
-            "Long Method": "Extract Method",
-            "Complex Method": "Extract Method",
+            "Long Method": EXTRACT_METHOD,
+            "Complex Method": EXTRACT_METHOD,
             "God Class": "Extract Class",
             "Large Class": "Extract Class",
             "Long Parameter List": "Introduce Parameter Object",
-            "Duplicated Conditions": "Extract Method",
+            "Duplicated Conditions": EXTRACT_METHOD,
             "Conditional Complexity": "Replace Conditional with Polymorphism",
         }
 
-        refactoring_type = mapping.get(smell_type, "Extract Method")
+        refactoring_type = mapping.get(smell_type, EXTRACT_METHOD)
 
         LOGGER.info("A4: Mapped %s → %s", smell_type, refactoring_type)
 

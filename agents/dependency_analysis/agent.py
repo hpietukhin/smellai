@@ -32,11 +32,9 @@ class DependencyAnalysis(BaseModel):
     )
 
 
-# TODO SPEC-009: Create comprehensive map of dependency rules with detailed citations.
-# Rules are based on Markovič & Polášek research.
-# Need comprehensive mapping with paper references and detailed citations.
-# MEDIUM priority.
-# (See TECHNICAL_SPECIFICATION.md §4.4)
+# SPEC-009 backlog: create a comprehensive map of dependency rules with
+# detailed citations. Rules are based on Markovič & Polášek research and should
+# be expanded with paper references (medium priority; see spec §4.4).
 
 
 def issue_to_smell_event(issue: Dict[str, Any]) -> SmellEvent | None:

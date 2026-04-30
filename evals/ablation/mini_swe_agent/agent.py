@@ -97,8 +97,6 @@ def invoke_agent(
     workspace_path = Path(workspace_path)
     workspace_path.mkdir(parents=True, exist_ok=True)
 
-    project_path = workspace_path / record.projectName
-
     # --- a0: setup (clone, checkout, jdk) ---
     setup = setup_project_workspace(record, workspace_path)
     if not setup.success:

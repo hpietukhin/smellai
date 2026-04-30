@@ -317,11 +317,12 @@ class PrioritizationVisualizer:
             # Size based on PZ score (higher PZ = larger node)
             size = pz_score * 10 + 20
 
-            color = "#999"  # Default gray
             border_color = "black"
             border_width = 1
 
-            if not is_resolved:
+            if is_resolved:
+                color = "#e0e0e0"  # Light gray for resolved
+            else:
                 if smell.severity_score >= 3:
                     color = "#ff9999"  # Red
                 elif smell.severity_score == 2:
@@ -336,8 +337,6 @@ class PrioritizationVisualizer:
                 ):
                     border_color = "#2196F3"  # Blue border for next smell
                     border_width = 3
-            else:
-                color = "#e0e0e0"  # Light gray for resolved
 
             # Label shows type + priority order + PZ score
             label_text = f"#{priority_order} {smell.smell_type}\nPZ={pz_score}"
@@ -391,13 +390,12 @@ class PrioritizationVisualizer:
 
             # Show edge labels for positive/negative
             show_label = edge_type in ["positive", "negative"]
-            label_text = (
-                "+"
-                if edge_type == "positive"
-                else "−"
-                if edge_type == "negative"
-                else ""
-            )
+            if edge_type == "positive":
+                label_text = "+"
+            elif edge_type == "negative":
+                label_text = "−"
+            else:
+                label_text = ""
 
             edges.append(
                 {
@@ -877,6 +875,10 @@ class PrioritizationVisualizer:
             self.diff_viewer.content = self.get_code_diff()
 
 
+APP_TITLE = "AI Agent Execution Visualizer"
+FULL_WIDTH_TEXT_XS = "w-full text-xs"
+TINY_TEXT_CLASS = "text-[10px]"
+
 visualizer = PrioritizationVisualizer()
 
 
@@ -884,7 +886,7 @@ visualizer = PrioritizationVisualizer()
 def main_page():
     # Header
     with ui.header(elevated=True).classes("items-center justify-between"):
-        ui.label("AI Agent Execution Visualizer").classes("text-sm font-bold")
+        ui.label(APP_TITLE).classes("text-sm font-bold")
 
         # Session selector (shown when database is loaded)
         session_selector = (
@@ -908,7 +910,7 @@ def main_page():
             label="Analytics DB Path",
             placeholder="test_analytics.db",
             value="test_analytics.db",
-        ).classes("w-full text-xs")
+        ).classes(FULL_WIDTH_TEXT_XS)
 
         def load_db():
             try:
@@ -926,7 +928,7 @@ def main_page():
                 logger.error(f"Database load error: {e}")
 
         ui.button("Load Database", on_click=load_db, icon="database").classes(
-            "w-full text-xs"
+            FULL_WIDTH_TEXT_XS
         )
 
         ui.button(
@@ -945,9 +947,7 @@ def main_page():
 
         # Get example manifest files
         manifest_dir = Path(__file__).parent / "example_manifests"
-        example_files = (
-            sorted(list(manifest_dir.glob("*.json"))) if manifest_dir.exists() else []
-        )
+        example_files = sorted(manifest_dir.glob("*.json")) if manifest_dir.exists() else []
 
         if example_files:
             example_options = {
@@ -962,15 +962,15 @@ def main_page():
                 )
                 if e.value
                 else None,
-            ).classes("w-full text-xs")
+            ).classes(FULL_WIDTH_TEXT_XS)
 
             # Info panel for loaded manifest
             with ui.scroll_area().classes("h-[120px] w-full mt-2"):
                 visualizer.manifest_info_label = ui.markdown(
                     "_Select example above_"
-                ).classes("text-[10px]")
+                ).classes(TINY_TEXT_CLASS)
         else:
-            ui.label("No examples found").classes("text-[10px] text-gray-500")
+            ui.label("No examples found").classes(f"{TINY_TEXT_CLASS} text-gray-500")
 
         ui.separator().classes("my-4")
 
@@ -1071,14 +1071,14 @@ def main_page():
         with ui.scroll_area().classes("h-[150px] w-full"):
             visualizer.sequence_table = ui.markdown(
                 "_Load data to see sequence_"
-            ).classes("text-[10px]")
+            ).classes(TINY_TEXT_CLASS)
 
         ui.separator().classes("my-4")
         ui.markdown("### Smell Details").classes("text-xs")
         with ui.scroll_area().classes("h-[200px] w-full"):
             visualizer.details_label = ui.markdown(
                 "Click on a smell node to see prioritization details."
-            ).classes("text-[10px]")
+            ).classes(TINY_TEXT_CLASS)
 
     # Right Drawer for Agent Execution Context
     with (
@@ -1090,7 +1090,7 @@ def main_page():
         with ui.scroll_area().classes("h-[120px] w-full"):
             visualizer.iteration_details = ui.markdown(
                 "_Load a database to see iteration details_"
-            ).classes("text-[10px]")
+            ).classes(TINY_TEXT_CLASS)
 
         ui.separator().classes("my-2")
 
@@ -1098,7 +1098,7 @@ def main_page():
         with ui.scroll_area().classes("h-[100px] w-full"):
             visualizer.quality_metrics_label = ui.markdown(
                 "_Load a database to see quality metrics_"
-            ).classes("text-[10px]")
+            ).classes(TINY_TEXT_CLASS)
 
         ui.separator().classes("my-2")
 
@@ -1106,7 +1106,7 @@ def main_page():
         with ui.scroll_area().classes("h-[150px] w-full"):
             visualizer.test_results_label = ui.markdown(
                 "_Load a database to see test results_"
-            ).classes("text-[10px]")
+            ).classes(TINY_TEXT_CLASS)
 
         ui.separator().classes("my-2")
 
@@ -1114,13 +1114,13 @@ def main_page():
         with ui.scroll_area().classes("h-[100px] w-full"):
             visualizer.tool_logs_area = ui.markdown(
                 "_Load a database to see tool calls_"
-            ).classes("text-[10px]")
+            ).classes(TINY_TEXT_CLASS)
 
         ui.separator().classes("my-2")
 
         ui.markdown("### Code Diff").classes("text-xs")
         with ui.scroll_area().classes("h-[200px] w-full"):
-            visualizer.diff_viewer = ui.code("", language="diff").classes("text-[10px]")
+            visualizer.diff_viewer = ui.code("", language="diff").classes(TINY_TEXT_CLASS)
 
     # Main content area - split between graph and timeline
     with ui.element("div").style(
@@ -1160,7 +1160,7 @@ def main_page():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="AI Agent Execution Visualizer")
+    parser = argparse.ArgumentParser(description=APP_TITLE)
     parser.add_argument("--db", type=str, help="Path to analytics database to auto-load")
     parser.add_argument("--port", type=int, default=8080, help="Port to run server on")
     args = parser.parse_args()
@@ -1168,7 +1168,7 @@ if __name__ == "__main__":
     # Store db path for auto-loading
     app.db_path = args.db
 
-    ui.run(title="AI Agent Execution Visualizer", port=args.port)
+    ui.run(title=APP_TITLE, port=args.port)
 else:
     app.db_path = None
     ui.run(title="AI Agent Execution Visualizer", port=8080)

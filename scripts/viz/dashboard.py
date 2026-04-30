@@ -13,6 +13,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
+SUCCESS_RATE_LABEL = "Success Rate (%)"
+
 
 st.set_page_config(
     page_title="Composite Refactoring Analytics", page_icon="🔍", layout="wide"
@@ -187,14 +189,14 @@ def main():
             "total_created": "Created",
             "net_improvement": "Net Improvement",
             "total_tokens": "Tokens",
-            "success_rate": "Success Rate (%)",
+            "success_rate": SUCCESS_RATE_LABEL,
         }
     )
 
     st.dataframe(
         display_df.style.background_gradient(
-            subset=["Success Rate (%)"], cmap="RdYlGn"
-        ).format({"Success Rate (%)": "{:.1f}", "Tokens": "{:,}"}),
+            subset=[SUCCESS_RATE_LABEL], cmap="RdYlGn"
+        ).format({SUCCESS_RATE_LABEL: "{:.1f}", "Tokens": "{:,}"}),
         use_container_width=True,
     )
 
@@ -314,7 +316,7 @@ def main():
                     y=refactoring_attempts_df["smells_resolved"].cumsum(),
                     mode="lines+markers",
                     name="Resolved",
-                    line=dict(color="green", width=3),
+                    line={"color": "green", "width": 3},
                 )
             )
             fig.add_trace(
@@ -323,7 +325,7 @@ def main():
                     y=refactoring_attempts_df["smells_created"].cumsum(),
                     mode="lines+markers",
                     name="Created",
-                    line=dict(color="red", width=3),
+                    line={"color": "red", "width": 3},
                 )
             )
             fig.update_layout(

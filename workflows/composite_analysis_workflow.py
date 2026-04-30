@@ -21,7 +21,7 @@ from typing import Any, Dict, List
 import networkx as nx
 import matplotlib.pyplot as plt
 
-from domain.rules import DEPENDENCY_RULES
+from domain.rules import COMPLEX_METHOD, DEPENDENCY_RULES, GOD_CLASS, LARGE_CLASS
 from workflows.utils import configure_logging, load_manifest, save_matplotlib_graph
 
 configure_logging()
@@ -29,14 +29,16 @@ logger = logging.getLogger(__name__)
 
 
 # Mapping from Refactoring Type to the Smells they typically address
+CLASS_EXTRACTION_SMELLS = [LARGE_CLASS, GOD_CLASS]
+
 REFACTORING_TO_SMELL_MAP = {
-    "Extract Method": ["Long Method", "Complex Method"],
-    "Extract Variable": ["Complex Method"],
-    "Decompose Conditional": ["Complex Method", "Conditional Complexity"],
+    "Extract Method": ["Long Method", COMPLEX_METHOD],
+    "Extract Variable": [COMPLEX_METHOD],
+    "Decompose Conditional": [COMPLEX_METHOD, "Conditional Complexity"],
     "Introduce Parameter Object": ["Long Parameter List"],
-    "Extract Class": ["Large Class", "God Class"],
-    "Extract Subclass": ["Large Class", "God Class"],
-    "Extract Interface": ["Large Class", "God Class"],
+    "Extract Class": CLASS_EXTRACTION_SMELLS,
+    "Extract Subclass": CLASS_EXTRACTION_SMELLS,
+    "Extract Interface": CLASS_EXTRACTION_SMELLS,
     "Consolidate Conditional Expression": ["Duplicated Conditions"],
     "Consolidate Duplicate Conditional Fragments": ["Duplicated Conditions"],
     # Add more mappings as needed

@@ -69,7 +69,6 @@ def visualize_file_dependencies(
 
     # Draw nodes
     node_colors = [G.nodes[n].get("color", "gray") for n in G.nodes()]
-    # node_styles = [G.nodes[n].get("style", "solid") for n in G.nodes()] # NetworkX draw doesn't support style list directly easily
 
     nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=2500, alpha=0.9)
     nx.draw_networkx_labels(G, pos, font_size=9, font_weight="bold")

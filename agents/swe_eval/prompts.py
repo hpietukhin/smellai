@@ -39,7 +39,11 @@ def get_refactoring_prompt(
     elif refactoring_type == "Inline Method":
         return _inline_method_prompt(source_code_before, file_path_before)
 
-    elif refactoring_type == "Move Method":
+    elif refactoring_type in (
+        "Move Method",
+        "Move And Rename Method",
+        "Move And Inline Method",
+    ):
         return _move_method_prompt(
             source_code_before,
             target_code_before,
@@ -49,14 +53,6 @@ def get_refactoring_prompt(
 
     elif refactoring_type == "Extract And Move Method":
         return _extract_and_move_prompt(
-            source_code_before,
-            target_code_before,
-            file_path_before,
-            file_path_after,
-        )
-
-    elif refactoring_type in ("Move And Rename Method", "Move And Inline Method"):
-        return _move_method_prompt(
             source_code_before,
             target_code_before,
             file_path_before,

@@ -226,7 +226,9 @@ class SmellPrioritizer:
         )
 
         # Build legend with all unique smell types present in the graph
-        unique_smells = set(self.graph.nodes[node]["data"].smell_type for node in self.graph.nodes())
+        unique_smells = {
+            self.graph.nodes[node]["data"].smell_type for node in self.graph.nodes()
+        }
 
         legend_elements = []
 
@@ -308,13 +310,14 @@ class SmellPrioritizer:
 
 def generate_sample_data() -> List[SmellEvent]:
     """Generates sample data for demonstration."""
+    create_user_path = "com.app.UserManager.createUser"
     samples = [
         ("1", "God Class",           "com.app.UserManager",                 "HIGH"),
-        ("2", "Long Method",         "com.app.UserManager.createUser",      "HIGH"),
+        ("2", "Long Method",         create_user_path,                       "HIGH"),
         ("3", "Feature Envy",        "com.app.UserManager.validateAddress", "MEDIUM"),
         ("4", "Duplicated Code",     "com.app.UserManager.updateUser",      "LOW"),
-        ("5", "Complex Method",      "com.app.UserManager.createUser",      "MEDIUM"),
-        ("6", "Long Parameter List", "com.app.UserManager.createUser",      "LOW"),
+        ("5", "Complex Method",      create_user_path,                       "MEDIUM"),
+        ("6", "Long Parameter List", create_user_path,                       "LOW"),
         ("7", "Data Clumps",         "com.app.OrderService",                "MEDIUM"),
     ]
     return [

@@ -96,11 +96,9 @@ def create_rminer_eval_agent(model_name: str | None = None) -> StateGraph:
     def map_refactorings(state: RMinerEvalState) -> dict:
         """Map refactorings to diff hunks.
 
-        # TODO SPEC-007: Implement token counting and truncation strategy for large files.
-        # Large files (e.g., "God Classes") may exceed LLM context windows.
-        # Need to implement token counting and truncation before prompt construction.
-        # HIGH priority.
-        # (See TECHNICAL_SPECIFICATION.md §4.3)
+        # SPEC-007 backlog: implement token counting and truncation for large
+        # files (e.g., "God Classes") before prompt construction. High priority;
+        # see TECHNICAL_SPECIFICATION.md §4.3.
         """
         refactorings_str = "\n".join(
             f"{i}. Type: {rt}\n   Description: {rd}"
@@ -114,17 +112,16 @@ def create_rminer_eval_agent(model_name: str | None = None) -> StateGraph:
             for i, h in enumerate(state["diff_hunks"])
         )
 
-        # TODO SPEC-004: Document when sonar_issues context is included vs excluded.
-        # Currently included if state contains sonar_issues, but decision criteria not documented.
-        # (See TECHNICAL_SPECIFICATION.md §4.3)
+        # SPEC-004 backlog: document when sonar_issues context is included vs
+        # excluded. Current criterion: include it when state contains
+        # sonar_issues; see TECHNICAL_SPECIFICATION.md §4.3.
 
-        # TODO SPEC-005: Document when dependency_analysis context is included vs excluded.
-        # Currently computed from sonar_issues, but inclusion criteria not documented.
-        # (See TECHNICAL_SPECIFICATION.md §4.3)
+        # SPEC-005 backlog: document when dependency_analysis context is included
+        # vs excluded. Current criterion: compute it from sonar_issues; see
+        # TECHNICAL_SPECIFICATION.md §4.3.
 
-        # TODO SPEC-006: Add reference link to exact prompt structure datamodels in code.
-        # Prompt construction should reference the specific datamodels being used.
-        # (See TECHNICAL_SPECIFICATION.md §4.3)
+        # SPEC-006 backlog: link prompt construction to the exact datamodels used;
+        # see TECHNICAL_SPECIFICATION.md §4.3.
 
         sonar_str = ""
         dep_str = ""

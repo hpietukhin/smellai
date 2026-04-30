@@ -2,6 +2,7 @@
 
 import json
 import logging
+import math
 from pathlib import Path
 
 from pydantic import BaseModel, Field, field_validator
@@ -44,7 +45,7 @@ class RefactoringRecord(BaseModel):
     def convert_jdk_version(cls, v):
         """Convert JDK version from float (1.8) or int (11, 17, 21) to int."""
         if isinstance(v, float):
-            return 8 if v == 1.8 else int(round(v))
+            return 8 if math.isclose(v, 1.8) else int(round(v))
         return int(v)
 
 

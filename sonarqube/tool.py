@@ -15,6 +15,8 @@ from pydantic import BaseModel, Field
 
 from sonarqube.commit_scan import scan_commit, scan_commit_file
 
+DEFAULT_SONAR_URL = "http://localhost:9000"
+
 
 class SonarScanArgs(BaseModel):
     """Input schema for the `scan_commit_smells` tool."""
@@ -32,7 +34,7 @@ class SonarScanArgs(BaseModel):
         description="Optional list of specific file paths to scan. If None, scans entire commit.",
     )
     sonar_url: str = Field(
-        default="http://localhost:9000",
+        default=DEFAULT_SONAR_URL,
         description="SonarQube server URL",
     )
     cache_dir: Optional[str] = Field(
@@ -66,7 +68,7 @@ def _start_sonarqube() -> None:
     import time
 
     for _ in range(60):
-        if _ensure_sonarqube_running("http://localhost:9000"):
+        if _ensure_sonarqube_running(DEFAULT_SONAR_URL):
             return
         time.sleep(2)
 
@@ -78,7 +80,7 @@ def scan_commit_smells(
     repo_url: str,
     commit_sha: str,
     file_paths: Optional[List[str]] = None,
-    sonar_url: str = "http://localhost:9000",
+    sonar_url: str = DEFAULT_SONAR_URL,
     cache_dir: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Scan a git commit for code smells using SonarQube.

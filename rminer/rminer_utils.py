@@ -69,47 +69,45 @@ def get_diff(
         return ""
 
 
+def _new_hunk_data(match: re.Match[str]) -> Dict[str, Any]:
+    return {
+        "old_start": int(match.group(1)),
+        "old_count": int(match.group(2) or 1),
+        "new_start": int(match.group(3)),
+        "new_count": int(match.group(4) or 1),
+        "removed_lines": [],
+        "added_lines": [],
+        "context_lines": [],
+    }
+
+
+def _add_diff_line(current_data: Dict[str, Any], line: str) -> None:
+    if line.startswith(("---", "+++", "\\ No newline at end of file")):
+        return
+    if line.startswith("-"):
+        current_data["removed_lines"].append(line[1:])
+    elif line.startswith("+"):
+        current_data["added_lines"].append(line[1:])
+    elif line.startswith(" "):
+        current_data["context_lines"].append(line[1:])
+
+
 def parse_diff_hunks(diff_text: str) -> List[DiffHunk]:
     """Parse unified diff text into structured hunks."""
     hunks: List[DiffHunk] = []
-
-    # Collect hunk data before creating immutable Pydantic models
     current_data: Optional[Dict[str, Any]] = None
-
-    def _finalize_hunk():
-        if current_data:
-            hunks.append(DiffHunk(**current_data))
 
     for line in diff_text.splitlines():
         match = _HUNK_PATTERN.match(line)
         if match:
-            _finalize_hunk()
-            current_data = {
-                "old_start": int(match.group(1)),
-                "old_count": int(match.group(2) or 1),
-                "new_start": int(match.group(3)),
-                "new_count": int(match.group(4) or 1),
-                "removed_lines": [],
-                "added_lines": [],
-                "context_lines": [],
-            }
-            continue
+            if current_data:
+                hunks.append(DiffHunk(**current_data))
+            current_data = _new_hunk_data(match)
+        elif current_data:
+            _add_diff_line(current_data, line)
 
-        if not current_data:
-            continue
-
-        if line.startswith("---") or line.startswith("+++"):
-            continue
-        if line.startswith("-"):
-            current_data["removed_lines"].append(line[1:])
-        elif line.startswith("+"):
-            current_data["added_lines"].append(line[1:])
-        elif line.startswith(" "):
-            current_data["context_lines"].append(line[1:])
-        elif line.startswith("\\ No newline at end of file"):
-            continue
-
-    _finalize_hunk()
+    if current_data:
+        hunks.append(DiffHunk(**current_data))
     return hunks
 
 
@@ -370,6 +368,15 @@ def _calculate_cluster_score(cluster: CommitCluster) -> float:
     return min(final_score, 1.0)
 
 
+def _average_jaccard_similarity(sets: list[set[str]]) -> float:
+    similarities = []
+    for i, set_a in enumerate(sets):
+        for set_b in sets[i + 1:]:
+            if set_a or set_b:
+                similarities.append(len(set_a & set_b) / len(set_a | set_b))
+    return sum(similarities) / len(similarities) if similarities else 0.0
+
+
 def calculate_semantic_similarity(cluster: CommitCluster) -> float:
     """
     Calculate semantic similarity score based on refactoring overlap.
@@ -378,18 +385,6 @@ def calculate_semantic_similarity(cluster: CommitCluster) -> float:
     1. Refactoring type overlap (Jaccard similarity)
     2. File path overlap extracted from descriptions
     3. Author consistency
-
-    Args:
-        cluster: CommitCluster to analyze
-
-    Returns:
-        Similarity score from 0.0 to 1.0
-
-    Examples:
-        >>> cluster = CommitCluster(...)
-        >>> score = calculate_semantic_similarity(cluster)
-        >>> 0.0 <= score <= 1.0
-        True
     """
     if len(cluster.commits) < 2:
         return 1.0
@@ -397,41 +392,12 @@ def calculate_semantic_similarity(cluster: CommitCluster) -> float:
     refactoring_types = [
         {ref.type for ref in commit.refactorings} for commit in cluster.commits
     ]
-
-    type_similarities = []
-    for i in range(len(refactoring_types)):
-        for j in range(i + 1, len(refactoring_types)):
-            set_a = refactoring_types[i]
-            set_b = refactoring_types[j]
-            if set_a or set_b:
-                jaccard = len(set_a & set_b) / len(set_a | set_b)
-                type_similarities.append(jaccard)
-
-    type_score = (
-        sum(type_similarities) / len(type_similarities) if type_similarities else 0.0
-    )
-
     file_paths = [_extract_file_paths(commit) for commit in cluster.commits]
+    author_score = 1.0 if len({commit.author for commit in cluster.commits}) == 1 else 0.5
 
-    path_similarities = []
-    for i in range(len(file_paths)):
-        for j in range(i + 1, len(file_paths)):
-            set_a = file_paths[i]
-            set_b = file_paths[j]
-            if set_a or set_b:
-                jaccard = len(set_a & set_b) / len(set_a | set_b)
-                path_similarities.append(jaccard)
-
-    path_score = (
-        sum(path_similarities) / len(path_similarities) if path_similarities else 0.0
-    )
-
-    authors = {commit.author for commit in cluster.commits}
-    author_score = 1.0 if len(authors) == 1 else 0.5
-
-    semantic_score = 0.4 * type_score + 0.4 * path_score + 0.2 * author_score
-
-    return semantic_score
+    type_score = _average_jaccard_similarity(refactoring_types)
+    path_score = _average_jaccard_similarity(file_paths)
+    return 0.4 * type_score + 0.4 * path_score + 0.2 * author_score
 
 
 def _extract_file_paths(commit: RMinerCommit) -> Set[str]:
