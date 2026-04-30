@@ -16,6 +16,7 @@ import sys
 from types import SimpleNamespace
 
 import mlflow
+import mlflow.langchain
 from dotenv import load_dotenv
 
 from agents.swe_eval.scorers import get_swe_scorers
@@ -178,6 +179,7 @@ def main(
     print(f"Loaded {len(records)} {args.source} EvalSamples")
 
     setup_workflow_mlflow(args.tracking_uri, args.experiment)
+    mlflow.langchain.autolog(silent=True)
 
     if args.source == "rminer":
         from agents.rminer_eval import (
