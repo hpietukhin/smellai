@@ -1,0 +1,17 @@
+{
+  "description": "Full composite workflow batch over a generated runnable batch list. Refactoring is mandatory and constrained to the target Java file. Uses OpenRouter MiniMax free model via LiteLLM.",
+  "workflow": {
+    "batch_list": "outputs/evals/full_eval_candidates_3_batch_list.json",
+    "experiment": "composite_workflow_full",
+    "run_name_prefix": "full-eval-openrouter-minimax-m27-file-only",
+    "planner": "befs",
+    "detector_backend": "organic",
+    "locality": "none",
+    "model": "openrouter/minimax/minimax-m2.7",
+    "concurrency": 2,
+    "max_steps": 5,
+    "max_no_progress": 2,
+    "retry_budget": 1,
+    "timeout": 300
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "description": "Full composite workflow batch over a generated runnable batch list. Refactoring is mandatory and constrained to the target Java file. Uses Cerebras Llama 3.1 8B via LiteLLM.",
+  "workflow": {
+    "batch_list": "outputs/evals/full_eval_candidates_3_batch_list.json",
+    "experiment": "composite_workflow_full",
+    "run_name_prefix": "full-eval-cerebras-llama31-8b-file-only",
+    "planner": "befs",
+    "detector_backend": "organic",
+    "locality": "none",
+    "model": "cerebras/llama3.1-8b",
+    "concurrency": 2,
+    "max_steps": 5,
+    "max_no_progress": 2,
+    "retry_budget": 1,
+    "timeout": 300
+  }
+}
