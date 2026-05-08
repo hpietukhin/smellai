@@ -1,4 +1,7 @@
-"""Configuration for SWE evaluation agent."""
+"""DEPRECATED: Configuration for SWE evaluation agent.
+
+Use Composite Refactorings 2020 flow instead (DatasetGraph.composite_refactoring + planner_eval_workflow).
+"""
 
 from enum import Enum
 

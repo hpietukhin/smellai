@@ -1,11 +1,11 @@
-import json
-import sys
 import types
+from contextlib import contextmanager
+from datetime import UTC, datetime
+from types import SimpleNamespace
 
 import pytest
 from typer.testing import CliRunner
 from pathlib import Path
-from eliot import FileDestination, Logger
 import workflows.composite_workflow_full as workflow_module
 
 from workflows.composite_workflow_full import (
@@ -14,8 +14,13 @@ from workflows.composite_workflow_full import (
     _CURRENT_STEP,
     _CURRENT_TRACKER,
     _case_args_from_batch_case,
+    StepLog,
     _case_log_path,
+    _complete_h_trace,
+    _derive_run_name_prefix,
     _profile_phase,
+    _resolve_smell_file,
+    RefactorFilePatch,
     _workflow_cli_args,
 )
 
@@ -69,7 +74,7 @@ def test_case_args_from_batch_case_rejects_unverified_case():
         "baseline_verification": {"status": "build_fail"},
     }
 
-    with pytest.raises(AssertionError, match="not baseline-verified"):
+    with pytest.raises(ValueError, match="not baseline-verified"):
         _case_args_from_batch_case(cfg, case, "run-1")
 
 
@@ -110,6 +115,26 @@ def test_workflow_cli_args_serializes_disabled_targeted_testing():
     assert "--no-targeted-testing" in cli
 
 
+def test_derive_run_name_prefix_uses_searchable_parameters():
+    prefix = _derive_run_name_prefix(
+        {
+            "batch_list": "outputs/evals/safe_maven_range_batch_list.json",
+            "planner": "befs",
+            "detector_backend": "organic",
+            "locality": "none",
+            "model": "openrouter/minimax/minimax-m2.7",
+            "max_steps": 5,
+        },
+        Path("evals/config/full_eval.json"),
+        now=datetime(2026, 5, 5, tzinfo=UTC),
+    )
+
+    assert prefix == (
+        "full-20260505-batch-safe_maven_range_batch_list-planner-befs-"
+        "det-organic-loc-none-model-openrouter_minimax_minimax-m2.7-steps-5"
+    )
+
+
 def test_case_log_path_uses_run_name_and_index():
     args = WorkflowRunArgs(
         project="JUnit4",
@@ -124,18 +149,84 @@ def test_case_log_path_uses_run_name_and_index():
     assert path == Path("logs/007-single_junit4_run.log")
 
 
-def test_batch_help_exposes_num_cases_and_no_single_command():
+def test_batch_help_exposes_limit_and_no_single_command():
     runner = CliRunner()
 
     batch_result = runner.invoke(app, ["batch", "--help"])
     root_result = runner.invoke(app, ["--help"])
 
     assert batch_result.exit_code == 0
-    assert "--num-cases" in batch_result.stdout
+    assert "--limit" in batch_result.stdout
+    assert "--list-cases" in batch_result.stdout
+    assert "--num-cases" not in batch_result.stdout
     assert "--subset-manifest" not in batch_result.stdout
     assert root_result.exit_code == 0
     assert "--model" in root_result.stdout
     assert " single " not in root_result.stdout
+
+
+def test_complete_h_trace_includes_terminal_post_step_state():
+    step_logs = [
+        StepLog(
+            step=0,
+            smell_count_before=1,
+            smell_count_after=1,
+            h_before=1.0,
+            h_after=1.0,
+            action_smell_id="Lazy Class:A.java:1",
+            action_ref_type="Inline Class",
+            compile_passed=False,
+            tests_passed=False,
+            execution_ok=True,
+            stop_reason="retry",
+        ),
+        StepLog(
+            step=1,
+            smell_count_before=1,
+            smell_count_after=0,
+            h_before=1.0,
+            h_after=0.0,
+            action_smell_id="Lazy Class:A.java:1",
+            action_ref_type="Inline Class",
+            compile_passed=True,
+            tests_passed=True,
+            execution_ok=True,
+        ),
+    ]
+
+    assert _complete_h_trace([1.0, 1.0], step_logs) == [1.0, 1.0, 0.0]
+
+
+def test_complete_h_trace_preserves_no_progress_transition():
+    step_logs = [
+        StepLog(
+            step=0,
+            smell_count_before=1,
+            smell_count_after=1,
+            h_before=1.0,
+            h_after=1.0,
+            action_smell_id="Lazy Class:A.java:1",
+            action_ref_type="Inline Class",
+            compile_passed=True,
+            tests_passed=True,
+            execution_ok=True,
+        )
+    ]
+
+    assert _complete_h_trace([1.0], step_logs) == [1.0, 1.0]
+
+
+def test_resolve_smell_file_handles_inner_class_detector_path(tmp_path):
+    source = tmp_path / "src" / "test" / "java" / "ch" / "bind" / "philib" / "msg" / "vm" / "PubSubVMTest.java"
+    source.parent.mkdir(parents=True)
+    source.write_text("class PubSubVMTest { class FanOut {} }", encoding="utf-8")
+    smell = SimpleNamespace(
+        file_path="ch/bind/philib/msg/vm/PubSubVMTest/FanOut.java",
+        smell_id="Feature Envy:ch/bind/philib/msg/vm/PubSubVMTest/FanOut.java:482",
+        class_name="ch.bind.philib.msg.vm.PubSubVMTest.FanOut",
+    )
+
+    assert _resolve_smell_file(tmp_path, smell) == source.resolve()
 
 
 def test_profile_phase_records_elapsed_time_with_step_context():
@@ -207,7 +298,7 @@ def test_run_java_test_bool_forwards_target_files(monkeypatch):
 
 
 
-def test_execute_refactor_action_writes_eliot_subactions(tmp_path, monkeypatch):
+def test_execute_refactor_action_records_mlflow_subactions(tmp_path, monkeypatch):
     repo = tmp_path / "repo"
     repo.mkdir()
     source = repo / "src" / "main" / "java" / "com" / "example" / "A.java"
@@ -222,42 +313,241 @@ def test_execute_refactor_action_writes_eliot_subactions(tmp_path, monkeypatch):
         detection_reason = "test"
         line_number = 1
 
-    before_module = types.SimpleNamespace(
-        ChatLiteLLM=lambda model: types.SimpleNamespace(
-            invoke=lambda _messages: types.SimpleNamespace(
-                content="package com.example;\npublic class A { int x; int y; }\n"
+    class FakeStructuredModel:
+        def invoke(self, _messages):
+            return workflow_module.JavaRefactorOutput(
+                java_source="package com.example;\npublic class A { int x; int y; }\n",
+                refactoring_summary="Added a field for test coverage.",
             )
-        )
-    )
 
-    monkeypatch.setitem(sys.modules, "langchain_litellm", before_module)
+    class FakeModel:
+        def with_structured_output(self, schema, *, method="json_schema"):
+            assert schema is workflow_module.JavaRefactorOutput
+            assert method == "function_calling"
+            return FakeStructuredModel()
+
+    workflow_module._structured_refactor_model.cache_clear()
+    monkeypatch.setattr(workflow_module, "make_openrouter_chat_model", lambda _model: FakeModel())
 
     def fake_diff_run(cmd, *args, **kwargs):
+        if cmd[:2] == ["sg", "-p"]:
+            return types.SimpleNamespace(
+                returncode=0,
+                stdout='[{"range":{"start":{"line":0},"end":{"line":0}}}]',
+                stderr="",
+            )
         assert cmd[:2] == ["git", "diff"]
-        return types.SimpleNamespace(returncode=0, stdout="diff --git a/A.java b/A.java\n")
+        return types.SimpleNamespace(returncode=0, stdout="diff --git a/A.java b/A.java\n", stderr="")
 
     monkeypatch.setattr(workflow_module.subprocess, "run", fake_diff_run)
 
-    log_path = tmp_path / "eliot_refactor.jsonl"
-    with log_path.open("wb") as handle:
-        destination = FileDestination(handle)
-        Logger._destinations.add(destination)
-        try:
-            ok, modified = workflow_module._execute_refactor_action(repo, 0, FakeSmell(), "extract", "test-model")
-        finally:
-            Logger._destinations.remove(destination)
+    action_types: list[str] = []
+
+    class FakeAction:
+        def addSuccessFields(self, **_kwargs):
+            return None
+
+    @contextmanager
+    def fake_start_action(action_type, **kwargs):
+        action_types.append(action_type)
+        yield FakeAction()
+
+    monkeypatch.setattr(workflow_module, "start_action", fake_start_action)
+    ok, modified_files, reason = workflow_module._execute_refactor_action(repo, 0, FakeSmell(), "extract", "test-model", "file")
 
     assert ok is True
-    assert modified == source
-
-    events = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines() if line.strip()]
-    action_types = {event["action_type"] for event in events if "action_type" in event}
+    assert modified_files == [source]
+    assert reason == "execution_ok"
 
     assert "llm_refactor" in action_types
     assert "resolve_refactor_target" in action_types
+    assert "preflight_refactor_target" in action_types
     assert "import_llm_client" in action_types
     assert "read_refactor_source" in action_types
     assert "llm_refactor_call" in action_types
-    assert "parse_refactor_llm_output" in action_types
+    assert "validate_refactor_output" in action_types
     assert "write_refactor_output" in action_types
     assert "verify_refactor_diff" in action_types
+
+
+def test_invoke_refactor_llm_falls_back_to_json_schema(monkeypatch):
+    calls: list[str] = []
+
+    class FakeModel:
+        def __init__(self, method: str) -> None:
+            self.method = method
+
+        def invoke(self, _messages: list[dict[str, str]]) -> str | None:
+            calls.append(self.method)
+            if self.method == "function_calling":
+                return None
+            return '{"java_source": "package p; public class A {}", "refactoring_summary": "Fallback JSON"}'
+
+    monkeypatch.setattr(workflow_module, "_structured_refactor_model", lambda _name, method: FakeModel(method))
+
+    output = workflow_module._invoke_refactor_llm("test-model", [{"role": "user", "content": "x"}])
+
+    assert output.java_source.strip().startswith("package p;")
+    assert calls == ["function_calling", "json_schema"]
+
+
+def test_execute_refactor_action_file_scope_move_method_is_not_blocked(tmp_path, monkeypatch):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    source = repo / "src" / "main" / "java" / "com" / "example" / "A.java"
+    source.parent.mkdir(parents=True)
+    source.write_text("package com.example;\npublic class A { int x; }", encoding="utf-8")
+
+    class FakeSmell:
+        smell_id = "src/main/java/com/example/A.java:1:0"
+        file_path = str(source)
+        smell_type = "Feature Envy"
+        severity = 1
+        detection_reason = "test"
+        line_number = 1
+
+    def fake_invoke(_model: str, _messages: list[dict[str, str]]) -> workflow_module.JavaRefactorOutput:
+        return workflow_module.JavaRefactorOutput(
+            java_source="package com.example;\npublic class A { int y; }",
+            refactoring_summary="refactored",
+        )
+
+    def fake_run(cmd, *args, **kwargs):
+        if cmd[:2] == ["sg", "-p"]:
+            return types.SimpleNamespace(returncode=1, stdout="", stderr="")
+        assert cmd[:2] == ["git", "diff"]
+        return types.SimpleNamespace(returncode=0, stdout="diff", stderr="")
+
+    monkeypatch.setattr(workflow_module, "_invoke_refactor_llm", fake_invoke)
+    monkeypatch.setattr(workflow_module.subprocess, "run", fake_run)
+
+    ok, modified_files, reason = workflow_module._execute_refactor_action(
+        repo,
+        0,
+        FakeSmell(),
+        "Move Method",
+        "test-model",
+        "file",
+    )
+
+    assert ok is True
+    assert modified_files == [source]
+    assert reason == "execution_ok"
+
+
+def test_execute_refactor_action_project_scope_allows_multiple_files(tmp_path, monkeypatch):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    source_a = repo / "src" / "main" / "java" / "com" / "example" / "A.java"
+    source_b = repo / "src" / "main" / "java" / "com" / "example" / "B.java"
+    source_a.parent.mkdir(parents=True)
+    source_b.parent.mkdir(parents=True, exist_ok=True)
+    source_a.write_text("package com.example;\npublic class A { int x; }", encoding="utf-8")
+    source_b.write_text("package com.example;\npublic class B { int y; }", encoding="utf-8")
+
+    class FakeSmell:
+        smell_id = "src/main/java/com/example/A.java:1:0"
+        file_path = str(source_a)
+        smell_type = "Feature Envy"
+        severity = 1
+        detection_reason = "test"
+        line_number = 1
+
+    def fake_invoke(_model: str, _messages: list[dict[str, str]]) -> workflow_module.JavaRefactorOutput:
+        return workflow_module.JavaRefactorOutput(
+            files=[
+                RefactorFilePatch(file_path="src/main/java/com/example/A.java", java_source="package com.example;\npublic class A { int a; }"),
+                RefactorFilePatch(file_path="src/main/java/com/example/B.java", java_source="package com.example;\npublic class B { int b; }"),
+            ],
+            refactoring_summary="multi-file refactor",
+        )
+
+    def fake_run(cmd, *args, **kwargs):
+        if cmd[:2] == ["sg", "-p"]:
+            return types.SimpleNamespace(returncode=1, stdout="", stderr="")
+        assert cmd[:2] == ["git", "diff"]
+        assert "src/main/java/com/example/A.java" in cmd
+        assert "src/main/java/com/example/B.java" in cmd
+        return types.SimpleNamespace(returncode=0, stdout="diff", stderr="")
+
+    monkeypatch.setattr(workflow_module, "_invoke_refactor_llm", fake_invoke)
+    monkeypatch.setattr(workflow_module.subprocess, "run", fake_run)
+
+    ok, modified_files, reason = workflow_module._execute_refactor_action(
+        repo,
+        0,
+        FakeSmell(),
+        "Move Method",
+        "test-model",
+        "project",
+    )
+
+    assert ok is True
+    assert set(modified_files) == {source_a, source_b}
+    assert source_a.read_text(encoding="utf-8").startswith("package com.example;")
+    assert source_b.read_text(encoding="utf-8").startswith("package com.example;")
+    assert reason == "execution_ok"
+
+
+def test_execute_refactor_action_labels_no_change(tmp_path, monkeypatch):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    source = repo / "src" / "main" / "java" / "com" / "example" / "A.java"
+    source.parent.mkdir(parents=True)
+    source.write_text("package com.example;\npublic class A { int x; }", encoding="utf-8")
+
+    class FakeSmell:
+        smell_id = "src/main/java/com/example/A.java:1:0"
+        file_path = str(source)
+        smell_type = "LongMethod"
+        severity = 1
+        detection_reason = "test"
+        line_number = 1
+
+    monkeypatch.setattr(workflow_module, "_resolve_smell_file", lambda _repo, _smell: source)
+    monkeypatch.setattr(workflow_module, "_preflight_refactor_target", lambda _repo, _target_file, _smell: True)
+
+    def fake_run(cmd, *args, **kwargs):
+        if cmd[:2] == ["sg", "-p"]:
+            return types.SimpleNamespace(returncode=1, stdout="", stderr="")
+        assert cmd[:2] == ["git", "diff"]
+        return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(workflow_module.subprocess, "run", fake_run)
+
+    action_types: list[str] = []
+
+    class FakeAction:
+        def addSuccessFields(self, **_kwargs):
+            return None
+
+    @contextmanager
+    def fake_start_action(action_type, **kwargs):
+        action_types.append(action_type)
+        yield FakeAction()
+
+    monkeypatch.setattr(workflow_module, "start_action", fake_start_action)
+
+    class FakeStructured:
+        def invoke(self, _messages):
+            return workflow_module.JavaRefactorOutput(java_source=source.read_text(), refactoring_summary="noop")
+
+    class FakeModel:
+        def with_structured_output(self, _schema, *, method="function_calling"):
+            return FakeStructured()
+
+    monkeypatch.setattr(workflow_module, "make_openrouter_chat_model", lambda _model: FakeModel())
+    workflow_module._structured_refactor_model.cache_clear()
+
+    ok, modified_files, reason = workflow_module._execute_refactor_action(
+        repo,
+        0,
+        FakeSmell(),
+        "extract",
+        "test-model",
+        "file",
+    )
+
+    assert ok is False
+    assert modified_files == []
+    assert reason == "llm_no_change"

@@ -1,0 +1,46 @@
+{
+  "episodes": [
+    {
+      "case_id": "range:Lyra:1c3759b07dc2",
+      "project": "Lyra",
+      "elements": [
+        "net.jodah.lyra.internal.ChannelRecoveryTest",
+        "net.jodah.lyra.internal.ChannelRecoveryTest.shouldHandleNonRetryableChannelClosure()",
+        "net.jodah.lyra.internal.ChannelRecoveryTest.shouldHandleNonRetryableConnectionClosure()",
+        "net.jodah.lyra.internal.ChannelRecoveryTest.shouldHandleRetryableChannelClosure()",
+        "net.jodah.lyra.internal.ChannelRecoveryTest.shouldHandleRetryableConnectionClosure()",
+        "net.jodah.lyra.internal.ChannelRecoveryTest.verifyChannelFailure()",
+        "net.jodah.lyra.internal.ChannelRecoveryTest.verifyConnectionFailure()"
+      ],
+      "meta": {
+        "start_commit_hash": "3f49cbffff020134239962f1001b168c43c58acb",
+        "start_commit_order": 20,
+        "end_commit_hash": "36bac28f84e84010e9592acd7c96cfc5d10d290b",
+        "end_commit_order": 21,
+        "repo_url": "https://github.com/jhalterman/lyra"
+      }
+    },
+    {
+      "case_id": "range:PhiCode Philib:649b775c08bf",
+      "project": "PhiCode Philib",
+      "elements": [
+        "ch.bind.philib.msg.vm.PubSubVMTest",
+        "ch.bind.philib.msg.vm.PubSubVMTest.asyncMessages()",
+        "ch.bind.philib.msg.vm.PubSubVMTest.asyncMessagesTwoSubscribers()",
+        "ch.bind.philib.msg.vm.PubSubVMTest.emptyPublish()",
+        "ch.bind.philib.msg.vm.PubSubVMTest.publishToTwoSubscribers()",
+        "ch.bind.philib.msg.vm.PubSubVMTest.ring()",
+        "ch.bind.philib.msg.vm.PubSubVMTest.standardPublish()",
+        "ch.bind.philib.msg.vm.PubSubVMTest.syncEmptyPublish()",
+        "ch.bind.philib.msg.vm.PubSubVMTest.syncMessagesTwoSubscribers()"
+      ],
+      "meta": {
+        "start_commit_hash": "a132ad528a176bc7ba6082999c270549e7956c23",
+        "start_commit_order": 748,
+        "end_commit_hash": "a3552e5191b78bf528cf3b0f74dda8067710eaea",
+        "end_commit_order": 749,
+        "repo_url": "https://github.com/PhiCode/philib"
+      }
+    }
+  ]
+}

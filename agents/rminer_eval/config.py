@@ -1,4 +1,7 @@
-"""Configuration for RMiner Evaluation Agent."""
+"""DEPRECATED: Configuration for RMiner Evaluation Agent.
+
+Use Composite Refactorings 2020 flow instead (DatasetGraph.composite_refactoring + planner_eval_workflow).
+"""
 
 from dataclasses import dataclass
 

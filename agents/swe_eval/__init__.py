@@ -1,4 +1,11 @@
-"""LangGraph agent for SWE-Refactor evaluation."""
+"""DEPRECATED: LangGraph agent for SWE-Refactor evaluation.
+
+Use Composite Refactorings 2020 flow instead:
+- dataset.neo4j_graph.DatasetGraph.composite_refactoring(...)
+- workflows/planner_eval_workflow.py
+
+This module is kept for backward compatibility and will be removed in a future cleanup.
+"""
 
 from .config import SWEEvalAgentConfig, DEFAULT_CONFIG
 from .prompts import get_refactoring_prompt, SYSTEM_PROMPT

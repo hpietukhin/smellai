@@ -1,0 +1,293 @@
+{
+  "batch_name": "safe-maven-range-2026-05-04",
+  "generated_at": "2026-05-04T17:45:12.466833Z",
+  "selection_policy": {
+    "heuristic": "range",
+    "requested_projects": [
+      "JUnit4",
+      "Lyra",
+      "OkHttp",
+      "PhiCode Philib",
+      "Tap4j"
+    ],
+    "projects": [
+      "JUnit4",
+      "Lyra",
+      "PhiCode Philib",
+      "Tap4j"
+    ],
+    "excluded_projects": {
+      "OkHttp": "excluded from batch generation: historical compatibility/patch target"
+    },
+    "limit_per_project": 1,
+    "requires_baseline_verification": true
+  },
+  "cases": [
+    {
+      "case_id": "range:Lyra:1c3759b07dc2",
+      "project": "Lyra",
+      "elements": [
+        "net.jodah.lyra.internal.ChannelRecoveryTest",
+        "net.jodah.lyra.internal.ChannelRecoveryTest.shouldHandleNonRetryableChannelClosure()",
+        "net.jodah.lyra.internal.ChannelRecoveryTest.shouldHandleNonRetryableConnectionClosure()",
+        "net.jodah.lyra.internal.ChannelRecoveryTest.shouldHandleRetryableChannelClosure()",
+        "net.jodah.lyra.internal.ChannelRecoveryTest.shouldHandleRetryableConnectionClosure()",
+        "net.jodah.lyra.internal.ChannelRecoveryTest.verifyChannelFailure()",
+        "net.jodah.lyra.internal.ChannelRecoveryTest.verifyConnectionFailure()"
+      ],
+      "start_commit_hash": "3f49cbffff020134239962f1001b168c43c58acb",
+      "start_commit_order": 20,
+      "end_commit_hash": "36bac28f84e84010e9592acd7c96cfc5d10d290b",
+      "end_commit_order": 21,
+      "start_state": {
+        "smells_total": 4,
+        "elements_with_smell": 4,
+        "smell_types": [
+          "FeatureEnvy"
+        ]
+      },
+      "range_metadata": {
+        "heuristic": "range",
+        "anchor_element": "net.jodah.lyra.internal.ChannelRecoveryTest",
+        "developer": "jhalterman@gmail.com",
+        "ref_count": 4,
+        "scope_size": 7,
+        "ref_ids": [
+          "3019d4c7e6641732039fbf1d522a7dca",
+          "4ee67700a33c340f8543db23f162eb36",
+          "784ae652b344773873067e3c5247ec00",
+          "cdc7bbb23323b085f7217d0da7baa5aa"
+        ],
+        "ref_types": [
+          "Extract Method"
+        ],
+        "selected_start_elements_count": 7,
+        "selected_start_smells": 4,
+        "selected_start_elements_with_smell": 4,
+        "smells_after": 2,
+        "smell_delta_abs": 2,
+        "smell_set_delta_size": 6,
+        "scope_smells_before": 4,
+        "scope_smells_after": 2,
+        "scope_smell_delta_abs": 2,
+        "scope_smell_set_delta_size": 6,
+        "start_dataset_commit_id": "dbc70ca6cf3caf94f17b0180dd05719f",
+        "end_dataset_commit_id": "c13b0ad732c520beb8a3399188f746bf",
+        "outlier_percentile": 0.95,
+        "outlier_cutoffs": {
+          "ref_count": 4,
+          "scope_size": 7,
+          "smell_delta_abs": 3
+        }
+      },
+      "repo_url": "https://github.com/jhalterman/lyra",
+      "commit_build_system_window": {
+        "repo_url": "https://github.com/jhalterman/lyra",
+        "project": "Lyra",
+        "start_commit_order": 20,
+        "end_commit_order": 21,
+        "commit_count": 2,
+        "all_maven": true,
+        "first_non_maven_order": null,
+        "first_non_maven_hash": null,
+        "first_non_maven_primary": null
+      },
+      "baseline_verification": {
+        "status": "passed",
+        "details": "baseline build/test passed",
+        "build_system": "maven",
+        "command": "mvn -Dtest=RetryPolicyTest,ChannelClosureTest,ConnectionFactoryInvocationTest,ChannelHandlerTest,ConnectionFactoryRecoveryTest,InterruptableWaiterTest,ConnectionRecoveryTest,RetryStatsTest,ChannelConfigTest,ChannelInvocationTest,ConnectionClosureTest,ReentrantCircuitTest,ConnectionInvocationTest test",
+        "command_source": "evals/maven_setup.md",
+        "llm_repair": null,
+        "pre_repair_exit_code": null,
+        "exit_code": 0,
+        "tests_total": 55,
+        "tests_failed": 0,
+        "tests_errors": 0,
+        "tests_skipped": 0,
+        "patches_applied": true
+      }
+    },
+    {
+      "case_id": "range:PhiCode Philib:649b775c08bf",
+      "project": "PhiCode Philib",
+      "elements": [
+        "ch.bind.philib.msg.vm.PubSubVMTest",
+        "ch.bind.philib.msg.vm.PubSubVMTest.asyncMessages()",
+        "ch.bind.philib.msg.vm.PubSubVMTest.asyncMessagesTwoSubscribers()",
+        "ch.bind.philib.msg.vm.PubSubVMTest.emptyPublish()",
+        "ch.bind.philib.msg.vm.PubSubVMTest.publishToTwoSubscribers()",
+        "ch.bind.philib.msg.vm.PubSubVMTest.ring()",
+        "ch.bind.philib.msg.vm.PubSubVMTest.standardPublish()",
+        "ch.bind.philib.msg.vm.PubSubVMTest.syncEmptyPublish()",
+        "ch.bind.philib.msg.vm.PubSubVMTest.syncMessagesTwoSubscribers()"
+      ],
+      "start_commit_hash": "a132ad528a176bc7ba6082999c270549e7956c23",
+      "start_commit_order": 748,
+      "end_commit_hash": "a3552e5191b78bf528cf3b0f74dda8067710eaea",
+      "end_commit_order": 749,
+      "start_state": {
+        "smells_total": 3,
+        "elements_with_smell": 3,
+        "smell_types": [
+          "ClassDataShouldBePrivate",
+          "FeatureEnvy"
+        ]
+      },
+      "range_metadata": {
+        "heuristic": "range",
+        "anchor_element": "ch.bind.philib.msg.vm.PubSubVMTest",
+        "developer": "philipp@bind.ch",
+        "ref_count": 4,
+        "scope_size": 9,
+        "ref_ids": [
+          "2fc9f611b4b90f9d77e0c3ea8f6648f8",
+          "6949f761ed4501ef4646e37bc828e5d3",
+          "78baacb3bdf02ecc9a538af5ddec5f17",
+          "9df370dfb6ca2486a1809275dc27aa67"
+        ],
+        "ref_types": [
+          "Rename Method"
+        ],
+        "selected_start_elements_count": 9,
+        "selected_start_smells": 3,
+        "selected_start_elements_with_smell": 3,
+        "smells_after": 2,
+        "smell_delta_abs": 1,
+        "smell_set_delta_size": 3,
+        "scope_smells_before": 3,
+        "scope_smells_after": 2,
+        "scope_smell_delta_abs": 1,
+        "scope_smell_set_delta_size": 3,
+        "start_dataset_commit_id": "a128da50f3b1735b9d42d882ad81b5b3",
+        "end_dataset_commit_id": "6954ee0f423930693d07727f07097acd",
+        "outlier_percentile": 0.95,
+        "outlier_cutoffs": {
+          "ref_count": 4,
+          "scope_size": 9,
+          "smell_delta_abs": 4
+        }
+      },
+      "repo_url": "https://github.com/PhiCode/philib",
+      "commit_build_system_window": {
+        "repo_url": "https://github.com/PhiCode/philib",
+        "project": "PhiCode Philib",
+        "start_commit_order": 748,
+        "end_commit_order": 749,
+        "commit_count": 2,
+        "all_maven": true,
+        "first_non_maven_order": null,
+        "first_non_maven_hash": null,
+        "first_non_maven_primary": null
+      },
+      "baseline_verification": {
+        "status": "passed",
+        "details": "baseline build/test passed",
+        "build_system": "maven",
+        "command": "mvn test",
+        "command_source": "evals/maven_setup.md",
+        "llm_repair": null,
+        "pre_repair_exit_code": null,
+        "exit_code": 0,
+        "tests_total": 362,
+        "tests_failed": 0,
+        "tests_errors": 0,
+        "tests_skipped": 0,
+        "patches_applied": true
+      }
+    },
+    {
+      "case_id": "range:Tap4j:dd9f29c1c4de",
+      "project": "Tap4j",
+      "elements": [
+        "org.tap4j.parser.Tap13Parser",
+        "org.tap4j.parser.Tap13Parser.checkIndentationLevel(int,String)",
+        "org.tap4j.parser.Tap13Parser.onComment(String)",
+        "org.tap4j.parser.Tap13Parser.onFinish()",
+        "org.tap4j.parser.Tap13Parser.onHeader(int,String)",
+        "org.tap4j.parser.Tap13Parser.onPlan(int,int,String,String)",
+        "org.tap4j.parser.Tap13Parser.parseLine(String)",
+        "org.tap4j.parser.Tap13Parser.popMemento()"
+      ],
+      "start_commit_hash": "fb2451c64b4d78d1db062eac6695dab2fe1af2a2",
+      "start_commit_order": 85,
+      "end_commit_hash": "f444bc29badff0d0302872b7d6d262410426b366",
+      "end_commit_order": 86,
+      "start_state": {
+        "smells_total": 8,
+        "elements_with_smell": 4,
+        "smell_types": [
+          "BrainClass",
+          "BrainMethod",
+          "ComplexClass",
+          "FeatureEnvy",
+          "IntensiveCoupling",
+          "LongMethod",
+          "LongParameterList"
+        ]
+      },
+      "range_metadata": {
+        "heuristic": "range",
+        "anchor_element": "org.tap4j.parser.Tap13Parser",
+        "developer": "jakub.podlesak@oracle.com",
+        "ref_count": 5,
+        "scope_size": 8,
+        "ref_ids": [
+          "4552ca710bd6f51f38072b3e8dd3ffaf",
+          "56c8f66fbca72510736b2e529ec61e78",
+          "ae3aa2ba2b184150790ff6b0653eb736",
+          "ae85c0505ef031e9159a34d05207eb7b",
+          "be2a887bfb55a2878bab7e3d3f2abaa9"
+        ],
+        "ref_types": [
+          "Inline Method"
+        ],
+        "selected_start_elements_count": 8,
+        "selected_start_smells": 8,
+        "selected_start_elements_with_smell": 4,
+        "smells_after": 5,
+        "smell_delta_abs": 3,
+        "smell_set_delta_size": 3,
+        "scope_smells_before": 8,
+        "scope_smells_after": 5,
+        "scope_smell_delta_abs": 3,
+        "scope_smell_set_delta_size": 3,
+        "start_dataset_commit_id": "ab70aa4fcd845432f85a39aa3ef0823d",
+        "end_dataset_commit_id": "98eb5c10b55ba8ca5b1734bebbde5677",
+        "outlier_percentile": 0.95,
+        "outlier_cutoffs": {
+          "ref_count": 5,
+          "scope_size": 8,
+          "smell_delta_abs": 3
+        }
+      },
+      "repo_url": "https://github.com/tupilabs/tap4j",
+      "commit_build_system_window": {
+        "repo_url": "https://github.com/tupilabs/tap4j",
+        "project": "Tap4j",
+        "start_commit_order": 85,
+        "end_commit_order": 86,
+        "commit_count": 2,
+        "all_maven": true,
+        "first_non_maven_order": null,
+        "first_non_maven_hash": null,
+        "first_non_maven_primary": null
+      },
+      "baseline_verification": {
+        "status": "passed",
+        "details": "baseline build/test passed",
+        "build_system": "maven",
+        "command": "mvn clean test",
+        "command_source": "evals/maven_setup.md",
+        "llm_repair": null,
+        "pre_repair_exit_code": null,
+        "exit_code": 0,
+        "tests_total": 160,
+        "tests_failed": 0,
+        "tests_errors": 0,
+        "tests_skipped": 0,
+        "patches_applied": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "description": "Full composite workflow batch over the generated safe Maven runnable batch list (all cases). Refactoring is mandatory and allows multi-file refactorings using the Java refactorer. Uses OpenRouter MiniMax via LiteLLM.",
+  "workflow": {
+    "env_file": ".env",
+    "batch_list": "outputs/evals/safe_maven_range_batch_list_all.json",
+    "experiment": "composite_workflow_full",
+    "run_name_prefix": "safe-maven-range-openrouter-minimax-m27",
+    "planner": "befs",
+    "detector_backend": "organic",
+    "locality": "none",
+    "refactor_scope": "project",
+    "refactor_model": "openrouter/minimax/minimax-m2.7",
+    "concurrency": 2,
+    "max_steps": 5,
+    "max_no_progress": 2,
+    "retry_budget": 1,
+    "timeout": 300,
+    "tracking_uri": "http://localhost:5000",
+    "mlflow_healthcheck_experiment": "planner-eval",
+    "eval_patch_script": "scripts/apply_eval_project_patches.sh"
+  }
+}

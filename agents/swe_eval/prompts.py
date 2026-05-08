@@ -1,4 +1,7 @@
-"""Prompt templates for refactoring generation by type."""
+"""DEPRECATED: Prompt templates for SWE refactoring generation by type.
+
+Use Composite Refactorings 2020 extraction + planner evaluation instead.
+"""
 
 SYSTEM_PROMPT = """You are an expert Java refactoring assistant.
 
@@ -11,6 +14,12 @@ Key requirements:
 - Maintain proper indentation and formatting
 - Do NOT add comments explaining the refactoring
 - Do NOT add extra features or improvements beyond the refactoring
+
+Tool/back-end preference (safe advisory, not forced):
+- For structural refactorings (e.g., Rename Method, Move Method, Extract/Move Class), prefer Spoon-based execution (`run_spoon_refactor`).
+- For local syntax-tree rewrites (e.g., Rename Local Variable, simple logger replacement), prefer ast-grep rewrites (`run_ast_grep_rewrite_git_safe`).
+- If structural tooling is unavailable, fallback to simple textual patch (`replace_in_file_git_safe`) and report limitation.
+- Prefer git-safe tools so every edit is rollback-able (`git reset --hard <previous_sha>`).
 """
 
 

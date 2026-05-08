@@ -5,6 +5,7 @@ Public API
 EvalSample, DatasetSource   — unified evaluation-sample schema
 load_swe_raw_df             — raw SWE-Refactor DataFrame (for inspection)
 load_rminer_raw_df          — raw RMiner oracle DataFrame (for inspection)
+load_tdd_raw_df             — raw TDD v2 issue-event DataFrame
 load_eval_samples           — list[EvalSample] from one or more sources
 load_eval_df                — MLflow-ready DataFrame
 enrich_swe_with_sonar       — optional SonarQube enrichment for SWE samples
@@ -16,6 +17,7 @@ from .schema import DatasetSource, EvalSample
 from .loaders import (
     load_rminer_raw_df,
     load_swe_raw_df,
+    load_tdd_raw_df,
     load_eval_samples,
     load_eval_df,
 )
@@ -27,6 +29,7 @@ __all__ = [
     "EvalSample",
     "load_rminer_raw_df",
     "load_swe_raw_df",
+    "load_tdd_raw_df",
     "load_eval_samples",
     "load_eval_df",
     "enrich_swe_with_sonar",

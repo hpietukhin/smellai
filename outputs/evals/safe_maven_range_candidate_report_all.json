@@ -1,0 +1,77 @@
+{
+  "batch_name": "safe-maven-range-2026-05-04",
+  "generated_at": "2026-05-04T17:45:12.466833Z",
+  "selection_policy": {
+    "heuristic": "range",
+    "requested_projects": [
+      "JUnit4",
+      "Lyra",
+      "OkHttp",
+      "PhiCode Philib",
+      "Tap4j"
+    ],
+    "projects": [
+      "JUnit4",
+      "Lyra",
+      "PhiCode Philib",
+      "Tap4j"
+    ],
+    "excluded_projects": {
+      "OkHttp": "excluded from batch generation: historical compatibility/patch target"
+    },
+    "limit_per_project": 1,
+    "requires_baseline_verification": true
+  },
+  "summary": {
+    "raw_candidates": 4,
+    "accepted": 3,
+    "rejected": 2
+  },
+  "accepted_cases": [
+    {
+      "case_id": "range:Lyra:1c3759b07dc2",
+      "project": "Lyra",
+      "start_commit_hash": "3f49cbffff020134239962f1001b168c43c58acb",
+      "reason": "baseline_verified"
+    },
+    {
+      "case_id": "range:PhiCode Philib:649b775c08bf",
+      "project": "PhiCode Philib",
+      "start_commit_hash": "a132ad528a176bc7ba6082999c270549e7956c23",
+      "reason": "baseline_verified"
+    },
+    {
+      "case_id": "range:Tap4j:dd9f29c1c4de",
+      "project": "Tap4j",
+      "start_commit_hash": "fb2451c64b4d78d1db062eac6695dab2fe1af2a2",
+      "reason": "baseline_verified"
+    }
+  ],
+  "rejected_cases": [
+    {
+      "case_id": null,
+      "project": "OkHttp",
+      "start_commit_hash": null,
+      "reason": "project_excluded",
+      "details": "excluded from batch generation: historical compatibility/patch target"
+    },
+    {
+      "case_id": "range:JUnit4:6349639b4e84",
+      "project": "JUnit4",
+      "start_commit_hash": "d3b3a19c78435ef6b0d1c8832bcdb1a8d5ed6a4e",
+      "reason": "unsupported_commit_build_system_window",
+      "details": "candidate window is not fully maven; first non-maven commit at order 108 uses ant",
+      "commit_build_system_window": {
+        "repo_url": "https://github.com/junit-team/junit4",
+        "project": "JUnit4",
+        "start_commit_order": 108,
+        "end_commit_order": 109,
+        "commit_count": 2,
+        "all_maven": false,
+        "first_non_maven_order": 108,
+        "first_non_maven_hash": "d3b3a19c78435ef6b0d1c8832bcdb1a8d5ed6a4e",
+        "first_non_maven_primary": "ant"
+      }
+    }
+  ]
+}

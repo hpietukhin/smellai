@@ -77,7 +77,7 @@ def _print_result(result: dict, as_json: bool) -> None:
 def main(
     project: str,
     no_clean: bool = False,
-    timeout: int = 300,
+    timeout: int = 2,
     verbose: bool = False,
     json: bool = False,
 ) -> int:

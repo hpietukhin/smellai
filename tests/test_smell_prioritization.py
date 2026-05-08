@@ -4,8 +4,9 @@ Test for smell prioritization logic.
 
 Tests that the SmellPrioritizer correctly:
 1. Creates SmellEvent objects usable in-memory (no DB session needed)
-2. Calculates PZ scores (severity + positive impact * 2)
+2. Calculates PZ scores via Eq. 2
 3. Returns smells ordered by highest PZ score first
+4. Greedy planner resolves positive dependencies (fewer steps)
 """
 
 import pytest
@@ -44,8 +45,8 @@ def test_severity_score_mapping():
     assert _smell("5", "Test", "loc", "LOW").severity_score == 1
 
 
-def test_prioritization_calculates_pz_correctly():
-    """Test priority score follows spec formula: P = freq * w_sev * sev + pos_out - w_neg * neg_out."""
+def test_prioritization_picks_long_method_first():
+    """LM has highest score (positive deps to Dup.Code + Complex Method)."""
     smells = [
         _smell("1", "Long Method",     "OrderProcessor.java", "HIGH"),
         _smell("2", "Duplicated Code", "OrderProcessor.java", "MEDIUM"),
@@ -55,15 +56,29 @@ def test_prioritization_calculates_pz_correctly():
     prioritizer = SmellPrioritizer(smells)
     sequence = prioritizer.calculate_priorities()
 
-    # Long Method: freq=1, w_sev=0.33, sev=3, pos_out=1 (Dup.Code), neg_out=0
-    # P = 1 * 0.33 * 3 + 1 - 0.5 * 0 = 1.99  (highest of the three)
-    assert len(sequence) == 3
+    # LM resolves Dup.Code and Complex Method via positive deps → 1 step
     assert sequence[0]["smell_type"] == "Long Method"
-    assert sequence[0]["pz_score"] > sequence[1]["pz_score"]
+    assert sequence[0]["pz_score"] > 0
+
+
+def test_prioritization_resolves_positive_deps_in_fewer_steps():
+    """Greedy with transition: resolving LM also resolves its positive neighbors."""
+    smells = [
+        _smell("1", "Long Method",     "OrderProcessor.java", "HIGH"),
+        _smell("2", "Duplicated Code", "OrderProcessor.java", "MEDIUM"),
+        _smell("3", "Complex Method",  "OrderProcessor.java", "MEDIUM"),
+    ]
+
+    prioritizer = SmellPrioritizer(smells)
+    sequence = prioritizer.calculate_priorities()
+
+    # LM positive deps include Dup.Code and Complex Method (same file, locality=none)
+    # So greedy resolves all 3 in 1 step
+    assert len(sequence) < 3
 
 
 def test_prioritization_returns_highest_pz_first():
-    """Test that smells are ordered by PZ score descending."""
+    """Test that first step has the highest PZ score."""
     smells = [
         _smell("1", "God Class",       "ReportGenerator.java", "CRITICAL"),
         _smell("2", "Long Method",     "ReportGenerator.java", "HIGH"),
@@ -75,35 +90,28 @@ def test_prioritization_returns_highest_pz_first():
     prioritizer = SmellPrioritizer(smells)
     sequence = prioritizer.calculate_priorities()
 
-    pz_scores = [item["pz_score"] for item in sequence]
-    assert pz_scores == sorted(pz_scores, reverse=True), (
-        f"Expected descending PZ scores, got: {pz_scores}"
-    )
-    assert sequence[0]["smell_type"] in ["God Class", "Large Class"], (
-        f"Expected high-priority smell first, got: {sequence[0]['smell_type']}"
-    )
+    # First action should be highest-scoring smell
+    assert len(sequence) > 0
+    assert sequence[0]["smell_type"] in ["God Class", "Long Method"]
 
 
 def test_prioritization_considers_dependencies():
-    """Test that positive dependencies increase PZ score."""
+    """LM with higher severity scores more than DC with lower severity."""
     smells = [
-        _smell("1", "Long Method",    "Test.java", "MEDIUM"),
-        _smell("2", "Duplicated Code","Test.java", "MEDIUM"),
+        _smell("1", "Long Method",    "Test.java", "HIGH"),     # sev=3
+        _smell("2", "Duplicated Code","Test.java", "MEDIUM"),   # sev=2
     ]
 
     prioritizer = SmellPrioritizer(smells)
     sequence = prioritizer.calculate_priorities()
 
-    long_method_item = next(s for s in sequence if s["smell_type"] == "Long Method")
-    duplicated_item  = next(s for s in sequence if s["smell_type"] == "Duplicated Code")
-
-    assert long_method_item["pz_score"] > duplicated_item["pz_score"], (
-        f"Long Method PZ ({long_method_item['pz_score']}) should be > Duplicated Code PZ ({duplicated_item['pz_score']})"
-    )
+    # LM has higher severity → picked first; resolves DC via positive dep → 1 step
+    assert sequence[0]["smell_type"] == "Long Method"
+    assert len(sequence) == 1
 
 
-def test_prioritization_ignores_different_files():
-    """Test that dependencies only apply within same file/class context."""
+def test_prioritization_mutual_positive_deps_resolve_in_one_step():
+    """When LM and DC have mutual positive deps, one step resolves both."""
     smells = [
         _smell("1", "Long Method",    "FileA.java", "HIGH"),
         _smell("2", "Duplicated Code","FileB.java", "HIGH"),
@@ -112,9 +120,8 @@ def test_prioritization_ignores_different_files():
     prioritizer = SmellPrioritizer(smells)
     sequence = prioritizer.calculate_priorities()
 
-    assert sequence[0]["pz_score"] == sequence[1]["pz_score"], (
-        "Different files should not have dependency relationships"
-    )
+    # With locality=none, LM↔DC have mutual positive deps → 1 step
+    assert len(sequence) == 1
 
 
 def test_prioritization_sequence_format():
@@ -149,7 +156,7 @@ def test_prioritization_sequence_format():
 
 
 def test_agent_integration_format():
-    """Test that SmellEvent objects are passed directly to SmellPrioritizer (no conversion needed)."""
+    """SmellEvent objects are passed directly to SmellPrioritizer."""
     detected_smells = [
         SmellEvent(
             smell_id="Long Method:OrderProcessor.java:23",
@@ -169,10 +176,14 @@ def test_agent_integration_format():
 
     prioritizer = SmellPrioritizer(detected_smells)
     priority_sequence = prioritizer.calculate_priorities()
-    priority_ids = [item["smell_id"] for item in priority_sequence]
 
-    assert len(priority_ids) == 2
-    assert priority_ids[0] == "Long Method:OrderProcessor.java:23"
+    # LM and CM have mutual positive deps → one step resolves both
+    assert len(priority_sequence) == 1
+    # Either can be picked first (same severity, mutual deps)
+    assert priority_sequence[0]["smell_id"] in (
+        "Long Method:OrderProcessor.java:23",
+        "Complex Method:OrderProcessor.java:23",
+    )
 
 
 if __name__ == "__main__":

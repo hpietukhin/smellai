@@ -3,7 +3,6 @@
   "workflow": {
     "batch_list": "outputs/evals/full_eval_candidates_3_batch_list.json",
     "experiment": "composite_workflow_full",
-    "run_name_prefix": "full-eval-openrouter-minimax-m27-file-only",
     "planner": "befs",
     "detector_backend": "organic",
     "locality": "none",

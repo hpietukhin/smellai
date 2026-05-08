@@ -1,4 +1,4 @@
-"""Tests for store package: SmellGraph, SmellStore, SmellDetector."""
+"""Tests for store package: DependencyGraph, SmellStore, SmellDetector."""
 
 from typing import TypedDict
 
@@ -13,7 +13,8 @@ from domain.detector import (
     StaticDetector,
 )
 from sonarqube.detector import SonarQubeDetector
-from domain.graph import SmellGraph
+from domain.dependency_graph import DependencyGraph
+from domain.refactoring_tree import RefactoringTree, State
 from store.smell_store import SmellStore
 from domain.models import SmellEvent
 
@@ -42,80 +43,42 @@ SAMPLES = [
 ]
 
 
-# === SmellGraph ===========================================================
+# === DependencyGraph ======================================================
 
 
-class TestSmellGraph:
-    def test_add_and_contains(self):
-        g = SmellGraph()
-        g.add_smell(_smell("s1"))
-        assert "s1" in g
-        assert len(g) == 1
+class TestDependencyGraphStore:
+    def test_from_events_contains_all(self):
+        dg = DependencyGraph.from_events(SAMPLES)
+        assert len(dg) == len(SAMPLES)
+        assert all(s.smell_id in dg for s in SAMPLES)
 
-    def test_remove_smell(self):
-        g = SmellGraph()
-        g.add_smell(_smell("s1"))
-        g.remove_smell("s1")
-        assert "s1" not in g
-        assert len(g) == 0
-
-    def test_remove_nonexistent_is_noop(self):
-        SmellGraph().remove_smell("nope")
-
-    def test_file_index(self):
-        g = SmellGraph()
-        g.add_smell(_smell("s1", file_path="A.java"))
-        g.add_smell(_smell("s2", file_path="A.java"))
-        g.add_smell(_smell("s3", file_path="B.java"))
-        assert set(g.smells_for_file("A.java")) == {"s1", "s2"}
-        assert g.smells_for_file("B.java") == ["s3"]
-        assert g.smells_for_file("C.java") == []
-
-    def test_file_index_after_remove(self):
-        g = SmellGraph()
-        g.add_smell(_smell("s1", file_path="A.java"))
-        g.add_smell(_smell("s2", file_path="A.java"))
-        g.remove_smell("s1")
-        assert g.smells_for_file("A.java") == ["s2"]
-
-    def test_dependencies(self):
-        g = SmellGraph()
-        g.add_smell(_smell("s1"))
-        g.add_smell(_smell("s2"))
-        g.add_smell(_smell("s3"))
-        g.add_dependency("s1", "s2", "positive")
-        g.add_dependency("s1", "s3", "negative")
-        assert g.positive_neighbors("s1") == ["s2"]
-        assert g.negative_neighbors("s1") == ["s3"]
-        assert g.successors("s1") == ["s2", "s3"]
-        assert g.predecessors("s2") == ["s1"]
-
-    def test_from_smells_wires_edges(self):
-        g = SmellGraph.from_smells(SAMPLES)
-        assert len(g) == len(SAMPLES)
-        pos = g.positive_neighbors("LM:A:10")
+    def test_positive_edges_same_file(self):
+        """LM:A:10 should have positive edge to LPL:A:20 (same file, default locality=none)."""
+        dg = DependencyGraph.from_events(SAMPLES)
+        pos = dg.positive_neighbors("LM:A:10")
         assert "LPL:A:20" in pos
-        assert g.positive_neighbors("LM:B:5") == []
+
+    def test_cross_file_no_edges_with_class_locality(self):
+        dg = DependencyGraph.from_events(SAMPLES, locality="class")
+        assert dg.positive_neighbors("LM:B:5") == []
 
     def test_serialization_roundtrip(self):
-        g = SmellGraph.from_smells(SAMPLES)
-        g2 = SmellGraph.from_dict(g.to_dict())
-        assert len(g2) == len(g)
-        assert set(g2.all_smell_ids()) == set(g.all_smell_ids())
-        assert g2.positive_neighbors("LM:A:10") == g.positive_neighbors("LM:A:10")
+        dg = DependencyGraph.from_events(SAMPLES)
+        dg2 = DependencyGraph.from_dict(dg.to_dict())
+        assert len(dg2) == len(dg)
+        assert set(dg2.all_smell_ids()) == set(dg.all_smell_ids())
+        assert dg2.positive_neighbors("LM:A:10") == dg.positive_neighbors("LM:A:10")
 
-    def test_calculate_priorities(self):
-        g = SmellGraph.from_smells(SAMPLES)
-        seq = g.calculate_priorities()
-        assert len(seq) == len(SAMPLES)
-        assert seq[0]["order"] == 1
-        ids = {item["smell_id"] for item in seq}
-        assert ids == {s.smell_id for s in SAMPLES}
+    def test_greedy_plan_covers_all_smells(self):
+        dg = DependencyGraph.from_events(SAMPLES)
+        initial = State(frozenset(s.smell_id for s in SAMPLES))
+        tree = RefactoringTree(initial, dg)
+        plan = tree.greedy()
+        assert plan.h_trace[-1] == 0
 
     def test_node_data(self):
-        g = SmellGraph()
-        g.add_smell(_smell("s1", severity="MEDIUM"))
-        d = g.node_data("s1")
+        dg = DependencyGraph.from_events([_smell("s1", severity="MEDIUM")])
+        d = dg.node_data("s1")
         assert d["severity"] == "MEDIUM"
         assert d["smell_type"] == "Long Method"
 
@@ -126,21 +89,21 @@ class TestSmellGraph:
 class TestSmellStore:
     def test_save_and_load_graph(self):
         ss = SmellStore(InMemoryStore())
-        g = SmellGraph.from_smells(SAMPLES)
-        ss.save_graph("sess1", g, iteration=3)
+        dg = DependencyGraph.from_events(SAMPLES)
+        ss.save_graph("sess1", dg, iteration=3)
 
         loaded = ss.load_graph("sess1")
         assert loaded is not None
-        assert len(loaded) == len(g)
-        assert set(loaded.all_smell_ids()) == set(g.all_smell_ids())
+        assert len(loaded) == len(dg)
+        assert set(loaded.all_smell_ids()) == set(dg.all_smell_ids())
 
     def test_load_nonexistent_returns_none(self):
         assert SmellStore(InMemoryStore()).load_graph("no_such") is None
 
     def test_meta(self):
         ss = SmellStore(InMemoryStore())
-        g = SmellGraph.from_smells(SAMPLES)
-        ss.save_graph("sess1", g, iteration=5)
+        dg = DependencyGraph.from_events(SAMPLES)
+        ss.save_graph("sess1", dg, iteration=5)
 
         meta = ss.get_meta("sess1")
         assert meta is not None
@@ -155,14 +118,11 @@ class TestSmellStore:
 
     def test_overwrite_graph(self):
         ss = SmellStore(InMemoryStore())
-        g1 = SmellGraph()
-        g1.add_smell(_smell("s1"))
-        ss.save_graph("sess1", g1)
+        dg1 = DependencyGraph.from_events([_smell("s1")])
+        ss.save_graph("sess1", dg1)
 
-        g2 = SmellGraph()
-        g2.add_smell(_smell("s2"))
-        g2.add_smell(_smell("s3"))
-        ss.save_graph("sess1", g2, iteration=1)
+        dg2 = DependencyGraph.from_events([_smell("s2"), _smell("s3", smell_type="God Class")])
+        ss.save_graph("sess1", dg2, iteration=1)
 
         loaded = ss.load_graph("sess1")
         assert len(loaded) == 2  # noqa: PLR2004
@@ -217,15 +177,17 @@ class TestLangGraphIntegration:
             priority_queue: list
 
         def prioritize_node(_state: S, *, store: BaseStore) -> dict:
-            graph = SmellStore(store).load_graph("int_test")
-            if graph is None:
+            dg = SmellStore(store).load_graph("int_test")
+            if dg is None:
                 return {"priority_queue": []}
-            seq = graph.calculate_priorities()
-            return {"priority_queue": [p["smell_id"] for p in seq]}
+            initial = State(frozenset(dg.all_smell_ids()))
+            tree = RefactoringTree(initial, dg)
+            plan = tree.greedy()
+            return {"priority_queue": [a.smell_id for a in plan.actions]}
 
         raw_store = InMemoryStore()
         SmellStore(raw_store).save_graph(
-            "int_test", SmellGraph.from_smells(SAMPLES),
+            "int_test", DependencyGraph.from_events(SAMPLES),
         )
 
         builder = StateGraph(S)
@@ -235,4 +197,4 @@ class TestLangGraphIntegration:
         app = builder.compile(store=raw_store)
 
         result = app.invoke({"priority_queue": []})
-        assert len(result["priority_queue"]) == len(SAMPLES)
+        assert len(result["priority_queue"]) > 0

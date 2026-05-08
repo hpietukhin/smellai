@@ -1,6 +1,6 @@
 """Dependency analysis package exports.
 
-Kept lazy to avoid import cycles with ``store.graph`` during module loading.
+Kept lazy to avoid import cycles during module loading.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ __all__ = [
     "DEPENDENCY_RULES",
     "DependencyAnalysis",
     "analyze_dependencies",
-    "build_smell_graph",
+    "build_dependency_graph",
     "issue_to_smell_event",
     "issues_to_smell_events",
     "prioritize_smells",

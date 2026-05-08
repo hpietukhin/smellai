@@ -22,7 +22,8 @@ from typing import Any, Dict, List
 
 import networkx as nx
 
-from domain.graph import SmellGraph
+from domain.dependency_graph import DependencyGraph
+from domain.refactoring_tree import RefactoringTree, State
 from domain.models import SmellEvent
 
 # Configure logging
@@ -73,23 +74,20 @@ def smell_json_to_instances(data: Any) -> "List[SmellEvent]":
 # -----------------------------------------------------------------------------
 
 
-def _to_visualization_graph(smell_graph: SmellGraph) -> nx.DiGraph:
-    """Convert the canonical domain graph to the legacy visualization shape."""
+def _to_visualization_graph(dep_graph: DependencyGraph) -> nx.DiGraph:
+    """Convert DependencyGraph to a visualization-friendly nx.DiGraph."""
     graph = nx.DiGraph()
-    for smell_id in smell_graph.all_smell_ids():
-        data = smell_graph.node_data(smell_id)
+    for smell_id in dep_graph.all_smell_ids():
         smell = SmellEvent(
             smell_id=smell_id,
-            smell_type=data.get("smell_type", "Unknown"),
-            file_path=data.get("file_path", "Unknown"),
-            line_number=int(data.get("line_number", 0) or 0),
-            severity=data.get("severity", "LOW"),
+            smell_type=dep_graph.smell_type_of(smell_id),
+            file_path=dep_graph.node_data(smell_id).get("file_path", "Unknown"),
+            line_number=int(dep_graph.node_data(smell_id).get("line_number", 0) or 0),
+            severity=dep_graph.node_data(smell_id).get("severity", "LOW"),
         )
-        # NiceGUI visualization historically expected a free-form description.
-        setattr(smell, "description", data.get("description", ""))
         graph.add_node(smell_id, data=smell)
 
-    for source, target, data in smell_graph.graph.edges(data=True):
+    for source, target, data in dep_graph.graph.edges(data=True):
         relation = data.get("relation", "")
         graph.add_edge(
             source,
@@ -109,21 +107,41 @@ def _severity_color(severity_score: int) -> str:
 
 
 class SmellPrioritizer:
-    """Thin compatibility wrapper around the canonical ``domain.graph.SmellGraph``.
+    """CLI wrapper around DependencyGraph + RefactoringTree.
 
-    Production code should depend on ``SmellGraph`` directly. This wrapper keeps
-    the CLI and visualization tool API stable while avoiding duplicate graph and
-    priority logic in ``scripts``.
+    Keeps the visualization and CLI API stable.
     """
 
     def __init__(self, smells: List[SmellEvent]):
         self.smells = smells
-        self.smell_graph = SmellGraph.from_smells(smells)
-        self.graph = _to_visualization_graph(self.smell_graph)
+        self.dep_graph = DependencyGraph.from_events(smells)
+        self.graph = _to_visualization_graph(self.dep_graph)
 
     def calculate_priorities(self) -> List[Dict[str, Any]]:
-        """Delegate priority calculation to ``SmellGraph.calculate_priorities``."""
-        return self.smell_graph.calculate_priorities()
+        """Run greedy planner and return legacy priority list format."""
+        initial = State(frozenset(e.smell_id for e in self.smells))
+        tree = RefactoringTree(initial, self.dep_graph)
+        plan = tree.greedy()
+
+        sequence = []
+        for i, action in enumerate(plan.actions):
+            smell_type = self.dep_graph.smell_type_of(action.smell_id)
+            data = self.dep_graph.node_data(action.smell_id)
+            file_path = data.get("file_path", "")
+            line_number = data.get("line_number", 0)
+            sequence.append({
+                "order": i + 1,
+                "smell_id": action.smell_id,
+                "smell_type": smell_type,
+                "file_path": file_path,
+                "line_number": line_number,
+                "location": f"{file_path}:{line_number}",
+                "pz_score": self.dep_graph.score(action.smell_id),
+                "positive_impacts": len(self.dep_graph.positive_neighbors(action.smell_id)),
+                "negative_impacts": len(self.dep_graph.negative_neighbors(action.smell_id)),
+                "suggested_refactorings": [action.ref_type],
+            })
+        return sequence
 
     def visualize(self, output_path: Path):
         """Generates a diagram of the smell dependencies and importance."""

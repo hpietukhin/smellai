@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Thin compatibility wrapper for SWE evaluation.
+"""DEPRECATED thin compatibility wrapper for SWE evaluation.
+
+Redirect to Composite Refactorings 2020 flow instead:
+- dataset.neo4j_graph.DatasetGraph.composite_refactoring(...)
+- workflows/planner_eval_workflow.py
 
 Delegates to workflows/eval_workflow.py with --source swe.
 
@@ -10,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import sys
+import warnings
 from workflows.eval_workflow import main as unified_eval_main
 
 
@@ -28,7 +33,15 @@ def main(
     sonar_cache_dir: str = "./sonar_cache",
     with_sonar: bool = False,
 ) -> int:
-    """SWE-Refactor evaluation workflow."""
+    """SWE-Refactor evaluation workflow.
+
+    DEPRECATED: use Composite Refactorings 2020 planner workflow instead.
+    """
+    warnings.warn(
+        "workflows.swe_eval_workflow is deprecated; use workflows/planner_eval_workflow.py with Composite Refactorings 2020 dataset.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     return unified_eval_main(
         source="swe",
         raw_path=dataset,

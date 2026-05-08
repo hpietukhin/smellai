@@ -14,6 +14,7 @@ Contract for `SmellDetector.detect(...)`:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import replace
 from pathlib import Path
 from typing import Sequence
 
@@ -67,14 +68,4 @@ class StaticDetector(SmellDetector):
 
     def detect(self, project_path: Path) -> list[SmellEvent]:
         del project_path
-        return [
-            SmellEvent(
-                smell_id=smell.smell_id,
-                smell_type=smell.smell_type,
-                severity=smell.severity,
-                file_path=smell.file_path,
-                line_number=smell.line_number,
-                action=smell.action,
-            )
-            for smell in self._smells
-        ]
+        return [replace(smell) for smell in self._smells]

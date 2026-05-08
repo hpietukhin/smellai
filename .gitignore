@@ -3,3 +3,8 @@
 !*/
 !*.py
 !.gitignore
+!/outputs/
+!/outputs/evals/
+!/outputs/evals/**/*.json
+/temp/
+/repos/

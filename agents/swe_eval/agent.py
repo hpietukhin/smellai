@@ -1,7 +1,13 @@
-"""LangGraph agent for SWE-Refactor evaluation workflow.
+"""DEPRECATED: LangGraph agent for SWE-Refactor evaluation workflow.
+
+Redirect to Composite Refactorings 2020 flow instead:
+- dataset.neo4j_graph.DatasetGraph.composite_refactoring(...)
+- workflows/planner_eval_workflow.py
 
 Workflow (basic): A0 (setup) → A5 (generate) → A6 (verify)
 Workflow (composite): A0 → A1 → A2 → A3 → [A4 → A5 → A6] (loop) → END
+
+This module is kept for compatibility and is scheduled for removal.
 """
 
 from __future__ import annotations
@@ -10,7 +16,7 @@ import logging
 import re
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, List, Literal, Optional, TypedDict
+from typing import Annotated, Any, List, Literal, Optional, TypedDict
 
 import networkx as nx
 from langchain_core.messages import BaseMessage
@@ -18,7 +24,7 @@ from langchain_litellm import ChatLiteLLM
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 
-from agents.dependency_analysis.agent import build_smell_graph_from_events
+from agents.dependency_analysis.agent import build_dependency_graph
 from swe_refactor.adapters import sample_to_refactoring_record
 from swe_refactor.dataset import RefactoringRecord
 from smellai_datasets.schema import EvalSample
@@ -29,9 +35,6 @@ from agents.swe_eval.config import DEFAULT_CONFIG, SWEEvalAgentConfig
 from agents.swe_eval.prompts import SYSTEM_PROMPT, get_refactoring_prompt
 from domain.detector import SmellDetectionError, SmellDetector
 from sonarqube.detector import SonarQubeDetector
-
-if TYPE_CHECKING:
-    from swe_refactor.persistence.database import AnalyticsDB
 
 LOGGER = logging.getLogger(__name__)
 EXTRACT_METHOD = "Extract Method"
@@ -87,9 +90,9 @@ class SWEEvalState(TypedDict):
     smells_created_count: int
     refactoring_history: List[dict]  # [{iteration, smell, type, outcome}, ...]
 
-    # Persistence
+    # Persistence hooks (optional; duck-typed logger)
     session_id: str  # thread_id from LangGraph
-    analytics_db: Optional[AnalyticsDB]  # SQLModel database instance
+    analytics_db: Any | None
 
     # Smell detection backend config
     smell_detector: SmellDetector
@@ -382,8 +385,22 @@ def create_swe_eval_agent(
 
         LOGGER.info("A2: Prioritizing %d smells", len(detected_smells))
 
-        smell_graph = build_smell_graph_from_events(detected_smells)
-        priority_sequence = smell_graph.calculate_priorities()
+        from domain.refactoring_tree import RefactoringTree, State
+
+        dep_graph = build_dependency_graph(detected_smells)
+        initial = State(frozenset(e.smell_id for e in detected_smells))
+        tree = RefactoringTree(initial, dep_graph)
+        plan = tree.greedy()
+        priority_sequence = [
+            {
+                "order": i + 1,
+                "smell_id": a.smell_id,
+                "smell_type": dep_graph.smell_type_of(a.smell_id),
+                "location": f"{dep_graph.node_data(a.smell_id).get('file_path', '')}:{dep_graph.node_data(a.smell_id).get('line_number', 0)}",
+                "ref_type": a.ref_type,
+            }
+            for i, a in enumerate(plan.actions)
+        ]
 
         LOGGER.info(
             "A2: Priority queue: %s",
@@ -397,7 +414,7 @@ def create_swe_eval_agent(
 
         return {
             "priority_queue": priority_ids,
-            "smell_graph": smell_graph.graph,
+            "smell_graph": dep_graph.graph,
         }
 
     def a3_select_next_smell(state: SWEEvalState) -> dict:
@@ -602,7 +619,7 @@ def invoke_agent(
     agent: StateGraph,
     sample: EvalSample,
     workspace_path: str | Path,
-    analytics_db=None,
+    analytics_db: Any | None = None,
     max_refactorings: int = 5,
     sonar_url: str = "http://localhost:9000",
     sonar_cache_dir: str | None = None,
@@ -614,7 +631,7 @@ def invoke_agent(
         agent: Compiled LangGraph agent
         sample: EvalSample with source="swe"
         workspace_path: Base workspace directory
-        analytics_db: Optional AnalyticsDB instance for composite mode
+        analytics_db: Optional analytics logger object for composite mode
         max_refactorings: Max refactoring iterations (N-action limit)
         sonar_url: SonarQube server URL
         sonar_cache_dir: SonarQube cache directory

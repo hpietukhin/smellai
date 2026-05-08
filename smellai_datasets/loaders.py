@@ -1,13 +1,14 @@
-"""Dataset loaders: raw JSON/manifest → EvalSample.
+"""Dataset loaders: raw source artifacts → EvalSample.
 
 Replaces the old converter.py + config.py + mlflow_bridge pipeline.
 
 Public API
 ----------
-load_swe_raw_df     : SWE-Refactor JSON → flat pandas DataFrame (for inspection)
-load_rminer_raw_df  : RMiner oracle JSON → flat pandas DataFrame (for inspection)
-load_eval_samples   : load list[EvalSample] from one or more sources
-load_eval_df        : MLflow-ready DataFrame (source/sample_id/inputs/expectations/tags)
+load_swe_raw_df      : SWE-Refactor JSON → flat pandas DataFrame (for inspection)
+load_rminer_raw_df   : RMiner oracle JSON → flat pandas DataFrame (for inspection)
+load_tdd_raw_df      : TDD v2 SQLite → flat pandas DataFrame of issue events
+load_eval_samples    : load list[EvalSample] from one or more sources
+load_eval_df         : MLflow-ready DataFrame (source/sample_id/inputs/expectations/tags)
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ import pandas as pd
 from pydantic import TypeAdapter
 
 from .schema import DatasetSource, EvalSample, rminer_sample
+from .td_v2 import load_tdd_raw_df
 from swe_refactor.dataset import RefactoringRecord
 
 PURE_REFACTORING_DATA_FILE = "pure_refactoring_data.json"
@@ -34,6 +36,7 @@ PURE_REFACTORING_DATA_FILE = "pure_refactoring_data.json"
 #   SWE_REFACTOR_PATH   — SWE-Refactor JSON file or containing directory
 #   RMINER_MANIFEST_PATH — RefactoringMiner manifest.json
 #   RMINER_ORACLE_PATH  — RefactoringMiner oracle JSON
+#   TDD_DB_PATH         — Technical Debt Dataset v2 SQLite DB
 # ---------------------------------------------------------------------------
 
 def _env_path(var: str) -> Path | None:
@@ -311,6 +314,41 @@ def _rminer_samples(manifest_path: Path, limit: int | None = None) -> list[EvalS
     return samples
 
 
+def _tdd_samples(df: pd.DataFrame) -> list[EvalSample]:
+    """Project TDD issue-event rows into EvalSample objects."""
+    rows = df.to_dict("records")
+    return [
+        EvalSample(
+            source="tdd",
+            sample_id=(
+                f"tdd:{row['project']}:{row.get('creation_commit') or ''}:"
+                f"{row['rule']}:{row['component']}:{row['start_line']}"
+            ),
+            inputs={
+                "project": row["project"],
+                "creation_commit": row.get("creation_commit") or "",
+                "rule": row["rule"],
+                "component": row["component"],
+                "message": row["message"],
+                "start_line": row["start_line"],
+                "end_line": row["end_line"],
+                "issue_type": row["issue_type"],
+            },
+            expectations={
+                "close_commit": row.get("close_commit") or "",
+            },
+            tags={
+                "severity": row["severity"],
+                "status": row["status"],
+                "resolution": row.get("resolution") or "",
+                "effort": row.get("effort"),
+                "debt": row.get("debt"),
+            },
+        )
+        for row in rows
+    ]
+
+
 # ---------------------------------------------------------------------------
 # Public unified loaders
 # ---------------------------------------------------------------------------
@@ -320,6 +358,7 @@ def load_eval_samples(
     *,
     swe_path: Path | None = None,
     rminer_manifest_path: Path | None = None,
+    tdd_db_path: Path | None = None,
     limit: int | None = None,
 ) -> list[EvalSample]:
     """Load EvalSample objects from one or more dataset sources.
@@ -328,6 +367,7 @@ def load_eval_samples(
         sources: Which sources to load. Defaults to ("swe",).
         swe_path: Path to SWE-Refactor JSON (or dir). Falls back to env/defaults.
         rminer_manifest_path: Path to RMiner manifest.json. Falls back to defaults.
+        tdd_db_path: Path to TDD v2 SQLite DB. Falls back to ``TDD_DB_PATH``.
         limit: Optional cap applied *per source*.
 
     Returns:
@@ -351,10 +391,13 @@ def load_eval_samples(
             samples.extend(_rminer_samples(resolved, limit=limit))
 
         elif source == "tdd":
-            raise NotImplementedError(
-                "TDD source is not yet implemented. "
-                "Load TDD data directly via load_tdd_raw_df() for inspection."
+            resolved = _require(
+                tdd_db_path or _env_path("TDD_DB_PATH"),
+                "TDD v2 SQLite DB",
+                "TDD_DB_PATH",
             )
+            df = load_tdd_raw_df(resolved, limit=limit)
+            samples.extend(_tdd_samples(df))
         else:
             raise ValueError(f"Unsupported source: {source!r}")
 
@@ -369,6 +412,7 @@ def load_eval_df(
     *,
     swe_path: Path | None = None,
     rminer_manifest_path: Path | None = None,
+    tdd_db_path: Path | None = None,
     limit: int | None = None,
 ) -> pd.DataFrame:
     """Return a MLflow-ready DataFrame from unified EvalSamples.
@@ -379,6 +423,7 @@ def load_eval_df(
         sources,
         swe_path=swe_path,
         rminer_manifest_path=rminer_manifest_path,
+        tdd_db_path=tdd_db_path,
         limit=limit,
     )
     return pd.DataFrame([s.model_dump() for s in samples])
@@ -387,6 +432,7 @@ def load_eval_df(
 __all__ = [
     "load_swe_raw_df",
     "load_rminer_raw_df",
+    "load_tdd_raw_df",
     "load_eval_samples",
     "load_eval_df",
 ]

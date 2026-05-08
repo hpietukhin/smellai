@@ -1,9 +1,10 @@
 """Dependency analysis agent for refactoring.
 
 This module exposes smell-dependency analysis over SonarQube issues while using
-``SmellGraph`` as the canonical in-memory representation. When a LangGraph
-``BaseStore`` is provided, the built graph and computed priorities can be
-persisted through ``SmellStore`` for later workflow steps.
+``DependencyGraph`` as the canonical in-memory representation and
+``RefactoringTree`` for planning. When a LangGraph ``BaseStore`` is provided,
+the built graph and computed priorities can be persisted through ``SmellStore``
+for later workflow steps.
 """
 
 from __future__ import annotations
@@ -13,10 +14,11 @@ from typing import Any, Dict, List
 from langgraph.store.base import BaseStore
 from pydantic import BaseModel, Field
 
-from domain.graph import SmellGraph
+from domain.dependency_graph import DependencyGraph
+from domain.refactoring_tree import RefactoringTree, State
 from domain.rules import DEPENDENCY_RULES
 from store.smell_store import SmellStore
-from domain.models import SmellAction, SmellEvent
+from domain.models import SmellEvent
 
 
 class DependencyAnalysis(BaseModel):
@@ -30,11 +32,6 @@ class DependencyAnalysis(BaseModel):
     negative_dependencies: List[str] = Field(
         description="Smells that might be caused/created"
     )
-
-
-# SPEC-009 backlog: create a comprehensive map of dependency rules with
-# detailed citations. Rules are based on Markovič & Polášek research and should
-# be expanded with paper references (medium priority; see spec §4.4).
 
 
 def issue_to_smell_event(issue: Dict[str, Any]) -> SmellEvent | None:
@@ -61,7 +58,7 @@ def issue_to_smell_event(issue: Dict[str, Any]) -> SmellEvent | None:
         severity=severity,
         file_path=file_path,
         line_number=line,
-        action=SmellAction.DETECTED,
+        action="detected",
     )
 
 
@@ -74,31 +71,16 @@ def issues_to_smell_events(sonar_issues: List[Dict[str, Any]]) -> List[SmellEven
     ]
 
 
-def build_smell_graph_from_events(
+def build_dependency_graph(
     smell_events: List[SmellEvent],
     *,
+    locality: str = "none",
     store: BaseStore | None = None,
     session_id: str | None = None,
     iteration: int = 0,
-) -> SmellGraph:
-    """Build a ``SmellGraph`` from already-normalized ``SmellEvent`` objects."""
-    graph = SmellGraph.from_smells(smell_events)
-
-    if store is not None and session_id:
-        SmellStore(store).save_graph(session_id, graph, iteration=iteration)
-
-    return graph
-
-
-def build_smell_graph(
-    sonar_issues: List[Dict[str, Any]],
-    *,
-    store: BaseStore | None = None,
-    session_id: str | None = None,
-    iteration: int = 0,
-) -> SmellGraph:
-    """Build a ``SmellGraph`` from SonarQube issues and optionally persist it."""
-    graph = SmellGraph.from_smells(issues_to_smell_events(sonar_issues))
+) -> DependencyGraph:
+    """Build a ``DependencyGraph`` from already-normalized ``SmellEvent`` objects."""
+    graph = DependencyGraph.from_events(smell_events, locality=locality)
 
     if store is not None and session_id:
         SmellStore(store).save_graph(session_id, graph, iteration=iteration)
@@ -109,22 +91,40 @@ def build_smell_graph(
 def prioritize_smells(
     sonar_issues: List[Dict[str, Any]],
     *,
+    locality: str = "none",
     store: BaseStore | None = None,
     session_id: str | None = None,
     iteration: int = 0,
 ) -> List[dict[str, Any]]:
-    """Prioritize smells by building a graph and applying greedy scoring.
+    """Prioritize smells using greedy planner on DependencyGraph.
 
     When ``store`` and ``session_id`` are provided, both the graph snapshot and
     the computed priority queue are persisted via ``SmellStore``.
     """
-    graph = build_smell_graph(
-        sonar_issues,
+    events = issues_to_smell_events(sonar_issues)
+    graph = build_dependency_graph(
+        events,
+        locality=locality,
         store=store,
         session_id=session_id,
         iteration=iteration,
     )
-    priorities = graph.calculate_priorities()
+    initial = State(frozenset(e.smell_id for e in events))
+    tree = RefactoringTree(initial, graph)
+    plan = tree.greedy()
+
+    # Convert Plan to legacy priority list format
+    priorities = []
+    for i, action in enumerate(plan.actions):
+        smell_type = graph.smell_type_of(action.smell_id)
+        priorities.append({
+            "order": i + 1,
+            "smell_id": action.smell_id,
+            "smell_type": smell_type,
+            "ref_type": action.ref_type,
+            "h_before": plan.h_trace[i],
+            "h_after": plan.h_trace[i + 1],
+        })
 
     if store is not None and session_id:
         SmellStore(store).save_priorities(session_id, priorities)
@@ -141,21 +141,12 @@ def analyze_dependencies(
 ) -> List[DependencyAnalysis]:
     """Analyze dependencies for a list of SonarQube issues.
 
-    This keeps the original smell-type-level response shape for callers, but now
-    builds the canonical ``SmellGraph`` first. If a store/session is provided,
-    the graph is persisted for downstream LangGraph steps.
-
-    Args:
-        sonar_issues: List of issues from SonarQube.
-        store: Optional LangGraph store for persistence.
-        session_id: Session key used when persisting to ``SmellStore``.
-        iteration: Iteration metadata used for persisted snapshots.
-
-    Returns:
-        List of ``DependencyAnalysis`` objects.
+    Builds the canonical ``DependencyGraph`` first. If a store/session is
+    provided, the graph is persisted for downstream LangGraph steps.
     """
-    graph = build_smell_graph(
-        sonar_issues,
+    events = issues_to_smell_events(sonar_issues)
+    graph = build_dependency_graph(
+        events,
         store=store,
         session_id=session_id,
         iteration=iteration,
@@ -173,7 +164,7 @@ def analyze_dependencies(
     results: List[DependencyAnalysis] = []
     seen_smell_types: set[str] = set()
     for smell_id in graph.all_smell_ids():
-        smell_type = graph.node_data(smell_id).get("smell_type")
+        smell_type = graph.smell_type_of(smell_id)
         if not smell_type or smell_type in seen_smell_types:
             continue
         seen_smell_types.add(smell_type)

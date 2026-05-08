@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Unified MLflow GenAI evaluation workflow.
+"""DEPRECATED unified MLflow GenAI evaluation workflow for SWE/RMiner.
+
+Redirect to Composite Refactorings 2020 flow instead:
+- dataset.neo4j_graph.DatasetGraph.composite_refactoring(...)
+- workflows/planner_eval_workflow.py
 
 Loads EvalSamples from raw dataset sources, converts to MLflow records,
 and runs agent evaluation with source-appropriate scorers.

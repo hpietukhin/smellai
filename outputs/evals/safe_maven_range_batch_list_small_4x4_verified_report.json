@@ -1,0 +1,62 @@
+{
+  "batch_name": "safe-maven-range-2026-05-05",
+  "generated_at": "2026-05-05T13:14:30.762910Z",
+  "selection_policy": {
+    "heuristic": "range",
+    "requested_projects": [
+      "Lyra",
+      "PhiCode Philib",
+      "Tap4j"
+    ],
+    "projects": [
+      "Lyra",
+      "PhiCode Philib",
+      "Tap4j"
+    ],
+    "excluded_projects": {},
+    "limit_per_project": 1,
+    "max_case_elements": 4,
+    "max_case_smells": 4,
+    "start_elements_count": 4,
+    "requires_baseline_verification": true
+  },
+  "summary": {
+    "raw_candidates": 3,
+    "accepted": 2,
+    "rejected": 1
+  },
+  "accepted_cases": [
+    {
+      "case_id": "range:Lyra:d5db2ae23480",
+      "project": "Lyra",
+      "start_commit_hash": "3f49cbffff020134239962f1001b168c43c58acb",
+      "reason": "baseline_verified"
+    },
+    {
+      "case_id": "range:Tap4j:015ad3f9486f",
+      "project": "Tap4j",
+      "start_commit_hash": "fb2451c64b4d78d1db062eac6695dab2fe1af2a2",
+      "reason": "baseline_verified"
+    }
+  ],
+  "rejected_cases": [
+    {
+      "case_id": "range:PhiCode Philib:484c440d6599",
+      "project": "PhiCode Philib",
+      "start_commit_hash": "a132ad528a176bc7ba6082999c270549e7956c23",
+      "reason": "test_fail",
+      "details": "tests failed: failed=1 errors=0",
+      "commit_build_system_window": {
+        "repo_url": "https://github.com/PhiCode/philib",
+        "project": "PhiCode Philib",
+        "start_commit_order": 748,
+        "end_commit_order": 749,
+        "commit_count": 2,
+        "all_maven": true,
+        "first_non_maven_order": null,
+        "first_non_maven_hash": null,
+        "first_non_maven_primary": null
+      }
+    }
+  ]
+}

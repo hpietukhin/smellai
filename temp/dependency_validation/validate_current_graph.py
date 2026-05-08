@@ -1,5 +1,8 @@
 from __future__ import annotations
-import ast, pathlib, re, json
+import ast
+import pathlib
+import re
+import json
 # Same static import model used to renew docs/dependency_graph.html.
 exclude={'.venv','.git','__pycache__','.ruff_cache','.pytest_cache','docs','notebooks','temp'}
 py_files=sorted(p for p in pathlib.Path('.').rglob('*.py') if not any(part in exclude for part in p.parts) and 'tests' not in p.parts)

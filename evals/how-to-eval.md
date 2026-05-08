@@ -84,7 +84,6 @@ Example workflow config shape:
   "workflow": {
     "batch_list": "outputs/evals/safe_maven_range_batch_list.json",
     "experiment": "composite_workflow_full",
-    "run_name_prefix": "safe-maven-range",
     "planner": "befs",
     "detector_backend": "organic",
     "locality": "none",
@@ -97,6 +96,14 @@ Example workflow config shape:
   }
 }
 ```
+
+If `run_name_prefix` is omitted, batch runs get a searchable auto-prefix like:
+
+```text
+full-20260505-batch-safe_maven_range_batch_list-planner-befs-det-organic-loc-none-model-openrouter_minimax_minimax-m2.7-steps-5-case-1
+```
+
+You can still set `run_name_prefix` explicitly for ad-hoc labels.
 
 ---
 

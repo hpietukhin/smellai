@@ -1,0 +1,18 @@
+{
+  "description": "Ad-hoc candidate eval using greedy planner and 4 refactoring-agent steps.",
+  "workflow": {
+    "batch_list": "outputs/evals/safe_maven_range_batch_list_2.json",
+    "experiment": "composite_workflow_full",
+    "planner": "greedy",
+    "detector_backend": "organic",
+    "locality": "none",
+    "model": "openrouter/minimax/minimax-m2.7",
+    "concurrency": 1,
+    "max_steps": 4,
+    "max_no_progress": 1,
+    "retry_budget": 0,
+    "timeout": 300,
+    "run_name_prefix": "ad-hoc-candidate-greedy-steps4",
+    "verbose": true
+  }
+}

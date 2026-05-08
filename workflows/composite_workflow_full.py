@@ -66,8 +66,17 @@ LOGGER = logging.getLogger(__name__)
 JAVA_TEST_CODE_AGENT_ENABLED = True
 JAVA_TEST_CODE_AGENT_MODEL = "openrouter/openai/gpt-oss-120b:free"
 JAVA_TEST_CODE_AGENT_MAX_STEPS = 4
-JAVA_TEST_CODE_AGENT_MAX_ATTEMPTS = 2
-JAVA_TEST_CODE_AGENT_TIMEOUT = 180
+JAVA_TEST_CODE_AGENT_MAX_ATTEMPTS = 3
+JAVA_TEST_CODE_AGENT_TIMEOUT = 2
+
+# Bound the refactor-model call attempts to keep runtime responsive.
+# Defaults are env-tunable so slow endpoints can be relaxed explicitly.
+_LLM_INVOKE_TIMEOUT_SECONDS = int(os.environ.get("COMPOSITE_LLM_INVOKE_TIMEOUT_SECONDS", "2"))
+_LLM_INVOKE_TIMEOUT_SEQUENCE = (
+    _LLM_INVOKE_TIMEOUT_SECONDS,
+    _LLM_INVOKE_TIMEOUT_SECONDS * 2,
+    _LLM_INVOKE_TIMEOUT_SECONDS * 3,
+)
 
 _CURRENT_TRACKER: contextvars.ContextVar[Any | None] = contextvars.ContextVar("composite_workflow_tracker", default=None)
 _CURRENT_STEP: contextvars.ContextVar[int | None] = contextvars.ContextVar("composite_workflow_step", default=None)
@@ -372,7 +381,7 @@ class WorkflowRunArgs(BaseSettings):
     max_steps: int = Field(default=5, ge=1)
     max_no_progress: int = Field(default=2, ge=0)
     retry_budget: int = Field(default=1, ge=0)
-    timeout: int = Field(default=300, ge=1)
+    timeout: int = Field(default=2, ge=1)
     organic_dir: str | None = None
     sonar_url: str = "http://localhost:9000"
     experiment: str = "composite_workflow_full"
@@ -542,7 +551,7 @@ def _run_git(args: list[str], cwd: Path | None = None, *, check: bool = True) ->
 
 
 @contextlib.contextmanager
-def _path_lock(lock_dir: Path, timeout: int = 300):
+def _path_lock(lock_dir: Path, timeout: int = 2):
     started = time.monotonic()
     while True:
         try:
@@ -741,40 +750,51 @@ def _invoke_refactor_llm(model_name: str, messages: Sequence[dict[str, str]]) ->
     methods: tuple[str, ...] = ("function_calling", "json_schema")
     last_error: Exception | None = None
 
-    for method in methods:
-        LOGGER.info("PHASE llm_refactor_call method=%s model=%s", method, model_name)
+    for attempt_index, invoke_timeout in enumerate(_LLM_INVOKE_TIMEOUT_SEQUENCE, start=1):
+        method = methods[(attempt_index - 1) % len(methods)]
+        LOGGER.info("PHASE llm_refactor_call method=%s attempt=%d timeout=%ss model=%s", method, attempt_index, invoke_timeout, model_name)
+
         try:
             structured_model = _structured_refactor_model(model_name, method)
-            result = structured_model.invoke(list(messages))
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(structured_model.invoke, list(messages))
+                result = future.result(timeout=invoke_timeout)
             LOGGER.debug("Structured output method=%s type=%s", method, type(result).__name__)
+
             if result is None:
-                LOGGER.warning("Structured output returned None with method=%s for model=%s", method, model_name)
+                LOGGER.warning(
+                    "Structured output returned None with method=%s for model=%s on attempt=%d",
+                    method,
+                    model_name,
+                    attempt_index,
+                )
                 last_error = _RefactorLLMError(
                     "llm_structured_none",
-                    f"Structured output returned None with method {method}",
+                    f"Structured output returned None with method {method} on attempt {attempt_index}",
                 )
                 continue
+
             if isinstance(result, JavaRefactorOutput):
                 return result
+
             try:
                 return _coerce_refactor_output(result, context=f"method={method}")
             except _RefactorLLMError as exc:
-                LOGGER.warning("Structured output parse/validation failed for method=%s: %s", method, exc)
+                LOGGER.warning(
+                    "Structured output parse/validation failed for method=%s attempt=%d: %s",
+                    method,
+                    attempt_index,
+                    exc,
+                )
                 last_error = exc
-                # Keep trying other structured methods if validation/parsing fails.
-                if method == methods[-1]:
-                    raise
-        except (RuntimeError, _RefactorLLMError, ValueError) as exc:
+        except (RuntimeError, _RefactorLLMError, ValueError, concurrent.futures.TimeoutError) as exc:
+            LOGGER.warning(
+                "Structured output call failed for method=%s attempt=%d: %s",
+                method,
+                attempt_index,
+                exc,
+            )
             last_error = exc
-            LOGGER.warning("Structured output call failed for method=%s: %s", method, exc)
-            if method != methods[-1]:
-                continue
-            if isinstance(exc, _RefactorLLMError):
-                raise
-            raise _RefactorLLMError(
-                "llm_structured_none",
-                f"Unable to invoke structured output with method {method}: {exc}",
-            ) from exc
 
     if last_error is not None:
         if isinstance(last_error, _RefactorLLMError):
@@ -925,7 +945,7 @@ def _ast_grep_java_matches(repo_path: Path, target_file: Path, pattern: str) -> 
             cwd=repo_path,
             capture_output=True,
             text=True,
-            timeout=8,
+            timeout=2,
             check=False,
         )
     except OSError as exc:
@@ -1783,7 +1803,7 @@ def run_case_direct(
     max_steps: int = typer.Option(5, "--max-steps", help="Maximum number of refactoring steps."),
     max_no_progress: int = typer.Option(2, "--max-no-progress", help="Stop if no objective progress for this many steps."),
     retry_budget: int = typer.Option(1, "--retry-budget", help="How many failed steps to retry before stopping."),
-    timeout: int = typer.Option(300, "--timeout", help="Per-step timeout for detection/refactor/test commands."),
+    timeout: int = typer.Option(2, "--timeout", help="Per-step timeout for detection/refactor/test commands."),
     organic_dir: str | None = typer.Option(None, "--organic-dir", help="Optional Organic detector working directory."),
     sonar_url: str = typer.Option("http://localhost:9000", "--sonar-url", help="SonarQube URL for detector backend."),
     experiment: str = typer.Option("composite_workflow_full", "--experiment", help="MLflow experiment name."),

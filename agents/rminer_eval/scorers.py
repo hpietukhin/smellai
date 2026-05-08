@@ -1,4 +1,7 @@
-"""MLflow scorers for refactoring mapping evaluation."""
+"""DEPRECATED: MLflow scorers for RMiner refactoring mapping evaluation.
+
+Use Composite Refactorings 2020 planner metrics via workflows/planner_eval_workflow.py.
+"""
 
 from mlflow.entities import Feedback
 from mlflow.genai.scorers import scorer

@@ -8,12 +8,23 @@ A multi-agent system for code smell detection, dependency-aware prioritization, 
 **Key capabilities**:
 - 🔍 Automated code smell detection (8 smell types via SonarQube)
 - 📊 Dependency-aware prioritization (NetworkX graph analysis)
-- 🤖 LLM-based refactoring mapping (OpenAI, Anthropic, Cerebras)
+- 🤖 LLM-based refactoring mapping (OpenRouter/LiteLLM, OpenAI, Anthropic, Cerebras)
 - ✅ Behavior preservation verification (Maven/Gradle test execution)
 - 📈 Experiment tracking and analysis (MLflow)
 - 🔄 Multiple dataset support via adapter pattern
 
 **Agent workflow**: A0 (Test Coverage) → A1 (SonarQube Scan) → A2 (Developer Query) → A3 (Prioritization) → A4 (Prompt Prep) → A5 (Refactoring Loop) → A6 (Behavior Verification) → A7 (Test Generation if needed)
+
+### Refactoring models
+
+Full-workflow refactoring experiments are run through LiteLLM/OpenRouter. The current refactoring model set is:
+
+- `qwen/qwen3-coder-next`
+- `google/gemini-2.5-flash-lite`
+- `qwen/qwen3.5-flash-02-23`
+- `minimax/minimax-m2.7`
+
+Configure `OPENROUTER_API_KEY` in `.env`; the full evaluation workflow loads it automatically.
 
 ## Quick start
 
@@ -73,6 +84,7 @@ cp .env.example .env
 
 **Required variables:**
 - `OPENAI_API_KEY`: OpenAI API key for GPT models (get from https://platform.openai.com/api-keys)
+- `OPENROUTER_API_KEY`: OpenRouter API key for LiteLLM refactoring model runs
 - `CEREBRAS_API_KEY`: Cerebras API key for fast inference (alternative LLM provider)
 - `SONAR_TOKEN`: SonarQube authentication token (create in SonarQube UI: My Account → Security)
 - `SONAR_URL`: SonarQube server URL (default: `http://localhost:9000`)

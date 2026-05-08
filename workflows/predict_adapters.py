@@ -46,10 +46,6 @@ def make_swe_predict_fn(agent, args):
     from agents.swe_eval import invoke_agent as swe_invoke
 
     analytics_db = None
-    if getattr(args, "enable_composite", False):
-        from swe_refactor.persistence.database import AnalyticsDB
-
-        analytics_db = AnalyticsDB(args.analytics_db)
 
     def predict_fn(
         project_name: str,

@@ -1,8 +1,14 @@
-"""LangGraph agent for refactoring mapping evaluation.
+"""DEPRECATED: LangGraph agent for RMiner refactoring mapping evaluation.
+
+Redirect to Composite Refactorings 2020 flow instead:
+- dataset.neo4j_graph.DatasetGraph.composite_refactoring(...)
+- workflows/planner_eval_workflow.py
 
 This module provides a LangGraph agent that maps refactorings to diff hunks
 in code changes. The agent analyzes before/after code, refactoring metadata,
 and diff hunks to determine which code changes correspond to which refactorings.
+
+Kept for backward compatibility.
 """
 
 from __future__ import annotations

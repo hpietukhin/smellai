@@ -1,12 +1,11 @@
-"""LangGraph Store adapter for persisting SmellGraph between agent steps.
+"""LangGraph Store adapter for persisting DependencyGraph between agent steps.
 
 Usage in a LangGraph node::
 
     def a2_prioritize(state, *, store: BaseStore):
         ss = SmellStore(store)
         graph = ss.load_graph(session_id)
-        priorities = graph.calculate_priorities()
-        return {"priority_queue": [p["smell_id"] for p in priorities]}
+        ...
 """
 
 from __future__ import annotations
@@ -15,7 +14,7 @@ from typing import Any
 
 from langgraph.store.base import BaseStore
 
-from domain.graph import SmellGraph
+from domain.dependency_graph import DependencyGraph
 
 _NS_PREFIX = "smell_graph"
 
@@ -33,7 +32,7 @@ class SmellStore:
     def save_graph(
         self,
         session_id: str,
-        graph: SmellGraph,
+        graph: DependencyGraph,
         *,
         iteration: int = 0,
     ) -> None:
@@ -41,14 +40,13 @@ class SmellStore:
         self._store.put(_namespace(session_id, "meta"), "info", {
             "iteration": iteration,
             "node_count": len(graph),
-            "edge_count": graph.graph.number_of_edges(),
         })
 
-    def load_graph(self, session_id: str) -> SmellGraph | None:
+    def load_graph(self, session_id: str) -> DependencyGraph | None:
         item = self._store.get(_namespace(session_id, "snapshot"), "latest")
         if item is None:
             return None
-        return SmellGraph.from_dict(item.value)
+        return DependencyGraph.from_dict(item.value)
 
     def get_meta(self, session_id: str) -> dict[str, Any] | None:
         item = self._store.get(_namespace(session_id, "meta"), "info")

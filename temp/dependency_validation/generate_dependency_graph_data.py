@@ -1,5 +1,7 @@
 from __future__ import annotations
-import ast, json, pathlib, re
+import ast
+import json
+import pathlib
 root=pathlib.Path('.')
 exclude={'.venv','.git','__pycache__','.ruff_cache','.pytest_cache','docs','notebooks','temp'}
 py_files=sorted(p for p in root.rglob('*.py') if not any(part in exclude for part in p.parts) and 'tests' not in p.parts)

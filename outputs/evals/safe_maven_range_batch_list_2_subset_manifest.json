@@ -1,0 +1,12 @@
+{
+  "manifest": [
+    {
+      "episode_id": "Lyra::net.jodah.lyra.internal.ChannelRecoveryTest|net.jodah.lyra.internal.ChannelRecoveryTest.shouldHandleNonRetryableChannelClosure()|net.jodah.lyra.internal.ChannelRecoveryTest.shouldHandleNonRetryableConnectionClosure()|net.jodah.lyra.internal.ChannelRecoveryTest.shouldHandleRetryableChannelClosure()|net.jodah.lyra.internal.ChannelRecoveryTest.shouldHandleRetryableConnectionClosure()|net.jodah.lyra.internal.ChannelRecoveryTest.verifyChannelFailure()|net.jodah.lyra.internal.ChannelRecoveryTest.verifyConnectionFailure()",
+      "build_test_verified": true
+    },
+    {
+      "episode_id": "PhiCode Philib::ch.bind.philib.msg.vm.PubSubVMTest|ch.bind.philib.msg.vm.PubSubVMTest.asyncMessages()|ch.bind.philib.msg.vm.PubSubVMTest.asyncMessagesTwoSubscribers()|ch.bind.philib.msg.vm.PubSubVMTest.emptyPublish()|ch.bind.philib.msg.vm.PubSubVMTest.publishToTwoSubscribers()|ch.bind.philib.msg.vm.PubSubVMTest.ring()|ch.bind.philib.msg.vm.PubSubVMTest.standardPublish()|ch.bind.philib.msg.vm.PubSubVMTest.syncEmptyPublish()|ch.bind.philib.msg.vm.PubSubVMTest.syncMessagesTwoSubscribers()",
+      "build_test_verified": true
+    }
+  ]
+}

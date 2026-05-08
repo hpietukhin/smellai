@@ -1,4 +1,7 @@
-"""MLflow scorers for SWE-Refactor evaluation outputs."""
+"""DEPRECATED: MLflow scorers for SWE-Refactor evaluation outputs.
+
+Use Composite Refactorings 2020 planner metrics via workflows/planner_eval_workflow.py.
+"""
 
 from __future__ import annotations
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from sqlmodel import Field, SQLModel
 
-from domain.models import SmellAction, SmellEvent  # re-export SmellAction; SmellEvent used in from_domain
+from domain.models import SmellEvent
 
 
 def _utc_now() -> datetime:
@@ -47,7 +47,7 @@ class SmellEventRecord(SQLModel, table=True):
     severity: str
     file_path: str
     line_number: int = Field(default=0)
-    action: SmellAction = Field(default=SmellAction.DETECTED)
+    action: str = Field(default="detected")
     timestamp: datetime = Field(default_factory=_utc_now)
 
     @classmethod

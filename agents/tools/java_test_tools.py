@@ -7,15 +7,30 @@ and parsing test results for Java projects. Supports Maven and Gradle.
 from __future__ import annotations
 
 import logging
+import os
+import select
 import subprocess
+import time
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field
+from collections import Counter
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 from langchain_core.tools import tool
 
 LOGGER = logging.getLogger(__name__)
+BuildSystem = Literal["maven", "gradle"]
+TestStatus = Literal["PASS", "FAIL", "ERROR", "SKIPPED"]
+REPORT_PATHS: dict[BuildSystem, str] = {
+    "maven": "target/surefire-reports",
+    "gradle": "build/test-results/test",
+}
+XML_TAG_TO_STATUS: dict[str, TestStatus] = {
+    "failure": "FAIL",
+    "error": "ERROR",
+    "skipped": "SKIPPED",
+}
 
 
 @dataclass
@@ -25,11 +40,11 @@ class TestResult:
     __test__ = False
 
     name: str
-    status: Literal["PASS", "FAIL", "ERROR", "SKIPPED"]
+    status: TestStatus
     duration: float = 0.0
-    error_message: Optional[str] = None
-    error_type: Optional[str] = None
-    failure_trace: Optional[str] = None
+    error_message: str | None = None
+    error_type: str | None = None
+    failure_trace: str | None = None
 
 
 @dataclass
@@ -52,7 +67,7 @@ class TestRunSummary:
 
     __test__ = False
 
-    build_system: Literal["maven", "gradle"]
+    build_system: BuildSystem
     exit_code: int = 0
     tests: list[TestResult] = field(default_factory=list)
     stdout: str = ""
@@ -65,7 +80,7 @@ class TestRunSummary:
         return self.exit_code == 0 and self.counts.failed == 0 and self.counts.errors == 0
 
 
-def detect_build_system(project_path: str) -> Optional[Literal["maven", "gradle"]]:
+def detect_build_system(project_path: str) -> BuildSystem | None:
     """Detect Java build system in the project.
 
     Args:
@@ -85,80 +100,103 @@ def detect_build_system(project_path: str) -> Optional[Literal["maven", "gradle"
     return None
 
 
+def _run_streaming_command(cmd: list[str], project: Path, timeout: int) -> tuple[int, str, str]:
+    LOGGER.info("Streaming Java test command: %s", " ".join(cmd))
+    proc = subprocess.Popen(
+        cmd,
+        cwd=str(project),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    assert proc.stdout is not None
+    lines: list[str] = []
+    deadline = time.monotonic() + timeout
+    fd = proc.stdout.fileno()
+    while proc.poll() is None:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            proc.kill()
+            raise subprocess.TimeoutExpired(cmd, timeout, output="\n".join(lines))
+        ready, _, _ = select.select([fd], [], [], min(1.0, remaining))
+        if ready:
+            line = proc.stdout.readline()
+            if line:
+                print(f"[java-test] {line}", end="", flush=True)
+                lines.append(line.rstrip())
+    for line in proc.stdout:
+        print(f"[java-test] {line}", end="", flush=True)
+        lines.append(line.rstrip())
+    return proc.wait(), "\n".join(lines), ""
+
+
+def _run_captured_command(cmd: list[str], project: Path, timeout: int) -> tuple[int, str, str]:
+    result = subprocess.run(
+        cmd,
+        cwd=str(project),
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+    return result.returncode, result.stdout, result.stderr
+
+
+def _compute_counts(tests: list[TestResult]) -> TestCounts:
+    by_status = Counter(test.status for test in tests)
+    return TestCounts(
+        total=len(tests),
+        passed=by_status["PASS"],
+        failed=by_status["FAIL"],
+        errors=by_status["ERROR"],
+        skipped=by_status["SKIPPED"],
+        duration=sum(test.duration for test in tests),
+    )
+
+
 def run_cmd_and_parse(
     cmd: list[str],
     project: Path,
-    build_system: Literal["maven", "gradle"],
-    timeout: int = 300,
+    build_system: BuildSystem,
+    timeout: int = 2,
 ) -> TestRunSummary:
-    """Execute a test command and parse results.
-
-    Args:
-        cmd: Command to execute
-        project: Path to the project directory
-        build_system: Build system type (for report parsing)
-        timeout: Timeout in seconds
-
-    Returns:
-        TestRunSummary with results
-    """
+    """Execute a test command and parse results."""
+    runner = _run_streaming_command if os.environ.get("JAVA_TEST_STREAM_LOGS", "") else _run_captured_command
     try:
-        result = subprocess.run(
-            cmd,
-            cwd=str(project),
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-
-        summary = TestRunSummary(
-            build_system=build_system,
-            exit_code=result.returncode,
-            stdout=result.stdout,
-            stderr=result.stderr,
-        )
-
-        # Parse test results
-        if build_system == "maven":
-            summary.tests = _parse_maven_results(project)
-        else:
-            summary.tests = _parse_gradle_results(project)
-
-        # Calculate summary statistics
-        summary.counts.total = len(summary.tests)
-        for test in summary.tests:
-            if test.status == "PASS":
-                summary.counts.passed += 1
-            elif test.status == "FAIL":
-                summary.counts.failed += 1
-            elif test.status == "ERROR":
-                summary.counts.errors += 1
-            elif test.status == "SKIPPED":
-                summary.counts.skipped += 1
-            summary.counts.duration += test.duration
-
-        return summary
-
-    except subprocess.TimeoutExpired:
+        exit_code, stdout, stderr = runner(cmd, project, timeout)
+    except subprocess.TimeoutExpired as exc:
+        output = exc.output if isinstance(exc.output, str) else ""
         return TestRunSummary(
             build_system=build_system,
             exit_code=-1,
+            stdout=output,
             stderr=f"Test execution timed out after {timeout} seconds",
         )
-    except Exception as e:
+    except (OSError, subprocess.SubprocessError) as exc:
         return TestRunSummary(
             build_system=build_system,
             exit_code=-1,
-            stderr=f"Error running tests: {str(e)}",
+            stderr=f"Error running tests: {exc}",
         )
+
+    tests = _collect_test_reports(project, build_system)
+    return TestRunSummary(
+        build_system=build_system,
+        exit_code=exit_code,
+        stdout=stdout,
+        stderr=stderr,
+        tests=tests,
+        counts=_compute_counts(tests),
+    )
 
 
 def run_tests(
     project_path: str,
-    build_system: Literal["maven", "gradle"],
+    build_system: BuildSystem,
     *,
     clean: bool = True,
-    timeout: int = 300,
+    timeout: int = 2,
 ) -> TestRunSummary:
     """Run tests using the detected build system.
 
@@ -185,80 +223,90 @@ def run_tests(
     return run_cmd_and_parse(cmd, project, build_system, timeout)
 
 
+def _testcase_duration(testcase: ET.Element) -> float:
+    try:
+        return float(testcase.get("time", "0"))
+    except ValueError:
+        return 0.0
+
+
+def _extract_test_result(testcase: ET.Element) -> TestResult:
+    name = f"{testcase.get('classname', '')}.{testcase.get('name', '')}"
+    duration = _testcase_duration(testcase)
+    for tag, status in XML_TAG_TO_STATUS.items():
+        element = testcase.find(tag)
+        if element is not None:
+            return TestResult(
+                name=name,
+                status=status,
+                duration=duration,
+                error_message=element.get("message") or None,
+                error_type=element.get("type") or None,
+                failure_trace=element.text,
+            )
+    return TestResult(name=name, status="PASS", duration=duration)
+
+
 def _parse_test_xml_reports(report_dir: Path) -> list[TestResult]:
-    """Parse JUnit-style XML test reports (used by both Maven Surefire and Gradle).
-
-    Args:
-        report_dir: Path to the directory containing TEST-*.xml files
-
-    Returns:
-        List of TestResult objects
-    """
-    results = []
-
+    """Parse JUnit-style XML test reports (used by both Maven Surefire and Gradle)."""
     if not report_dir.exists():
-        return results
+        return []
 
+    results: list[TestResult] = []
     for xml_file in report_dir.glob("TEST-*.xml"):
         try:
-            tree = ET.parse(xml_file)
-            root = tree.getroot()
-
-            for testcase in root.findall("testcase"):
-                name = f"{testcase.get('classname', '')}.{testcase.get('name', '')}"
-                duration = float(testcase.get("time", "0"))
-
-                # Check for failure
-                failure = testcase.find("failure")
-                error = testcase.find("error")
-                skipped = testcase.find("skipped")
-
-                if failure is not None:
-                    status = "FAIL"
-                    error_message = failure.get("message", "")
-                    error_type = failure.get("type", "")
-                    failure_trace = failure.text
-                elif error is not None:
-                    status = "ERROR"
-                    error_message = error.get("message", "")
-                    error_type = error.get("type", "")
-                    failure_trace = error.text
-                elif skipped is not None:
-                    status = "SKIPPED"
-                    error_message = None
-                    error_type = None
-                    failure_trace = None
-                else:
-                    status = "PASS"
-                    error_message = None
-                    error_type = None
-                    failure_trace = None
-
-                results.append(
-                    TestResult(
-                        name=name,
-                        status=status,
-                        duration=duration,
-                        error_message=error_message,
-                        error_type=error_type,
-                        failure_trace=failure_trace,
-                    )
-                )
-        except ET.ParseError as e:
-            LOGGER.warning("Skipping malformed XML file %s: %s", xml_file, e)
+            root = ET.parse(xml_file).getroot()
+        except ET.ParseError as exc:
+            LOGGER.warning("Skipping malformed XML file %s: %s", xml_file, exc)
             continue
-
+        results.extend(_extract_test_result(testcase) for testcase in root.findall("testcase"))
     return results
 
 
+def _parse_reports_from_dirs(report_dirs: list[Path]) -> list[TestResult]:
+    seen: set[Path] = set()
+    results: list[TestResult] = []
+    for report_dir in report_dirs:
+        resolved = report_dir.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        results.extend(_parse_test_xml_reports(report_dir))
+    return results
+
+
+def _collect_test_reports(project_path: Path, build_system: BuildSystem) -> list[TestResult]:
+    """Parse JUnit XML test reports, avoiding deep repository scans on common layouts."""
+    relative_report_path = REPORT_PATHS[build_system]
+    common_dirs: list[Path] = []
+    direct = project_path / relative_report_path
+    if direct.exists():
+        common_dirs.append(direct)
+
+    excluded_modules = {".git", ".gradle", ".mvn", "build", "target", "node_modules"}
+    for child in sorted(project_path.iterdir()):
+        if not child.is_dir() or child.name in excluded_modules:
+            continue
+        module_reports = child / relative_report_path
+        if module_reports.exists():
+            common_dirs.append(module_reports)
+
+    results = _parse_reports_from_dirs(common_dirs)
+    if results:
+        return results
+
+    deep_dirs = sorted(project_path.glob(f"**/{relative_report_path}"))
+    return _parse_reports_from_dirs(deep_dirs)
+
+
 def _parse_maven_results(project_path: Path) -> list[TestResult]:
-    """Parse Maven Surefire XML test reports."""
-    return _parse_test_xml_reports(project_path / "target" / "surefire-reports")
+    """Backward-compatible Maven report parser wrapper."""
+    return _collect_test_reports(project_path, "maven")
 
 
 def _parse_gradle_results(project_path: Path) -> list[TestResult]:
-    """Parse Gradle test XML reports."""
-    return _parse_test_xml_reports(project_path / "build" / "test-results" / "test")
+    """Backward-compatible Gradle report parser wrapper."""
+    return _collect_test_reports(project_path, "gradle")
 
 
 # LangChain tools for agent
@@ -283,7 +331,7 @@ def detect_java_build_system(project_path: str) -> str:
 
 
 @tool
-def run_java_tests(project_path: str, clean: bool = True) -> dict:
+def run_java_tests(project_path: str, clean: bool = True) -> dict[str, object]:
     """Run Java tests and return results summary.
 
     Args:
@@ -327,7 +375,7 @@ def run_java_tests(project_path: str, clean: bool = True) -> dict:
     return result
 
 
-def run_tests_if_present(project_path, has_tests: bool) -> bool:
+def run_tests_if_present(project_path: str | Path, has_tests: bool) -> bool:
     """Run tests when ``has_tests`` is True and a build system is detected.
 
     Returns True if tests passed (or no tests were run), False otherwise.
@@ -341,18 +389,15 @@ def run_tests_if_present(project_path, has_tests: bool) -> bool:
     return True
 
 
-def test_summary_to_dict(summary: TestRunSummary) -> dict:
+def test_summary_to_dict(summary: TestRunSummary) -> dict[str, object]:
     """Convert a TestRunSummary to the standard result dict (9 core fields)."""
+    counts = asdict(summary.counts)
+    counts["duration"] = round(summary.counts.duration, 2)
     return {
         "build_system": summary.build_system,
         "success": summary.success,
-        "total": summary.counts.total,
-        "passed": summary.counts.passed,
-        "failed": summary.counts.failed,
-        "errors": summary.counts.errors,
-        "skipped": summary.counts.skipped,
-        "duration": round(summary.counts.duration, 2),
         "exit_code": summary.exit_code,
+        **counts,
     }
 
 
@@ -371,7 +416,7 @@ def get_test_output(project_path: str) -> str:
     if build_system is None:
         return f"No Java build system detected in {project_path}"
 
-    summary = run_tests(project_path, build_system, clean=False, timeout=60)
+    summary = run_tests(project_path, build_system, clean=False, timeout=2)
 
     output = "=== Test Output ===\n\n"
 

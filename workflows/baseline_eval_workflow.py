@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
-"""Baseline evaluation workflow — single LLM call, no framework.
+"""DEPRECATED baseline evaluation workflow for RMiner.
 
-Uses the same scorers and data as rminer_eval_workflow for direct comparison.
+Redirect to Composite Refactorings 2020 flow instead:
+- dataset.neo4j_graph.DatasetGraph.composite_refactoring(...)
+- workflows/planner_eval_workflow.py
+
+Single LLM call, no framework. Uses the same scorers and data as
+rminer_eval_workflow for direct comparison.
 
 Usage:
     uv run workflows/baseline_eval_workflow.py --manifest ~/uni/masterThesis/datasets/rminer_data/manifest.json --limit 5

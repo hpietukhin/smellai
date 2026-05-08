@@ -1,0 +1,35 @@
+{
+  "workflow": {
+    "description": "Single-case full composite workflow for the safe Maven PhiCode Philib case.",
+    "env_file": ".env",
+    "experiment": "composite_workflow_full",
+    "run_name": "single-phicode-philib-openrouter-minimax-m27",
+    "planner": "befs",
+    "detector_backend": "organic",
+    "locality": "none",
+    "refactor_scope": "project",
+    "refactor_model": "openrouter/minimax/minimax-m2.7",
+    "max_steps": 5,
+    "max_no_progress": 2,
+    "retry_budget": 1,
+    "timeout": 300,
+    "tracking_uri": "http://localhost:5000",
+    "mlflow_healthcheck_experiment": "planner-eval",
+    "eval_patch_script": "scripts/apply_eval_project_patches.sh",
+    "verbose": true,
+    "project": "PhiCode Philib",
+    "repo_url": "https://github.com/PhiCode/philib",
+    "start_commit_hash": "a132ad528a176bc7ba6082999c270549e7956c23",
+    "elements": [
+      "ch.bind.philib.msg.vm.PubSubVMTest",
+      "ch.bind.philib.msg.vm.PubSubVMTest.asyncMessages()",
+      "ch.bind.philib.msg.vm.PubSubVMTest.asyncMessagesTwoSubscribers()",
+      "ch.bind.philib.msg.vm.PubSubVMTest.emptyPublish()",
+      "ch.bind.philib.msg.vm.PubSubVMTest.publishToTwoSubscribers()",
+      "ch.bind.philib.msg.vm.PubSubVMTest.ring()",
+      "ch.bind.philib.msg.vm.PubSubVMTest.standardPublish()",
+      "ch.bind.philib.msg.vm.PubSubVMTest.syncEmptyPublish()",
+      "ch.bind.philib.msg.vm.PubSubVMTest.syncMessagesTwoSubscribers()"
+    ]
+  }
+}
